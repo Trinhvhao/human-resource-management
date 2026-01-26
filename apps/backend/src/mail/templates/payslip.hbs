@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #8b5cf6; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .payslip-table { width: 100%; background: white; border-collapse: collapse; margin: 20px 0; }
+    .payslip-table th { background: #f3f4f6; padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; }
+    .payslip-table td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .payslip-table tr:last-child td { border-bottom: none; }
+    .total-row { background: #f3f4f6; font-weight: bold; font-size: 16px; }
+    .net-salary { background: #8b5cf6; color: white; font-size: 18px; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>💰 Phiếu lương tháng {{month}}/{{year}}</h1>
+    </div>
+    <div class="content">
+      <p>Xin chào <strong>{{employeeName}}</strong>,</p>
+      
+      <p>Phiếu lương tháng {{month}}/{{year}} của bạn đã được tạo. Chi tiết như sau:</p>
+      
+      <table class="payslip-table">
+        <thead>
+          <tr>
+            <th>Khoản mục</th>
+            <th style="text-align: right;">Số tiền (VNĐ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lương cơ bản</td>
+            <td style="text-align: right;">{{baseSalary}}</td>
+          </tr>
+          <tr>
+            <td>Phụ cấp</td>
+            <td style="text-align: right;">{{allowances}}</td>
+          </tr>
+          <tr>
+            <td>Thưởng</td>
+            <td style="text-align: right;">{{bonus}}</td>
+          </tr>
+          <tr>
+            <td>Lương tăng ca</td>
+            <td style="text-align: right;">{{overtimePay}}</td>
+          </tr>
+          <tr>
+            <td>Khấu trừ</td>
+            <td style="text-align: right; color: #ef4444;">-{{deduction}}</td>
+          </tr>
+          <tr>
+            <td>Bảo hiểm</td>
+            <td style="text-align: right; color: #ef4444;">-{{insurance}}</td>
+          </tr>
+          <tr>
+            <td>Thuế TNCN</td>
+            <td style="text-align: right; color: #ef4444;">-{{tax}}</td>
+          </tr>
+          <tr class="net-salary">
+            <td><strong>LƯƠNG THỰC NHẬN</strong></td>
+            <td style="text-align: right;"><strong>{{netSalary}}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <p><strong>Lưu ý:</strong> Lương sẽ được chuyển vào tài khoản của bạn trong vòng 3-5 ngày làm việc.</p>
+      
+      <p>Nếu có thắc mắc về phiếu lương, vui lòng liên hệ phòng Nhân sự.</p>
+      
+      <p>Trân trọng,<br>Phòng Nhân sự</p>
+    </div>
+    <div class="footer">
+      <p>Email này được gửi tự động từ Hệ thống Quản lý Nhân sự</p>
+      <p>Vui lòng không trả lời email này</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #10b981; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .info-box { background: white; padding: 15px; margin: 15px 0; border-left: 4px solid #10b981; }
+    .comparison { display: flex; justify-content: space-between; margin: 15px 0; }
+    .before, .after { flex: 1; padding: 10px; }
+    .before { background: #fef2f2; border-radius: 5px; margin-right: 10px; }
+    .after { background: #f0fdf4; border-radius: 5px; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ Yêu cầu điều chỉnh chấm công đã được duyệt</h1>
+    </div>
+    <div class="content">
+      <p>Xin chào <strong>{{employeeName}}</strong>,</p>
+      
+      <p>Yêu cầu điều chỉnh chấm công của bạn đã được <strong>{{approverName}}</strong> phê duyệt.</p>
+      
+      <div class="info-box">
+        <p><strong>Ngày:</strong> {{date}}</p>
+        
+        <div class="comparison">
+          <div class="before">
+            <p><strong>Trước khi điều chỉnh:</strong></p>
+            <p>Check-in: {{originalCheckIn}}</p>
+            <p>Check-out: {{originalCheckOut}}</p>
+          </div>
+          <div class="after">
+            <p><strong>Sau khi điều chỉnh:</strong></p>
+            <p>Check-in: {{requestedCheckIn}}</p>
+            <p>Check-out: {{requestedCheckOut}}</p>
+          </div>
+        </div>
+      </div>
+      
+      <p>Bản ghi chấm công đã được cập nhật trong hệ thống.</p>
+      
+      <p>Trân trọng,<br>Phòng Nhân sự</p>
+    </div>
+    <div class="footer">
+      <p>Email này được gửi tự động từ Hệ thống Quản lý Nhân sự</p>
+    </div>
+  </div>
+</body>
+</html>
