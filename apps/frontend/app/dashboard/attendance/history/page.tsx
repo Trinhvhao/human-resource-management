@@ -85,7 +85,7 @@ export default function AttendanceHistoryPage() {
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-primary">Lịch sử chấm công</h1>
+              <h1 className="text-3xl font-bold text-secondary">Lịch sử chấm công</h1>
               <p className="text-slate-500 mt-1">Xem chi tiết chấm công theo tháng</p>
             </div>
           </div>

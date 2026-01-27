@@ -46,7 +46,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-secondary to-brandRed rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-primary">
@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </span>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-gradient-to-br from-secondary to-brandRed rounded-lg flex items-center justify-center mx-auto">
+          <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center mx-auto">
             <Clock className="w-5 h-5 text-white" />
           </div>
         )}

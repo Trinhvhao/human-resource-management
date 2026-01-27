@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Bell, Settings, LogOut, User, ChevronDown } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Search, Bell, Settings, LogOut, User, ChevronDown, LayoutGrid, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const roleLabels: Record<string, string> = {
@@ -12,11 +12,34 @@ const roleLabels: Record<string, string> = {
   EMPLOYEE: 'Nhân viên',
 };
 
+const pageInfo: Record<string, { title: string; subtitle: string; icon?: any }> = {
+  '/dashboard': { 
+    title: 'Dashboard', 
+    subtitle: 'Tổng quan hệ thống quản lý nhân sự',
+    icon: LayoutGrid 
+  },
+  '/dashboard/employees': { title: 'Quản lý Nhân viên', subtitle: 'Quản lý thông tin nhân viên' },
+  '/dashboard/departments': { title: 'Quản lý Phòng ban', subtitle: 'Quản lý cơ cấu tổ chức' },
+  '/dashboard/attendance': { title: 'Quản lý Chấm công', subtitle: 'Quản lý chấm công nhân viên' },
+  '/dashboard/leaves': { title: 'Nghỉ phép', subtitle: 'Quản lý đơn nghỉ phép' },
+  '/dashboard/overtime': { title: 'Quản lý Tăng ca', subtitle: 'Quản lý đơn tăng ca' },
+  '/dashboard/payroll': { title: 'Quản lý Lương', subtitle: 'Quản lý bảng lương' },
+  '/dashboard/rewards': { title: 'Khen thưởng', subtitle: 'Quản lý khen thưởng' },
+  '/dashboard/disciplines': { title: 'Kỷ luật', subtitle: 'Quản lý kỷ luật' },
+  '/dashboard/settings': { title: 'Cài đặt', subtitle: 'Cấu hình hệ thống' },
+  '/dashboard/profile': { title: 'Hồ sơ', subtitle: 'Thông tin cá nhân' },
+};
+
 export default function TopHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Get current page info
+  const currentPage = pageInfo[pathname] || { title: 'Dashboard', subtitle: '' };
+  const PageIcon = currentPage.icon;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,6 +58,10 @@ export default function TopHeader() {
     router.push('/login');
   };
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   const displayName = user?.employee?.fullName || user?.email?.split('@')[0] || 'User';
   const initials = displayName
     .split(' ')
@@ -45,8 +72,18 @@ export default function TopHeader() {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
-      {/* Search */}
-      <div className="flex-1 max-w-md">
+      {/* Left: Page Title */}
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-primary">{currentPage.title}</h1>
+          {currentPage.subtitle && (
+            <p className="text-xs text-slate-500">{currentPage.subtitle}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Center: Search */}
+      <div className="flex-1 max-w-md mx-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
@@ -58,7 +95,18 @@ export default function TopHeader() {
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Refresh Button (only on dashboard) */}
+        {pathname === '/dashboard' && (
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 rounded-lg transition-colors"
+            title="Làm mới"
+          >
+            <RefreshCw size={18} className="text-brandBlue" />
+          </button>
+        )}
+
         {/* Notifications */}
         <button className="relative p-2 hover:bg-slate-50 rounded-lg transition-colors">
           <Bell size={20} className="text-slate-600" />
@@ -93,7 +141,7 @@ export default function TopHeader() {
                 className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brandBlue to-secondary text-white flex items-center justify-center font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-brandBlue text-white flex items-center justify-center font-bold text-sm border-2 border-brandBlue/20">
                 {initials}
               </div>
             )}

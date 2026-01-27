@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewCards from '@/components/dashboard/OverviewCards';
 import AttendanceChart from '@/components/dashboard/AttendanceChart';
@@ -8,38 +8,60 @@ import EmployeeDistribution from '@/components/dashboard/EmployeeDistribution';
 import RecentActivities from '@/components/dashboard/RecentActivities';
 import AlertsPanel from '@/components/dashboard/AlertsPanel';
 import QuickActions from '@/components/dashboard/QuickActions';
+import PayrollSummaryChart from '@/components/dashboard/PayrollSummaryChart';
+import LeaveRequestsChart from '@/components/dashboard/LeaveRequestsChart';
+import AttendanceHeatmap from '@/components/dashboard/AttendanceHeatmap';
+import TopPerformers from '@/components/dashboard/TopPerformers';
+import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
+import DepartmentPerformance from '@/components/dashboard/DepartmentPerformance';
+import { LayoutGrid, RefreshCw } from 'lucide-react';
 
 export default function DashboardPage() {
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const handleRefresh = () => {
+    setLastUpdated(new Date());
+    window.location.reload();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Tổng quan hệ thống quản lý nhân sự</p>
-        </div>
+        {/* Quick Actions - TOP PRIORITY */}
+        <QuickActions />
 
         {/* Overview Cards */}
         <OverviewCards />
 
-        {/* Charts Row */}
+        {/* Alerts & Events Row - High Priority */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AlertsPanel />
+          <UpcomingEvents />
+        </div>
+
+        {/* Main Charts Row - 3 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <AttendanceChart />
           <EmployeeDistribution />
+          <LeaveRequestsChart />
         </div>
 
-        {/* Bottom Row */}
+        {/* Secondary Charts Row - 2 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <PayrollSummaryChart />
+          <AttendanceHeatmap />
+        </div>
+
+        {/* Performance & Top Performers Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <RecentActivities />
+            <DepartmentPerformance />
           </div>
-          <div>
-            <AlertsPanel />
-          </div>
+          <TopPerformers />
         </div>
 
-        {/* Quick Actions */}
-        <QuickActions />
+        {/* Recent Activities - Bottom */}
+        <RecentActivities />
       </div>
     </DashboardLayout>
   );

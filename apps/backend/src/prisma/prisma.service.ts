@@ -7,20 +7,37 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({
       datasources: {
         db: {
-          // Use direct connection to avoid Supabase pooler prepared statement issues
-          url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+          // Use DATABASE_URL (Transaction Mode) for better connection pooling
+          url: process.env.DATABASE_URL,
         },
       },
+      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     });
   }
 
   async onModuleInit() {
-    await this.$connect();
-    console.log('✅ Database connected');
+    try {
+      await this.$connect();
+      console.log('✅ Database connected successfully');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
+      throw error;
+    }
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
-    console.log('❌ Database disconnected');
+    console.log('🔌 Database disconnected');
+  }
+
+  // Helper method to ensure connection cleanup
+  async cleanupConnections() {
+    try {
+      await this.$disconnect();
+      await this.$connect();
+      console.log('🔄 Database connections refreshed');
+    } catch (error) {
+      console.error('❌ Failed to refresh connections:', error);
+    }
   }
 }

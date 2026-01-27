@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Download, Lock, Edit, Save, X } from 'lucide-react';
 import payrollService from '@/services/payrollService';
@@ -9,9 +9,9 @@ import { Payroll, PayrollItem } from '@/types/payroll';
 import { formatCurrency } from '@/utils/formatters';
 import { useAuthStore } from '@/store/authStore';
 
-export default function PayrollDetailPage() {
+export default function PayrollDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const params = useParams();
+  const { id } = use(params);
   const { user } = useAuthStore();
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,12 +22,12 @@ export default function PayrollDetailPage() {
 
   useEffect(() => {
     fetchPayroll();
-  }, [params.id]);
+  }, [id]);
 
   const fetchPayroll = async () => {
     try {
       setLoading(true);
-      const response = await payrollService.getById(params.id as string);
+      const response = await payrollService.getById(id);
       setPayroll(response.data);
     } catch (error) {
       console.error('Failed to fetch payroll:', error);
@@ -50,7 +50,7 @@ export default function PayrollDetailPage() {
 
   const handleSave = async (itemId: string) => {
     try {
-      await payrollService.updateItem(params.id as string, itemId, editValues);
+      await payrollService.updateItem(id, itemId, editValues);
       alert('Cập nhật thành công');
       setEditingItem(null);
       fetchPayroll();
@@ -66,7 +66,7 @@ export default function PayrollDetailPage() {
     }
 
     try {
-      await payrollService.finalize(params.id as string);
+      await payrollService.finalize(id);
       alert('Chốt bảng lương thành công');
       fetchPayroll();
     } catch (error: any) {

@@ -9,10 +9,10 @@ import { Overtime } from '@/types/overtime';
 import { useAuthStore } from '@/store/authStore';
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  APPROVED: { label: 'Đã duyệt', color: 'bg-green-100 text-green-700 border-green-200' },
-  REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700 border-red-200' },
-  CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+  PENDING: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-700 border-2 border-yellow-200' },
+  APPROVED: { label: 'Đã duyệt', color: 'bg-green-100 text-green-700 border-2 border-green-200' },
+  REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700 border-2 border-red-200' },
+  CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700 border-2 border-gray-200' },
 };
 
 export default function OvertimePage() {
@@ -36,17 +36,33 @@ export default function OvertimePage() {
   const fetchOvertimes = async () => {
     try {
       setLoading(true);
-      const response = await overtimeService.getMyRequests();
-      setOvertimes(response.data);
-      calculateStats(response.data);
+      
+      // Admin/HR Manager see all requests, employees see only their own
+      const isAdminOrHR = user?.role === 'ADMIN' || user?.role === 'HR_MANAGER';
+      
+      const response = await (isAdminOrHR 
+        ? overtimeService.getAll() 
+        : overtimeService.getMyRequests()
+      );
+      
+      const data = Array.isArray(response.data) ? response.data : [];
+      setOvertimes(data);
+      calculateStats(data);
     } catch (error) {
       console.error('Failed to fetch overtimes:', error);
+      setOvertimes([]);
+      calculateStats([]);
     } finally {
       setLoading(false);
     }
   };
 
   const calculateStats = (data: Overtime[]) => {
+    if (!Array.isArray(data)) {
+      setStats({ total: 0, pending: 0, approved: 0, rejected: 0, totalHours: 0 });
+      return;
+    }
+
     setStats({
       total: data.length,
       pending: data.filter(o => o.status === 'PENDING').length,
@@ -56,9 +72,9 @@ export default function OvertimePage() {
     });
   };
 
-  const filteredOvertimes = filter === 'all' 
-    ? overtimes 
-    : overtimes.filter(o => o.status === filter);
+  const filteredOvertimes = Array.isArray(overtimes) 
+    ? (filter === 'all' ? overtimes : overtimes.filter(o => o.status === filter))
+    : [];
 
   return (
     <DashboardLayout>
@@ -66,13 +82,13 @@ export default function OvertimePage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Quản lý Tăng ca</h1>
+            <h1 className="text-3xl font-bold text-secondary">Quản lý Tăng ca</h1>
             <p className="text-slate-500 mt-1">Đăng ký và theo dõi đơn tăng ca</p>
           </div>
 
           <button
             onClick={() => router.push('/dashboard/overtime/new')}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-brandBlue text-white rounded-lg font-semibold hover:bg-blue-700 hover:shadow-lg transition-all"
           >
             <Plus size={20} />
             Đăng ký tăng ca
@@ -121,7 +137,7 @@ export default function OvertimePage() {
             <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
           </div>
 
-          <div className="bg-gradient-to-br from-brandBlue to-[#0047b3] rounded-xl p-6 text-white">
+          <div className="bg-brandBlue rounded-xl p-6 text-white border-2 border-brandBlue/20">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                 <Clock size={20} />
@@ -155,6 +171,9 @@ export default function OvertimePage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
+                  {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Nhân viên</th>
+                  )}
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Ngày</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Thời gian</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Số giờ</th>
@@ -181,6 +200,19 @@ export default function OvertimePage() {
                 ) : (
                   filteredOvertimes.map((overtime) => (
                     <tr key={overtime.id} className="hover:bg-slate-50 transition-colors">
+                      {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-brandBlue/10 flex items-center justify-center text-brandBlue font-semibold text-xs">
+                              {overtime.employee?.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'NA'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-primary">{overtime.employee?.fullName || 'N/A'}</p>
+                              <p className="text-xs text-slate-500">{overtime.employee?.employeeCode || ''}</p>
+                            </div>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-sm font-medium text-primary">
                         {new Date(overtime.date).toLocaleDateString('vi-VN')}
                       </td>
@@ -194,7 +226,7 @@ export default function OvertimePage() {
                         {overtime.reason}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${statusLabels[overtime.status].color}`}>
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 whitespace-nowrap ${statusLabels[overtime.status].color}`}>
                           {statusLabels[overtime.status].label}
                         </span>
                       </td>

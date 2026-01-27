@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Calendar, Clock, User, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import leaveService from '@/services/leaveService';
@@ -24,9 +24,9 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 };
 
-export default function LeaveDetailPage() {
+export default function LeaveDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const params = useParams();
+  const { id } = use(params);
   const { user } = useAuthStore();
   const [leave, setLeave] = useState<LeaveRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,12 +36,12 @@ export default function LeaveDetailPage() {
 
   useEffect(() => {
     fetchLeaveDetail();
-  }, [params.id]);
+  }, [id]);
 
   const fetchLeaveDetail = async () => {
     try {
       setLoading(true);
-      const response = await leaveService.getById(params.id as string);
+      const response = await leaveService.getById(id);
       setLeave(response.data);
     } catch (error) {
       console.error('Failed to fetch leave detail:', error);
@@ -56,7 +56,7 @@ export default function LeaveDetailPage() {
 
     try {
       setActionLoading(true);
-      await leaveService.approve(params.id as string);
+      await leaveService.approve(id);
       alert('Duyệt đơn thành công');
       fetchLeaveDetail();
     } catch (error: any) {
@@ -75,7 +75,7 @@ export default function LeaveDetailPage() {
 
     try {
       setActionLoading(true);
-      await leaveService.reject(params.id as string, rejectReason);
+      await leaveService.reject(id, rejectReason);
       alert('Từ chối đơn thành công');
       setShowRejectModal(false);
       fetchLeaveDetail();
@@ -92,7 +92,7 @@ export default function LeaveDetailPage() {
 
     try {
       setActionLoading(true);
-      await leaveService.cancel(params.id as string);
+      await leaveService.cancel(id);
       alert('Hủy đơn thành công');
       router.push('/dashboard/leaves');
     } catch (error: any) {

@@ -56,17 +56,17 @@ export default function EmployeesPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      ACTIVE: 'bg-green-100 text-green-700',
-      ON_LEAVE: 'bg-yellow-100 text-yellow-700',
-      TERMINATED: 'bg-red-100 text-red-700',
+      ACTIVE: 'bg-green-100 text-green-700 border-2 border-green-200',
+      ON_LEAVE: 'bg-yellow-100 text-yellow-700 border-2 border-yellow-200',
+      TERMINATED: 'bg-red-100 text-red-700 border-2 border-red-200',
     };
     const labels = {
-      ACTIVE: 'Đang làm việc',
-      ON_LEAVE: 'Đang nghỉ',
-      TERMINATED: 'Đã nghỉ việc',
+      ACTIVE: 'Hoạt động',
+      ON_LEAVE: 'Nghỉ phép',
+      TERMINATED: 'Đã nghỉ',
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
         {labels[status as keyof typeof labels] || status}
       </span>
     );
@@ -77,81 +77,86 @@ export default function EmployeesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Quản lý Nhân viên</h1>
-            <p className="text-slate-500 mt-1">Tổng số: {total} nhân viên</p>
+        {/* Stats Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl p-4 border-2 border-slate-100">
+            <p className="text-sm text-slate-600 font-medium">Tổng số</p>
+            <p className="text-2xl font-bold text-brandBlue">{total}</p>
           </div>
-          <button
-            onClick={() => router.push('/dashboard/employees/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg hover:shadow-lg transition-all"
-          >
-            <Plus size={20} />
-            Thêm nhân viên
-          </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Modern Filters */}
+        <div className="bg-white rounded-2xl p-6 border-2 border-slate-100 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brandBlue" size={20} />
               <input
                 type="text"
                 placeholder="Tìm kiếm theo tên, email, mã NV..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20"
+                className="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brandBlue/30 focus:border-brandBlue transition-all font-medium"
               />
             </div>
 
             {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang làm việc</option>
-              <option value="ON_LEAVE">Đang nghỉ</option>
-              <option value="TERMINATED">Đã nghỉ việc</option>
-            </select>
+            <div className="relative">
+              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-brandBlue" size={18} />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brandBlue/30 focus:border-brandBlue appearance-none bg-white cursor-pointer font-medium text-slate-700 transition-all"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="ACTIVE">Đang làm việc</option>
+                <option value="ON_LEAVE">Đang nghỉ</option>
+                <option value="TERMINATED">Đã nghỉ việc</option>
+              </select>
+            </div>
 
-            {/* Export Button */}
-            <button className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-              <Download size={18} />
-              Xuất Excel
-            </button>
+            {/* Export & Add Button */}
+            <div className="flex gap-2">
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-brandBlue text-brandBlue rounded-xl hover:bg-brandBlue hover:text-white transition-all font-semibold">
+                <Download size={18} />
+                <span className="hidden sm:inline">Xuất</span>
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/employees/new')}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-brandBlue text-white rounded-xl hover:bg-blue-700 hover:shadow-xl transition-all font-semibold shadow-lg shadow-brandBlue/20"
+              >
+                <Plus size={20} />
+                <span className="hidden sm:inline">Thêm</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Modern Table */}
+        <div className="bg-white rounded-2xl border-2 border-slate-100 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-gradient-to-r from-brandBlue to-blue-700 text-white">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Mã NV
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Họ tên
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Chức vụ
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Phòng ban
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Ngày vào
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-sm font-bold uppercase tracking-wider">
                     Trạng thái
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-sm font-bold uppercase tracking-wider">
                     Thao tác
                   </th>
                 </tr>
@@ -182,9 +187,9 @@ export default function EmployeesPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
-                      className="hover:bg-slate-50 transition-colors"
+                      className="hover:bg-blue-50/50 transition-all border-b border-slate-100 last:border-0"
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-primary">
+                      <td className="px-6 py-4 text-sm font-bold text-brandBlue">
                         {employee.employeeCode}
                       </td>
                       <td className="px-6 py-4">
@@ -193,45 +198,45 @@ export default function EmployeesPage() {
                             <img
                               src={employee.avatarUrl}
                               alt={employee.fullName}
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-brandBlue/20"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-brandBlue/10 flex items-center justify-center text-brandBlue font-semibold text-xs">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brandBlue to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                               {employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-medium text-primary">{employee.fullName}</p>
+                            <p className="text-sm font-bold text-slate-800">{employee.fullName}</p>
                             <p className="text-xs text-slate-500">{employee.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-700">{employee.position}</td>
-                      <td className="px-6 py-4 text-sm text-slate-700">{employee.department?.name}</td>
-                      <td className="px-6 py-4 text-sm text-slate-700">{formatDate(employee.startDate)}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">{employee.position}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-slate-700">{employee.department?.name}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600">{formatDate(employee.startDate)}</td>
                       <td className="px-6 py-4">{getStatusBadge(employee.status)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
-                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
+                            className="p-2 hover:bg-blue-100 rounded-lg text-brandBlue transition-all"
                             title="Xem chi tiết"
                           >
-                            <Eye size={16} />
+                            <Eye size={18} />
                           </button>
                           <button
                             onClick={() => router.push(`/dashboard/employees/${employee.id}/edit`)}
-                            className="p-2 hover:bg-yellow-50 rounded-lg text-yellow-600 transition-colors"
+                            className="p-2 hover:bg-yellow-100 rounded-lg text-yellow-600 transition-all"
                             title="Chỉnh sửa"
                           >
-                            <Edit size={16} />
+                            <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(employee.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                            className="p-2 hover:bg-red-100 rounded-lg text-red-600 transition-all"
                             title="Xóa"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       </td>
@@ -242,17 +247,17 @@ export default function EmployeesPage() {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Modern Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
-              <p className="text-sm text-slate-500">
-                Hiển thị {(page - 1) * limit + 1} - {Math.min(page * limit, total)} trong tổng số {total}
+            <div className="px-6 py-4 bg-slate-50 border-t-2 border-slate-100 flex items-center justify-between">
+              <p className="text-sm text-slate-600 font-medium">
+                Hiển thị <span className="font-bold text-brandBlue">{(page - 1) * limit + 1}</span> - <span className="font-bold text-brandBlue">{Math.min(page * limit, total)}</span> trong tổng số <span className="font-bold text-brandBlue">{total}</span>
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-4 py-2 border-2 border-slate-200 rounded-lg hover:bg-brandBlue hover:text-white hover:border-brandBlue disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold transition-all"
                 >
                   Trước
                 </button>
@@ -260,9 +265,9 @@ export default function EmployeesPage() {
                   <button
                     key={i + 1}
                     onClick={() => setPage(i + 1)}
-                    className={`px-3 py-1 border rounded-lg text-sm ${page === i + 1
-                        ? 'bg-brandBlue text-white border-brandBlue'
-                        : 'border-slate-200 hover:bg-slate-50'
+                    className={`px-4 py-2 border-2 rounded-lg text-sm font-bold transition-all ${page === i + 1
+                        ? 'bg-brandBlue text-white border-brandBlue shadow-lg'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                       }`}
                   >
                     {i + 1}
@@ -271,7 +276,7 @@ export default function EmployeesPage() {
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="px-4 py-2 border-2 border-slate-200 rounded-lg hover:bg-brandBlue hover:text-white hover:border-brandBlue disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold transition-all"
                 >
                   Sau
                 </button>

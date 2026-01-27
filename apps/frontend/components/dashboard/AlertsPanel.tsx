@@ -19,14 +19,60 @@ export default function AlertsPanel() {
     try {
       setLoading(true);
       const response = await dashboardService.getAlerts();
-      // Backend returns data object with nested arrays, flatten them
+      
+      // Axios interceptor returns response.data directly, so response = { success: true, data: {...} }
       if (response.data) {
+        const alertsData = response.data;
         const allAlerts: DashboardAlert[] = [];
 
-        // Convert backend alerts to DashboardAlert format
-        // For now, use empty array if data structure doesn't match
-        // In production, map backend response properly
-        setAlerts(Array.isArray(response.data) ? response.data : []);
+        // Convert expiring contracts to alerts
+        if (alertsData.expiringContracts) {
+          alertsData.expiringContracts.forEach((contract: any) => {
+            allAlerts.push({
+              id: `contract-${contract.contractId}`,
+              type: 'CONTRACT_EXPIRING',
+              title: 'Hợp đồng sắp hết hạn',
+              message: `${contract.employee.fullName} - Còn ${contract.daysRemaining} ngày`,
+              severity: contract.daysRemaining <= 7 ? 'ERROR' : 'WARNING',
+              link: `/dashboard/employees/${contract.employee.employeeCode}`,
+              createdAt: new Date().toISOString(),
+            });
+          });
+        }
+
+        // Convert pending leave requests to alerts
+        if (alertsData.pendingLeaveRequests) {
+          alertsData.pendingLeaveRequests.forEach((leave: any) => {
+            allAlerts.push({
+              id: `leave-${leave.requestId}`,
+              type: 'LEAVE_PENDING',
+              title: 'Đơn nghỉ phép chờ duyệt',
+              message: `${leave.employee.fullName} - ${leave.totalDays} ngày`,
+              severity: 'INFO',
+              link: `/dashboard/leaves/${leave.requestId}`,
+              createdAt: leave.createdAt,
+            });
+          });
+        }
+
+        // Convert frequent late employees to alerts
+        if (alertsData.frequentLateEmployees) {
+          alertsData.frequentLateEmployees.forEach((late: any) => {
+            if (late.lateCount >= 3) {
+              allAlerts.push({
+                id: `late-${late.employee?.employeeCode}`,
+                type: 'LATE_ATTENDANCE',
+                title: 'Nhân viên đi muộn thường xuyên',
+                message: `${late.employee?.fullName} - ${late.lateCount} lần trong 7 ngày`,
+                severity: 'WARNING',
+                link: `/dashboard/employees/${late.employee?.employeeCode}`,
+                createdAt: new Date().toISOString(),
+              });
+            }
+          });
+        }
+
+        setAlerts(allAlerts);
       }
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
@@ -86,7 +132,7 @@ export default function AlertsPanel() {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-100">
+    <div className="bg-white rounded-2xl p-6 border border-slate-100 h-full flex flex-col">
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-primary">Cảnh báo</h3>

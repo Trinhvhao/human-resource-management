@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Edit, Trash2, Building2, Users, User, Mail, Phone, Briefcase, ChevronRight } from 'lucide-react';
@@ -8,19 +8,20 @@ import { motion } from 'framer-motion';
 import departmentService from '@/services/departmentService';
 import { Department } from '@/types/department';
 
-export default function DepartmentDetailPage({ params }: { params: { id: string } }) {
+export default function DepartmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = use(params);
   const [department, setDepartment] = useState<Department | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDepartment();
-  }, [params.id]);
+  }, [id]);
 
   const fetchDepartment = async () => {
     try {
       setLoading(true);
-      const response = await departmentService.getById(params.id);
+      const response = await departmentService.getById(id);
       setDepartment(response.data);
     } catch (error) {
       console.error('Failed to fetch department:', error);

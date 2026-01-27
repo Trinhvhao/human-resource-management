@@ -17,7 +17,15 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prisma:studio": "prisma studio",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "db:view": "node view-database.js",
+    "db:seed": "node seed-database.js",
+    "db:seed:full": "node seed-full-data.js",
+    "db:seed:sample": "node seed-sample-data.js",
+    "db:check": "node check-connections.js"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",

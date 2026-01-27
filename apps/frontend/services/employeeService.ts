@@ -42,6 +42,10 @@ class EmployeeService {
   async getHistory(id: string): Promise<ApiResponse<any[]>> {
     return axiosInstance.get(`/employees/${id}/history`);
   }
+
+  async generateCode(): Promise<ApiResponse<{ employeeCode: string }>> {
+    return axiosInstance.get('/employees/generate-code');
+  }
 }
 
 export default new EmployeeService();

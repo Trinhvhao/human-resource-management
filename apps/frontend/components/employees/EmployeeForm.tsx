@@ -12,7 +12,7 @@ import departmentService from '@/services/departmentService';
 import { Department } from '@/types/department';
 
 const employeeSchema = z.object({
-    employeeCode: z.string().min(1, 'Mã nhân viên là bắt buộc'),
+    employeeCode: z.string().optional(), // Mã nhân viên tự động
     fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
     email: z.string().email('Email không hợp lệ'),
     phone: z.string().optional(),
@@ -163,7 +163,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-primary">
+                        <h1 className="text-3xl font-bold text-secondary">
                             {mode === 'create' ? 'Thêm nhân viên mới' : 'Chỉnh sửa nhân viên'}
                         </h1>
                         <p className="text-slate-500 mt-1">
@@ -180,20 +180,19 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                             Thông tin cơ bản
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Employee Code */}
+                            {/* Employee Code - Auto generated */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Mã nhân viên <span className="text-red-500">*</span>
+                                    Mã nhân viên
                                 </label>
                                 <input
                                     {...register('employeeCode')}
-                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20 ${errors.employeeCode ? 'border-red-500' : 'border-slate-300'
-                                        }`}
-                                    placeholder="NV001"
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
+                                    placeholder="Tự động tạo"
+                                    disabled
+                                    readOnly
                                 />
-                                {errors.employeeCode && (
-                                    <p className="mt-1 text-sm text-red-500">{errors.employeeCode.message}</p>
-                                )}
+                                <p className="mt-1 text-xs text-slate-500">Mã nhân viên sẽ được tạo tự động</p>
                             </div>
 
                             {/* Full Name */}
@@ -410,7 +409,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-6 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <>

@@ -44,28 +44,22 @@ export default function DepartmentsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">Quản lý Phòng ban</h1>
-            <p className="text-slate-500 mt-1">Tổng số: {departments.length} phòng ban</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push('/dashboard/departments/tree')}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              <Building2 size={20} />
-              Sơ đồ tổ chức
-            </button>
-            <button
-              onClick={() => router.push('/dashboard/departments/new')}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg hover:shadow-lg transition-all"
-            >
-              <Plus size={20} />
-              Thêm phòng ban
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={() => router.push('/dashboard/departments/tree')}
+            className="flex items-center gap-2 px-5 py-3 border-2 border-brandBlue text-brandBlue rounded-xl hover:bg-brandBlue hover:text-white transition-all font-semibold"
+          >
+            <Building2 size={20} />
+            Sơ đồ tổ chức
+          </button>
+          <button
+            onClick={() => router.push('/dashboard/departments/new')}
+            className="flex items-center gap-2 px-5 py-3 bg-brandBlue text-white rounded-xl hover:bg-blue-700 hover:shadow-xl transition-all font-semibold shadow-lg shadow-brandBlue/20"
+          >
+            <Plus size={20} />
+            Thêm phòng ban
+          </button>
         </div>
 
         {/* Departments Grid */}
@@ -90,41 +84,45 @@ export default function DepartmentsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-all"
+                className="bg-white rounded-2xl p-6 border-2 border-slate-100 hover:border-brandBlue/30 hover:shadow-xl transition-all group"
               >
                 {/* Department Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brandBlue to-brandLightBlue flex items-center justify-center">
-                      <Building2 className="text-white" size={24} />
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brandBlue to-blue-600 flex items-center justify-center shadow-lg">
+                      <Building2 className="text-white" size={28} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-primary">{dept.name}</h3>
-                      <p className="text-sm text-slate-500">{dept.code}</p>
+                      <h3 className="font-bold text-lg text-brandBlue group-hover:text-blue-700 transition-colors">{dept.name}</h3>
+                      <p className="text-sm text-slate-600 font-medium">{dept.code}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Description */}
                 {dept.description && (
-                  <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                  <p className="text-sm text-slate-600 mb-4 line-clamp-2 leading-relaxed">
                     {dept.description}
                   </p>
                 )}
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b-2 border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Users size={16} className="text-brandBlue" />
-                    <span className="text-sm text-slate-600">
-                      {dept._count?.employees || 0} nhân viên
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Users size={16} className="text-brandBlue" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700">
+                      {dept._count?.employees || 0} NV
                     </span>
                   </div>
                   {dept._count?.children ? (
                     <div className="flex items-center gap-2">
-                      <Building2 size={16} className="text-secondary" />
-                      <span className="text-sm text-slate-600">
-                        {dept._count.children} phòng con
+                      <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                        <Building2 size={16} className="text-secondary" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">
+                        {dept._count.children} PB
                       </span>
                     </div>
                   ) : null}
@@ -133,13 +131,13 @@ export default function DepartmentsPage() {
                 {/* Manager */}
                 {dept.manager && (
                   <div className="mb-4">
-                    <p className="text-xs text-slate-500 mb-1">Trưởng phòng</p>
+                    <p className="text-xs text-slate-500 font-semibold mb-2">TRƯỞNG PHÒNG</p>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-brandBlue/10 flex items-center justify-center text-brandBlue font-semibold text-xs">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brandBlue to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
                         {dept.manager.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-primary">{dept.manager.fullName}</p>
+                        <p className="text-sm font-bold text-slate-800">{dept.manager.fullName}</p>
                         <p className="text-xs text-slate-500">{dept.manager.position}</p>
                       </div>
                     </div>
@@ -149,8 +147,8 @@ export default function DepartmentsPage() {
                 {/* Parent Department */}
                 {dept.parent && (
                   <div className="mb-4">
-                    <p className="text-xs text-slate-500 mb-1">Thuộc phòng</p>
-                    <div className="flex items-center gap-1 text-sm text-brandBlue">
+                    <p className="text-xs text-slate-500 font-semibold mb-1">THUỘC PHÒNG</p>
+                    <div className="flex items-center gap-1 text-sm text-brandBlue font-medium">
                       <ChevronRight size={14} />
                       <span>{dept.parent.name}</span>
                     </div>
@@ -158,24 +156,24 @@ export default function DepartmentsPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-4 border-t-2 border-slate-100">
                   <button
                     onClick={() => router.push(`/dashboard/departments/${dept.id}`)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-50 text-brandBlue rounded-xl hover:bg-blue-100 transition-all text-sm font-semibold"
                   >
                     <Eye size={16} />
                     Xem
                   </button>
                   <button
                     onClick={() => router.push(`/dashboard/departments/${dept.id}/edit`)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors text-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-100 transition-all text-sm font-semibold"
                   >
                     <Edit size={16} />
                     Sửa
                   </button>
                   <button
                     onClick={() => handleDelete(dept.id)}
-                    className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all"
                   >
                     <Trash2 size={16} />
                   </button>

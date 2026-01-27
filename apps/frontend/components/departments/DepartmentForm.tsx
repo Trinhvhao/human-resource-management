@@ -152,7 +152,7 @@ export default function DepartmentForm({ mode, departmentId }: DepartmentFormPro
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-primary">
+            <h1 className="text-3xl font-bold text-secondary">
               {mode === 'create' ? 'Thêm phòng ban mới' : 'Chỉnh sửa phòng ban'}
             </h1>
             <p className="text-slate-500 mt-1">
@@ -259,7 +259,7 @@ export default function DepartmentForm({ mode, departmentId }: DepartmentFormPro
               <button
                 type="submit"
                 disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

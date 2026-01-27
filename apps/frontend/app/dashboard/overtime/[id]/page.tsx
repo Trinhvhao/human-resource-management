@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Clock, User, FileText, CheckCircle, XCircle, Loader2, Calendar } from 'lucide-react';
 import overtimeService from '@/services/overtimeService';
@@ -15,9 +15,9 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700 border-gray-200' },
 };
 
-export default function OvertimeDetailPage() {
+export default function OvertimeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const params = useParams();
+  const { id } = use(params);
   const { user } = useAuthStore();
   const [overtime, setOvertime] = useState<Overtime | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,12 +27,12 @@ export default function OvertimeDetailPage() {
 
   useEffect(() => {
     fetchOvertimeDetail();
-  }, [params.id]);
+  }, [id]);
 
   const fetchOvertimeDetail = async () => {
     try {
       setLoading(true);
-      const response = await overtimeService.getById(params.id as string);
+      const response = await overtimeService.getById(id);
       setOvertime(response.data);
     } catch (error) {
       console.error('Failed to fetch overtime detail:', error);
@@ -47,7 +47,7 @@ export default function OvertimeDetailPage() {
 
     try {
       setActionLoading(true);
-      await overtimeService.approve(params.id as string);
+      await overtimeService.approve(id);
       alert('Duyệt đơn thành công');
       fetchOvertimeDetail();
     } catch (error: any) {
@@ -66,7 +66,7 @@ export default function OvertimeDetailPage() {
 
     try {
       setActionLoading(true);
-      await overtimeService.reject(params.id as string, { rejectedReason: rejectReason });
+      await overtimeService.reject(id, { rejectedReason: rejectReason });
       alert('Từ chối đơn thành công');
       setShowRejectModal(false);
       fetchOvertimeDetail();
@@ -83,7 +83,7 @@ export default function OvertimeDetailPage() {
 
     try {
       setActionLoading(true);
-      await overtimeService.cancel(params.id as string);
+      await overtimeService.cancel(id);
       alert('Hủy đơn thành công');
       router.push('/dashboard/overtime');
     } catch (error: any) {

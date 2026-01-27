@@ -36,46 +36,15 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle 401 Unauthorized
-    if (error.response?.status === 401 && originalRequest) {
-      // Try to refresh token
-      const refreshToken = localStorage.getItem('refreshToken');
-      
-      if (refreshToken && !originalRequest.url?.includes('/auth/refresh')) {
-        try {
-          const response = await axios.post<ApiResponse<{ accessToken: string }>>(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-            { refreshToken }
-          );
-          
-          const { accessToken } = response.data.data;
-          localStorage.setItem('accessToken', accessToken);
-          
-          // Retry original request
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          }
-          return axiosInstance(originalRequest);
-        } catch (refreshError) {
-          // Refresh failed, logout
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // No refresh token or already tried refresh, logout
+    if (error.response?.status === 401) {
+      // Clear tokens and redirect to login
+      if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        window.location.href = '/login';
       }
+      return Promise.reject(error.response?.data || { message: 'Unauthorized' });
     }
 
     // Handle other errors

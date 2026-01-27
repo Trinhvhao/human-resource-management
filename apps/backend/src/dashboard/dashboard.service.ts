@@ -18,6 +18,7 @@ export class DashboardService {
       activeEmployees,
       totalDepartments,
       pendingLeaveRequests,
+      pendingOvertimeRequests,
       expiringContracts,
       attendanceThisMonth,
       totalAttendanceRecords,
@@ -35,6 +36,9 @@ export class DashboardService {
 
       // Pending leave requests
       this.prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
+
+      // Pending overtime requests
+      this.prisma.overtimeRequest.count({ where: { status: 'PENDING' } }),
 
       // Contracts expiring in 30 days
       this.prisma.contract.count({
@@ -102,6 +106,9 @@ export class DashboardService {
         },
         leaveRequests: {
           pending: pendingLeaveRequests,
+        },
+        overtimeRequests: {
+          pending: pendingOvertimeRequests,
         },
         contracts: {
           expiringSoon: expiringContracts,

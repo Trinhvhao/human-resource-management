@@ -120,7 +120,7 @@ export default function AttendanceCorrectionsPage() {
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-primary">Điều chỉnh chấm công</h1>
+              <h1 className="text-3xl font-bold text-secondary">Điều chỉnh chấm công</h1>
               <p className="text-slate-500 mt-1">Yêu cầu điều chỉnh giờ check-in/check-out</p>
             </div>
           </div>

@@ -91,7 +91,7 @@ export default function ManagePayrollPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Quản lý Bảng lương</h1>
+            <h1 className="text-3xl font-bold text-secondary">Quản lý Bảng lương</h1>
             <p className="text-slate-500 mt-1">Tạo và quản lý bảng lương hàng tháng</p>
           </div>
 

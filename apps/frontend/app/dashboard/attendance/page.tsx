@@ -110,7 +110,7 @@ export default function AttendancePage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-primary">Chấm công</h1>
+          <h1 className="text-3xl font-bold text-secondary">Chấm công</h1>
           <p className="text-slate-500 mt-1">Quản lý chấm công và theo dõi giờ làm việc</p>
         </div>
 
@@ -196,7 +196,7 @@ export default function AttendancePage() {
                     <div>
                       <p className="text-sm text-white/70">Giờ làm việc</p>
                       <p className="text-xl font-bold">
-                        {todayAttendance?.workHours?.toFixed(1) || '0.0'} giờ
+                        {todayAttendance?.workHours ? Number(todayAttendance.workHours).toFixed(1) : '0.0'} giờ
                       </p>
                     </div>
                   </div>

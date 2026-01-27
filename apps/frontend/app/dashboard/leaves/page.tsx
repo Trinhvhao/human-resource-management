@@ -26,9 +26,13 @@ export default function LeavesPage() {
 
     try {
       setLoading(true);
+      
+      // Admin/HR Manager see all requests, employees see only their own
+      const isAdminOrHR = user.role === 'ADMIN' || user.role === 'HR_MANAGER';
+      
       const [balanceRes, requestsRes] = await Promise.all([
         leaveService.getBalance(user.employeeId),
-        leaveService.getMyRequests(),
+        isAdminOrHR ? leaveService.getAll() : leaveService.getMyRequests(),
       ]);
 
       setBalance(balanceRes.data);
@@ -54,7 +58,7 @@ export default function LeavesPage() {
     const Icon = icons[status as keyof typeof icons] || AlertCircle;
 
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border-2 whitespace-nowrap ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
         <Icon size={14} />
         {status === 'PENDING' ? 'Chờ duyệt' : status === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}
       </span>
@@ -67,12 +71,12 @@ export default function LeavesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Nghỉ phép</h1>
+            <h1 className="text-3xl font-bold text-secondary">Nghỉ phép</h1>
             <p className="text-slate-500 mt-1">Quản lý đơn nghỉ phép và số dư phép năm</p>
           </div>
           <button
             onClick={() => router.push('/dashboard/leaves/new')}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all"
           >
             <Plus size={20} />
             Tạo đơn mới
@@ -94,7 +98,7 @@ export default function LeavesPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-br from-brandBlue to-[#0047b3] rounded-2xl p-6 text-white relative overflow-hidden"
+              className="bg-brandBlue rounded-2xl p-6 text-white relative overflow-hidden border-2 border-brandBlue/20"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
               <div className="relative z-10">
@@ -162,6 +166,11 @@ export default function LeavesPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
+                  {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Nhân viên
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Loại phép
                   </th>
@@ -209,6 +218,19 @@ export default function LeavesPage() {
                       transition={{ delay: index * 0.05 }}
                       className="hover:bg-slate-50 transition-colors"
                     >
+                      {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-brandBlue/10 flex items-center justify-center text-brandBlue font-semibold text-xs">
+                              {request.employee?.fullName?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'NA'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-primary">{request.employee?.fullName || 'N/A'}</p>
+                              <p className="text-xs text-slate-500">{request.employee?.employeeCode || ''}</p>
+                            </div>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-primary">
                           {request.leaveType === 'ANNUAL' ? 'Phép năm' :

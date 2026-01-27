@@ -59,38 +59,52 @@ export default function OverviewCards() {
     try {
       setLoading(true);
       const response = await dashboardService.getOverview();
-      const overview = response.data;
+      
+      // Axios interceptor returns response.data directly, so response = { success: true, data: {...} }
+      const overviewData = response.data;
+
+      if (!overviewData) {
+        console.error('No overview data received');
+        return;
+      }
+
+      const totalEmployees = overviewData.employees?.total || 0;
+      const activeEmployees = overviewData.employees?.active || 0;
+      const pendingLeaveRequests = overviewData.leaveRequests?.pending || 0;
+      const pendingOvertimeRequests = overviewData.overtimeRequests?.pending || 0;
+      const totalPendingRequests = pendingLeaveRequests + pendingOvertimeRequests;
+      const expiringContracts = overviewData.contracts?.expiringSoon || 0;
+      const attendanceRate = overviewData.attendance?.rate || 0;
 
       setData([
         {
           title: 'Tổng nhân viên',
-          value: overview.totalEmployees.toString(),
-          change: overview.newEmployeesThisMonth > 0 ?
-            Math.round((overview.newEmployeesThisMonth / overview.totalEmployees) * 100) : 0,
+          value: totalEmployees.toString(),
+          change: attendanceRate,
           icon: Users,
           color: 'text-brandBlue',
           bgColor: 'bg-brandBlue/10',
         },
         {
           title: 'Đang làm việc',
-          value: `${overview.activeEmployees}/${overview.totalEmployees}`,
-          change: Math.round((overview.activeEmployees / overview.totalEmployees) * 100),
+          value: `${activeEmployees}/${totalEmployees}`,
+          change: totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 0,
           icon: Clock,
           color: 'text-secondary',
           bgColor: 'bg-secondary/10',
         },
         {
           title: 'Đơn chờ duyệt',
-          value: (overview.pendingLeaveRequests + overview.pendingOvertimeRequests).toString(),
-          change: overview.pendingLeaveRequests,
+          value: totalPendingRequests.toString(),
+          change: totalPendingRequests,
           icon: Calendar,
           color: 'text-purple-600',
           bgColor: 'bg-purple-100',
         },
         {
           title: 'HĐ sắp hết hạn',
-          value: overview.expiringContracts.toString(),
-          change: overview.expiringContracts > 0 ? -overview.expiringContracts : 0,
+          value: expiringContracts.toString(),
+          change: expiringContracts > 0 ? -expiringContracts : 0,
           icon: AlertCircle,
           color: 'text-red-600',
           bgColor: 'bg-red-100',
@@ -98,6 +112,7 @@ export default function OverviewCards() {
       ]);
     } catch (error) {
       console.error('Failed to fetch overview:', error);
+      // Keep default loading values on error
     } finally {
       setLoading(false);
     }

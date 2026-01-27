@@ -1,34 +1,43 @@
-export type RewardType = 'BONUS' | 'CERTIFICATE' | 'GIFT' | 'OTHER';
+export type RewardType = 'BONUS' | 'CERTIFICATE' | 'PROMOTION' | 'OTHER';
 
 export interface Reward {
   id: string;
   employeeId: string;
-  type: RewardType;
-  title: string;
-  description?: string;
-  amount?: number;
+  reason: string;
+  amount: number;
   rewardDate: string;
+  rewardType: RewardType;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
-  employee: {
+  employee?: {
     id: string;
     employeeCode: string;
     fullName: string;
-    position: string;
-    department: {
-      id: string;
+    department?: {
       name: string;
     };
+  };
+  creator?: {
+    id: string;
+    email: string;
   };
 }
 
 export interface CreateRewardData {
   employeeId: string;
-  type: RewardType;
-  title: string;
-  description?: string;
-  amount?: number;
+  reason: string;
+  amount: number;
   rewardDate: string;
+  rewardType?: RewardType;
 }
 
-export interface UpdateRewardData extends Partial<CreateRewardData> {}
+export interface RewardStats {
+  totalRewards: number;
+  totalAmount: number;
+  byType: {
+    type: RewardType;
+    count: number;
+    amount: number;
+  }[];
+}

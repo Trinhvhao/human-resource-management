@@ -22,6 +22,12 @@ export interface DashboardAlert {
   createdAt: string;
 }
 
+export interface AlertsData {
+  expiringContracts: any[];
+  pendingLeaveRequests: any[];
+  frequentLateEmployees: any[];
+}
+
 export interface RecentActivity {
   id: string;
   type: string;
@@ -31,11 +37,11 @@ export interface RecentActivity {
 }
 
 class DashboardService {
-  async getOverview(): Promise<ApiResponse<DashboardOverview>> {
+  async getOverview(): Promise<ApiResponse<any>> {
     return axiosInstance.get('/dashboard/overview');
   }
 
-  async getAlerts(): Promise<ApiResponse<DashboardAlert[]>> {
+  async getAlerts(): Promise<ApiResponse<AlertsData>> {
     return axiosInstance.get('/dashboard/alerts');
   }
 
@@ -43,12 +49,16 @@ class DashboardService {
     return axiosInstance.get('/dashboard/activities', { params: { limit } });
   }
 
-  async getAttendanceChart(days: number = 7): Promise<ApiResponse<any>> {
-    return axiosInstance.get('/dashboard/attendance-chart', { params: { days } });
+  async getAttendanceSummary(month?: number, year?: number): Promise<ApiResponse<any>> {
+    return axiosInstance.get('/dashboard/attendance-summary', { params: { month, year } });
   }
 
-  async getEmployeeDistribution(): Promise<ApiResponse<any>> {
-    return axiosInstance.get('/dashboard/employee-distribution');
+  async getEmployeeStats(): Promise<ApiResponse<any>> {
+    return axiosInstance.get('/dashboard/employee-stats');
+  }
+
+  async getPayrollSummary(year?: number): Promise<ApiResponse<any>> {
+    return axiosInstance.get('/dashboard/payroll-summary', { params: { year } });
   }
 }
 

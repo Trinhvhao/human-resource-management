@@ -81,7 +81,7 @@ export default function AttendanceReportsPage() {
               <ArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-primary">Báo cáo chấm công</h1>
+              <h1 className="text-3xl font-bold text-secondary">Báo cáo chấm công</h1>
               <p className="text-slate-500 mt-1">Báo cáo tổng hợp theo tháng</p>
             </div>
           </div>

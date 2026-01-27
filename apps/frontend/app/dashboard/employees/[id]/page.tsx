@@ -1,28 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, Building, Briefcase, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Mail, Phone, Calendar, Building, Briefcase, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import employeeService from '@/services/employeeService';
 import { Employee } from '@/types/employee';
 import { formatDate, formatCurrency } from '@/utils/formatters';
 import SalaryStructure from '@/components/employees/SalaryStructure';
 
-export default function EmployeeDetailPage({ params }: { params: { id: string } }) {
+export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
+    const { id } = use(params); // Unwrap params Promise
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchEmployee();
-    }, [params.id]);
+    }, [id]);
 
     const fetchEmployee = async () => {
         try {
             setLoading(true);
-            const response = await employeeService.getById(params.id);
+            const response = await employeeService.getById(id);
             setEmployee(response.data);
         } catch (error) {
             console.error('Failed to fetch employee:', error);
@@ -37,7 +38,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
         if (!confirm('Bạn có chắc chắn muốn xóa nhân viên này?')) return;
 
         try {
-            await employeeService.delete(params.id);
+            await employeeService.delete(id);
             router.push('/dashboard/employees');
         } catch (error) {
             console.error('Failed to delete employee:', error);
@@ -84,7 +85,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => router.push(`/dashboard/employees/${params.id}/edit`)}
+                            onClick={() => router.push(`/dashboard/employees/${id}/edit`)}
                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
                         >
                             <Edit size={18} />
@@ -313,7 +314,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.7 }}
                 >
-                    <SalaryStructure employeeId={params.id} canEdit={true} />
+                    <SalaryStructure employeeId={id} canEdit={true} />
                 </motion.div>
             </div>
         </DashboardLayout>

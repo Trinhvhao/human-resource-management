@@ -32,6 +32,18 @@ export class EmployeesController {
     return this.employeesService.getStatistics();
   }
 
+  @Get('generate-code')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ summary: 'Generate next employee code', description: 'Get the next available employee code' })
+  @ApiResponse({ status: 200, description: 'Employee code generated successfully' })
+  async generateCode() {
+    const code = await this.employeesService.generateNextEmployeeCode();
+    return {
+      success: true,
+      data: { employeeCode: code },
+    };
+  }
+
   @Get(':id')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
   @ApiOperation({ summary: 'Get employee by ID', description: 'Get detailed employee information' })

@@ -116,7 +116,7 @@ export default function PayrollPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-primary">Lương & Thưởng</h1>
+          <h1 className="text-3xl font-bold text-secondary">Lương & Thưởng</h1>
           <p className="text-slate-500 mt-1">Xem phiếu lương và lịch sử trả lương</p>
         </div>
 

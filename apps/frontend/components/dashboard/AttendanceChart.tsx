@@ -1,24 +1,68 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import dashboardService from '@/services/dashboardService';
+
+interface DailyAttendance {
+  date: string;
+  count: number;
+}
 
 export default function AttendanceChart() {
-  // Simulated data for 7 days
-  const data = [
-    { day: 'T2', present: 235, late: 12, absent: 1 },
-    { day: 'T3', present: 240, late: 8, absent: 0 },
-    { day: 'T4', present: 238, late: 10, absent: 0 },
-    { day: 'T5', present: 242, late: 6, absent: 0 },
-    { day: 'T6', present: 245, late: 3, absent: 0 },
-    { day: 'T7', present: 230, late: 15, absent: 3 },
-    { day: 'CN', present: 0, late: 0, absent: 0 },
-  ];
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<any>(null);
 
-  const maxValue = Math.max(...data.map(d => d.present + d.late + d.absent));
+  useEffect(() => {
+    fetchAttendanceData();
+  }, []);
+
+  const fetchAttendanceData = async () => {
+    try {
+      const response = await dashboardService.getAttendanceSummary();
+      
+      // Axios interceptor returns response.data directly, so response = { success: true, data: {...} }
+      if (response.data) {
+        const { trend, summary: summaryData } = response.data;
+        setSummary(summaryData);
+        
+        // Get last 7 days of data
+        const last7Days = trend.slice(-7);
+        const formattedData = last7Days.map((item: DailyAttendance) => {
+          const date = new Date(item.date);
+          const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+          return {
+            day: dayNames[date.getDay()],
+            count: item.count,
+            date: item.date,
+          };
+        });
+        setData(formattedData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendance data:', error);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 border border-slate-100">
+        <div className="animate-pulse">
+          <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
+          <div className="h-64 bg-slate-100 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...data.map(d => d.count), 1);
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-100">
+    <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-brandBlue/30 hover:shadow-lg transition-all h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -34,66 +78,57 @@ export default function AttendanceChart() {
 
       {/* Chart */}
       <div className="h-64 flex items-end justify-between gap-4">
-        {data.map((item, index) => {
-          const total = item.present + item.late + item.absent;
-          const presentHeight = maxValue > 0 ? (item.present / maxValue) * 100 : 0;
-          const lateHeight = maxValue > 0 ? (item.late / maxValue) * 100 : 0;
+        {data.length === 0 ? (
+          <div className="w-full h-full flex items-center justify-center text-slate-400">
+            Không có dữ liệu chấm công
+          </div>
+        ) : (
+          data.map((item, index) => {
+            const height = maxValue > 0 ? (item.count / maxValue) * 100 : 0;
 
-          return (
-            <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-              {/* Bar */}
-              <div className="w-full flex flex-col-reverse gap-1 h-48">
-                {/* Present */}
-                {item.present > 0 && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${presentHeight}%` }}
-                    transition={{ delay: index * 0.1, duration: 0.5 }}
-                    className="w-full bg-brandBlue rounded-t-lg relative group cursor-pointer"
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      Có mặt: {item.present}
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Late */}
-                {item.late > 0 && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${lateHeight}%` }}
-                    transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
-                    className="w-full bg-secondary rounded-t-lg relative group cursor-pointer"
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      Đi muộn: {item.late}
-                    </div>
-                  </motion.div>
-                )}
+            return (
+              <div key={item.date} className="flex-1 flex flex-col items-center gap-2">
+                {/* Bar */}
+                <div className="w-full flex flex-col-reverse gap-1 h-48">
+                  {item.count > 0 && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${height}%` }}
+                      transition={{ delay: index * 0.1, duration: 0.5 }}
+                      className="w-full bg-brandBlue rounded-t-lg relative group cursor-pointer"
+                    >
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        Chấm công: {item.count}
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Day Label */}
+                <span className="text-sm font-medium text-slate-600">{item.day}</span>
               </div>
-
-              {/* Day Label */}
-              <span className="text-sm font-medium text-slate-600">{item.day}</span>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-brandBlue"></div>
-          <span className="text-sm text-slate-600">Có mặt</span>
+      {/* Summary Stats */}
+      {summary && (
+        <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-slate-100">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-brandBlue">{summary.present}</p>
+            <p className="text-xs text-slate-500">Có mặt</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-secondary">{summary.late}</p>
+            <p className="text-xs text-slate-500">Đi muộn</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-500">{summary.presentRate}%</p>
+            <p className="text-xs text-slate-500">Tỷ lệ</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-secondary"></div>
-          <span className="text-sm text-slate-600">Đi muộn</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span className="text-sm text-slate-600">Vắng mặt</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

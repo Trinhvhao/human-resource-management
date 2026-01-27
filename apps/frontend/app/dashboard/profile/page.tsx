@@ -83,7 +83,7 @@ export default function ProfilePage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-primary">Hồ sơ cá nhân</h1>
+                        <h1 className="text-3xl font-bold text-secondary">Hồ sơ cá nhân</h1>
                         <p className="text-slate-500 mt-1">Quản lý thông tin cá nhân của bạn</p>
                     </div>
                     {!editing ? (

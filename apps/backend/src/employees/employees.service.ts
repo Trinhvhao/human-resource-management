@@ -369,6 +369,11 @@ export class EmployeesService {
     };
   }
 
+  // Public method to generate next employee code
+  async generateNextEmployeeCode(): Promise<string> {
+    return this.generateEmployeeCode();
+  }
+
   private async generateEmployeeCode(): Promise<string> {
     const year = new Date().getFullYear().toString().slice(-2);
     

@@ -1,34 +1,43 @@
-export type DisciplineType = 'WARNING' | 'SUSPENSION' | 'FINE' | 'TERMINATION' | 'OTHER';
+export type DisciplineType = 'WARNING' | 'FINE' | 'DEMOTION' | 'TERMINATION';
 
 export interface Discipline {
   id: string;
   employeeId: string;
-  type: DisciplineType;
-  title: string;
-  description?: string;
-  amount?: number;
+  reason: string;
+  disciplineType: DisciplineType;
+  amount: number;
   disciplineDate: string;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
-  employee: {
+  employee?: {
     id: string;
     employeeCode: string;
     fullName: string;
-    position: string;
-    department: {
-      id: string;
+    department?: {
       name: string;
     };
+  };
+  creator?: {
+    id: string;
+    email: string;
   };
 }
 
 export interface CreateDisciplineData {
   employeeId: string;
-  type: DisciplineType;
-  title: string;
-  description?: string;
-  amount?: number;
+  reason: string;
+  disciplineType: DisciplineType;
+  amount: number;
   disciplineDate: string;
 }
 
-export interface UpdateDisciplineData extends Partial<CreateDisciplineData> {}
+export interface DisciplineStats {
+  totalDisciplines: number;
+  totalFines: number;
+  byType: {
+    type: DisciplineType;
+    count: number;
+    amount: number;
+  }[];
+}

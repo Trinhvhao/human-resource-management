@@ -89,7 +89,7 @@ export default function NewOvertimePage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-primary">Đăng ký Tăng ca</h1>
+            <h1 className="text-3xl font-bold text-secondary">Đăng ký Tăng ca</h1>
             <p className="text-slate-500 mt-1">Điền thông tin để đăng ký tăng ca</p>
           </div>
         </div>

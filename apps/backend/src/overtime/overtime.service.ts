@@ -142,7 +142,7 @@ export class OvertimeService {
       };
     }
 
-    return this.prisma.overtimeRequest.findMany({
+    const requests = await this.prisma.overtimeRequest.findMany({
       where,
       include: {
         employee: {
@@ -164,14 +164,22 @@ export class OvertimeService {
         date: 'desc',
       },
     });
+
+    return {
+      success: true,
+      data: requests,
+      meta: { total: requests.length },
+    };
   }
 
   async findPending() {
-    return this.findAll('PENDING');
+    const requests = await this.findAll('PENDING');
+    return requests; // Already wrapped in { success, data }
   }
 
   async findByEmployee(employeeId: string) {
-    return this.findAll(undefined, employeeId);
+    const requests = await this.findAll(undefined, employeeId);
+    return requests; // Already wrapped in { success, data }
   }
 
   async findOne(id: string) {
@@ -387,7 +395,8 @@ export class OvertimeService {
 
   // Báo cáo tăng ca theo tháng
   async getMonthlyReport(month: number, year: number) {
-    const overtimeRequests = await this.findAll(undefined, undefined, month, year);
+    const result = await this.findAll(undefined, undefined, month, year);
+    const overtimeRequests = result.data; // Extract array from response
 
     const summary = {
       totalRequests: overtimeRequests.length,
