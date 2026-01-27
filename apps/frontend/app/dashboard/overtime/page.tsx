@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
@@ -21,17 +21,42 @@ export default function OvertimePage() {
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0,
-    totalHours: 0,
-  });
+
+  // Tính stats với useMemo để tránh re-calculate
+  const stats = useMemo(() => {
+    if (!Array.isArray(overtimes) || overtimes.length === 0) {
+      return { total: 0, pending: 0, approved: 0, rejected: 0, totalHours: 0 };
+    }
+
+    // Chỉ tính tháng hiện tại
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const currentMonthData = overtimes.filter(o => {
+      const overtimeDate = new Date(o.date);
+      return overtimeDate.getMonth() === currentMonth && 
+             overtimeDate.getFullYear() === currentYear;
+    });
+
+    const totalHours = currentMonthData
+      .filter(o => o.status === 'APPROVED')
+      .reduce((sum, o) => sum + (Number(o.hours) || 0), 0);
+
+    return {
+      total: overtimes.length,
+      pending: overtimes.filter(o => o.status === 'PENDING').length,
+      approved: overtimes.filter(o => o.status === 'APPROVED').length,
+      rejected: overtimes.filter(o => o.status === 'REJECTED').length,
+      totalHours,
+    };
+  }, [overtimes]); // Chỉ tính lại khi overtimes thay đổi
 
   useEffect(() => {
-    fetchOvertimes();
-  }, []);
+    if (user) {
+      fetchOvertimes();
+    }
+  }, [user?.role]); // Chỉ fetch lại khi role thay đổi
 
   const fetchOvertimes = async () => {
     try {
@@ -47,29 +72,12 @@ export default function OvertimePage() {
       
       const data = Array.isArray(response.data) ? response.data : [];
       setOvertimes(data);
-      calculateStats(data);
     } catch (error) {
       console.error('Failed to fetch overtimes:', error);
       setOvertimes([]);
-      calculateStats([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStats = (data: Overtime[]) => {
-    if (!Array.isArray(data)) {
-      setStats({ total: 0, pending: 0, approved: 0, rejected: 0, totalHours: 0 });
-      return;
-    }
-
-    setStats({
-      total: data.length,
-      pending: data.filter(o => o.status === 'PENDING').length,
-      approved: data.filter(o => o.status === 'APPROVED').length,
-      rejected: data.filter(o => o.status === 'REJECTED').length,
-      totalHours: data.filter(o => o.status === 'APPROVED').reduce((sum, o) => sum + o.hours, 0),
-    });
   };
 
   const filteredOvertimes = Array.isArray(overtimes) 
@@ -105,6 +113,7 @@ export default function OvertimePage() {
               <p className="text-sm text-slate-600">Tổng đơn</p>
             </div>
             <p className="text-3xl font-bold text-primary">{stats.total}</p>
+            <p className="text-xs text-slate-500 mt-1">Tất cả thời gian</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 border-2 border-yellow-200">
@@ -115,6 +124,7 @@ export default function OvertimePage() {
               <p className="text-sm text-slate-600">Chờ duyệt</p>
             </div>
             <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
+            <p className="text-xs text-slate-500 mt-1">Cần xử lý</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 border-2 border-green-200">
@@ -125,6 +135,7 @@ export default function OvertimePage() {
               <p className="text-sm text-slate-600">Đã duyệt</p>
             </div>
             <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+            <p className="text-xs text-slate-500 mt-1">Được chấp thuận</p>
           </div>
 
           <div className="bg-white rounded-xl p-6 border-2 border-red-200">
@@ -135,6 +146,7 @@ export default function OvertimePage() {
               <p className="text-sm text-slate-600">Từ chối</p>
             </div>
             <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
+            <p className="text-xs text-slate-500 mt-1">Không được duyệt</p>
           </div>
 
           <div className="bg-brandBlue rounded-xl p-6 text-white border-2 border-brandBlue/20">
@@ -142,9 +154,14 @@ export default function OvertimePage() {
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                 <Clock size={20} />
               </div>
-              <p className="text-sm text-white/80">Tổng giờ</p>
+              <p className="text-sm text-white/80">Tổng giờ đã duyệt</p>
             </div>
-            <p className="text-3xl font-bold">{stats.totalHours}h</p>
+            <p className="text-3xl font-bold">
+              {typeof stats.totalHours === 'number' 
+                ? stats.totalHours.toLocaleString('vi-VN') 
+                : '0'}h
+            </p>
+            <p className="text-xs text-white/60 mt-1">Tháng này</p>
           </div>
         </div>
 
