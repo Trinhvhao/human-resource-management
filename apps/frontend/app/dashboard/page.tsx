@@ -12,7 +12,7 @@ import PayrollSummaryChart from '@/components/dashboard/PayrollSummaryChart';
 import LeaveRequestsChart from '@/components/dashboard/LeaveRequestsChart';
 import AttendanceHeatmap from '@/components/dashboard/AttendanceHeatmap';
 import TopPerformers from '@/components/dashboard/TopPerformers';
-import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
+import ExpiringContracts from '@/components/dashboard/ExpiringContracts';
 import DepartmentPerformance from '@/components/dashboard/DepartmentPerformance';
 import { LayoutGrid, RefreshCw } from 'lucide-react';
 
@@ -33,10 +33,10 @@ export default function DashboardPage() {
         {/* Overview Cards */}
         <OverviewCards />
 
-        {/* Alerts & Events Row - High Priority */}
+        {/* Alerts & Expiring Contracts Row - High Priority */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AlertsPanel />
-          <UpcomingEvents />
+          <ExpiringContracts />
         </div>
 
         {/* Main Charts Row - 3 columns */}
