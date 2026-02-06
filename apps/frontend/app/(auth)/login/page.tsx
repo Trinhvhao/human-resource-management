@@ -25,19 +25,26 @@ export default function LoginPage() {
       await login({ email, password });
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Đăng nhập thất bại');
+      console.error('Login error:', err);
+      // Error can be ApiError object with message property
+      const errorMessage = err?.message || err?.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemoAccount = (type: 'admin' | 'hr') => {
+  const fillDemoAccount = (type: 'admin' | 'hr' | 'employee') => {
     if (type === 'admin') {
-      setEmail('admin@2th.com');
-      setPassword('password123');
+      setEmail('admin@company.com');
+      setPassword('Password123!');
+    } else if (type === 'hr') {
+      setEmail('hr.manager@company.com');
+      setPassword('Password123!');
     } else {
-      setEmail('hr@2th.com');
-      setPassword('password123');
+      // Get first employee user
+      setEmail('emp001@company.com');
+      setPassword('Password123!');
     }
   };
 
@@ -250,21 +257,46 @@ export default function LoginPage() {
             </div>
 
             {/* Demo Accounts */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => fillDemoAccount('admin')}
+                  className="px-4 py-3 border-2 border-brandBlue/20 text-brandBlue rounded-xl hover:bg-brandBlue/5 hover:border-brandBlue transition-all font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <Shield size={16} />
+                  <span>Admin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoAccount('hr')}
+                  className="px-4 py-3 border-2 border-secondary/20 text-secondary rounded-xl hover:bg-secondary/5 hover:border-secondary transition-all font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={16} />
+                  <span>HR Manager</span>
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => fillDemoAccount('admin')}
-                className="px-4 py-3 border-2 border-brandBlue/20 text-brandBlue rounded-xl hover:bg-brandBlue/5 hover:border-brandBlue transition-all font-medium text-sm"
+                onClick={() => fillDemoAccount('employee')}
+                className="w-full px-4 py-3 border-2 border-green-500/20 text-green-600 rounded-xl hover:bg-green-50 hover:border-green-500 transition-all font-medium text-sm flex items-center justify-center gap-2"
               >
-                👤 Admin
+                <CheckCircle2 size={16} />
+                <span>Employee</span>
               </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('hr')}
-                className="px-4 py-3 border-2 border-secondary/20 text-secondary rounded-xl hover:bg-secondary/5 hover:border-secondary transition-all font-medium text-sm"
-              >
-                👔 HR Manager
-              </button>
+            </div>
+
+            {/* Account Info */}
+            <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <p className="text-xs font-semibold text-blue-900 mb-2">📋 Thông tin tài khoản demo:</p>
+              <div className="space-y-1 text-xs text-blue-700">
+                <p>• <strong>Admin:</strong> admin@company.com</p>
+                <p>• <strong>HR Manager:</strong> hr.manager@company.com</p>
+                <p>• <strong>Employee:</strong> emp001@company.com</p>
+                <p className="mt-2 pt-2 border-t border-blue-200">
+                  🔑 <strong>Password:</strong> Password123!
+                </p>
+              </div>
             </div>
 
             {/* Footer Note */}

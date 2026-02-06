@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DollarSign, Download, Eye, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
@@ -33,7 +33,7 @@ export default function PayrollPage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user?.employeeId) return;
 
     try {
@@ -91,9 +91,13 @@ export default function PayrollPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.employeeId]);
 
-  const getStatusBadge = (status: string) => {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const getStatusBadge = useCallback((status: string) => {
     const styles = {
       DRAFT: 'bg-gray-100 text-gray-700',
       PROCESSING: 'bg-yellow-100 text-yellow-700',
@@ -109,7 +113,64 @@ export default function PayrollPage() {
               status === 'PAID' ? 'Đã trả' : status}
       </span>
     );
-  };
+  }, []);
+
+  // Memoize payroll rows
+  const payrollRows = useMemo(() => {
+    return payrolls.map((payroll, index) => (
+      <motion.tr
+        key={payroll.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: index * 0.05 }}
+        className="hover:bg-slate-50 transition-colors"
+      >
+        <td className="px-6 py-4">
+          <div className="text-sm font-medium text-primary">
+            Tháng {payroll.month}/{payroll.year}
+          </div>
+          <div className="text-xs text-slate-500">
+            {formatDate(payroll.createdAt)}
+          </div>
+        </td>
+        <td className="px-6 py-4 text-sm text-slate-700">
+          {formatCurrency(Number(payroll.baseSalary))}
+        </td>
+        <td className="px-6 py-4 text-sm text-green-600">
+          +{formatCurrency(Number(payroll.allowances))}
+        </td>
+        <td className="px-6 py-4 text-sm text-blue-600">
+          +{formatCurrency(Number(payroll.overtimePay))}
+        </td>
+        <td className="px-6 py-4 text-sm text-red-600">
+          -{formatCurrency(Number(payroll.deductions) + Number(payroll.socialInsurance) + Number(payroll.healthInsurance) + Number(payroll.unemploymentInsurance) + Number(payroll.personalIncomeTax))}
+        </td>
+        <td className="px-6 py-4">
+          <span className="text-sm font-bold text-green-600">
+            {formatCurrency(Number(payroll.netSalary))}
+          </span>
+        </td>
+        <td className="px-6 py-4">{payroll.status ? getStatusBadge(payroll.status) : '-'}</td>
+        <td className="px-6 py-4">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => router.push(`/dashboard/payroll/${payroll.id}`)}
+              className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
+              title="Xem chi tiết"
+            >
+              <Eye size={16} />
+            </button>
+            <button
+              className="p-2 hover:bg-green-50 rounded-lg text-green-600 transition-colors"
+              title="Tải xuống"
+            >
+              <Download size={16} />
+            </button>
+          </div>
+        </td>
+      </motion.tr>
+    ));
+  }, [payrolls, getStatusBadge, router]);
 
   return (
     <DashboardLayout>
@@ -260,59 +321,7 @@ export default function PayrollPage() {
                     </td>
                   </tr>
                 ) : (
-                  payrolls.map((payroll, index) => (
-                    <motion.tr
-                      key={payroll.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-slate-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-primary">
-                          Tháng {payroll.month}/{payroll.year}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {formatDate(payroll.createdAt)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-700">
-                        {formatCurrency(Number(payroll.baseSalary))}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-green-600">
-                        +{formatCurrency(Number(payroll.allowances))}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-blue-600">
-                        +{formatCurrency(Number(payroll.overtimePay))}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-red-600">
-                        -{formatCurrency(Number(payroll.deductions) + Number(payroll.socialInsurance) + Number(payroll.healthInsurance) + Number(payroll.unemploymentInsurance) + Number(payroll.personalIncomeTax))}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-green-600">
-                          {formatCurrency(Number(payroll.netSalary))}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">{payroll.status ? getStatusBadge(payroll.status) : '-'}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => router.push(`/dashboard/payroll/${payroll.id}`)}
-                            className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
-                            title="Xem chi tiết"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            className="p-2 hover:bg-green-50 rounded-lg text-green-600 transition-colors"
-                            title="Tải xuống"
-                          >
-                            <Download size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))
+                  payrollRows
                 )}
               </tbody>
             </table>

@@ -19,6 +19,7 @@ export interface Department {
     employeeCode: string;
     fullName: string;
     position: string;
+    email?: string;
   };
   employees?: Array<{
     id: string;
@@ -26,10 +27,12 @@ export interface Department {
     fullName: string;
     position: string;
     email: string;
+    status?: string;
   }>;
   _count?: {
     employees: number;
     children: number;
+    teams?: number;
   };
 }
 

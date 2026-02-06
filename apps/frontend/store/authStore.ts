@@ -29,15 +29,13 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null });
 
           const response = await authService.login(credentials);
-          const { accessToken, refreshToken, user } = response.data;
+          
+          // Backend returns: { success: true, data: { user, accessToken } }
+          // So we need to access response.data (which is already unwrapped by axios)
+          const { user, accessToken } = response.data;
 
-          // Save tokens and user
-          if (refreshToken) {
-            authService.saveTokens(accessToken, refreshToken);
-          } else {
-            // If no refresh token, just save access token
-            authService.saveTokens(accessToken, accessToken);
-          }
+          // Save tokens and user (no refreshToken in current backend)
+          authService.saveTokens(accessToken, accessToken);
           authService.saveUser(user);
 
           set({
@@ -46,8 +44,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
         } catch (error: any) {
+          const errorMessage = error.message || 'Đăng nhập thất bại';
           set({
-            error: error.message || 'Đăng nhập thất bại',
+            error: errorMessage,
             isLoading: false
           });
           throw error;

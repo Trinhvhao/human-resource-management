@@ -1,366 +1,325 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Clock, Calendar, TrendingUp, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import PageHeader from '@/components/common/PageHeader';
+import AttendanceStatsBar from '@/components/attendance/AttendanceStatsBar';
+import AttendanceFilterPanel from '@/components/attendance/AttendanceFilterPanel';
+import TodayAttendanceTable from '@/components/attendance/TodayAttendanceTable';
+import AttendanceLiveFeed from '@/components/attendance/AttendanceLiveFeed';
+import AttendanceInsights from '@/components/attendance/AttendanceInsights';
+import AttendanceTrendChart from '@/components/attendance/AttendanceTrendChart';
+import AttendanceQuickStats from '@/components/attendance/AttendanceQuickStats';
+import TimePeriodTabs from '@/components/attendance/TimePeriodTabs';
+import { Plus, FileText, Settings } from 'lucide-react';
 import attendanceService from '@/services/attendanceService';
+import departmentService from '@/services/departmentService';
 import { useAuthStore } from '@/store/authStore';
-import { formatTime, formatDate } from '@/utils/formatters';
-
-interface TodayAttendance {
-  id?: string;
-  checkIn?: string;
-  checkOut?: string;
-  workHours?: number;
-  isLate?: boolean;
-  isEarlyLeave?: boolean;
-  status: string;
-}
+import { Attendance } from '@/types/attendance';
 
 export default function AttendancePage() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
-  const [statistics, setStatistics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [checking, setChecking] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
+  const [pendingCorrections, setPendingCorrections] = useState(0);
 
-  useEffect(() => {
-    fetchTodayAttendance();
-    fetchStatistics();
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Stats
+  const [totalEmployees, setTotalEmployees] = useState(0);
+  const [presentCount, setPresentCount] = useState(0);
+  const [lateCount, setLateCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
+  const [notCheckedOutCount, setNotCheckedOutCount] = useState(0);
 
-  const fetchTodayAttendance = async () => {
-    if (!user?.employeeId) return;
+  // Time period
+  const [activePeriod, setActivePeriod] = useState<'today' | 'week' | 'month'>('today');
 
+  // Chart data
+  const [trendData, setTrendData] = useState<any[]>([]);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR_MANAGER';
+
+  // Fetch data
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await attendanceService.getTodayAttendance();
-      setTodayAttendance(response.data || { status: 'NOT_CHECKED_IN' });
+
+      // Fetch departments
+      const deptResponse = await departmentService.getAll();
+      setDepartments(deptResponse.data.map((d: any) => ({ id: d.id, name: d.name })));
+
+      // Fetch pending corrections
+      if (isAdmin) {
+        try {
+          const correctionsResponse = await attendanceService.getPendingCorrections();
+          setPendingCorrections(correctionsResponse.data?.length || 0);
+        } catch (error) {
+          console.error('Failed to fetch pending corrections:', error);
+          setPendingCorrections(0);
+        }
+      }
+
+      // Fetch today's all attendances
+      const attendancesResponse = await attendanceService.getTodayAllAttendances();
+      const attendanceData = attendancesResponse.data || [];
+      
+      setAttendances(attendanceData);
+
+      // Calculate stats
+      setTotalEmployees(attendanceData.length);
+      setPresentCount(attendanceData.filter((a: Attendance) => a.status === 'PRESENT').length);
+      setLateCount(attendanceData.filter((a: Attendance) => a.isLate).length);
+      setAbsentCount(attendanceData.filter((a: Attendance) => a.status === 'ABSENT').length);
+      setNotCheckedOutCount(attendanceData.filter((a: Attendance) => a.checkIn && !a.checkOut).length);
+
+      // Mock trend data for now (you can fetch real data from API later)
+      setTrendData([
+        { date: 'T2', attendanceRate: 92, lateRate: 8, total: attendanceData.length },
+        { date: 'T3', attendanceRate: 95, lateRate: 5, total: attendanceData.length },
+        { date: 'T4', attendanceRate: 88, lateRate: 12, total: attendanceData.length },
+        { date: 'T5', attendanceRate: 93, lateRate: 7, total: attendanceData.length },
+        { date: 'T6', attendanceRate: 90, lateRate: 10, total: attendanceData.length },
+        { date: 'T7', attendanceRate: 96, lateRate: 4, total: attendanceData.length },
+        { date: 'CN', attendanceRate: 100, lateRate: 0, total: attendanceData.length },
+      ]);
     } catch (error) {
-      console.error('Failed to fetch attendance:', error);
-      setTodayAttendance({ status: 'NOT_CHECKED_IN' });
+      console.error('Failed to fetch attendance data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin]);
 
-  const fetchStatistics = async () => {
-    if (!user?.employeeId) return;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-    try {
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
-      
-      const [statsResponse, attendancesResponse] = await Promise.all([
-        attendanceService.getStatistics(month, year),
-        attendanceService.getEmployeeAttendances(user.employeeId, month, year)
-      ]);
-
-      setStatistics({
-        ...statsResponse.data,
-        employeeSummary: attendancesResponse.data.summary
-      });
-    } catch (error) {
-      console.error('Failed to fetch statistics:', error);
+  // Filter attendances
+  const filteredAttendances = attendances.filter((attendance) => {
+    // Search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesName = attendance.employee?.fullName?.toLowerCase().includes(searchLower);
+      const matchesCode = attendance.employee?.employeeCode?.toLowerCase().includes(searchLower);
+      if (!matchesName && !matchesCode) return false;
     }
+
+    // Department filter
+    if (departmentFilter !== 'all') {
+      if (attendance.employee?.department?.name !== departments.find((d) => d.id === departmentFilter)?.name) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'on-time' && (attendance.isLate || !attendance.checkIn)) return false;
+      if (statusFilter === 'late' && !attendance.isLate) return false;
+      if (statusFilter === 'absent' && attendance.status !== 'ABSENT') return false;
+      if (statusFilter === 'not-checked-out' && (attendance.checkOut || !attendance.checkIn)) return false;
+    }
+
+    return true;
+  });
+
+  const activeFilterCount = [
+    departmentFilter !== 'all',
+    statusFilter !== 'all',
+  ].filter(Boolean).length;
+
+  const handleClearFilters = () => {
+    setDepartmentFilter('all');
+    setStatusFilter('all');
+    setCurrentPage(1); // Reset to first page when clearing filters
   };
 
-  const handleCheckIn = async () => {
-    if (!user?.employeeId) return;
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Paginate filtered results
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedAttendances = filteredAttendances.slice(startIndex, endIndex);
+
+  const handleExport = () => {
+    alert('Xuất báo cáo chấm công - Tính năng đang phát triển');
+  };
+
+  const handleViewDetail = (attendance: Attendance) => {
+    router.push(`/dashboard/attendance/detail/${attendance.id}`);
+  };
+
+  const handleManualCheckIn = async () => {
     try {
-      setChecking(true);
       await attendanceService.checkIn();
-      await fetchTodayAttendance();
-    } catch (error: any) {
-      console.error('Check-in failed:', error);
-      alert(error.response?.data?.message || 'Check-in thất bại');
-    } finally {
-      setChecking(false);
+      alert('Check-in thủ công thành công');
+      fetchData();
+    } catch (error) {
+      console.error('Manual check-in failed:', error);
+      alert('Check-in thất bại');
     }
   };
-
-  const handleCheckOut = async () => {
-    if (!user?.employeeId) return;
-
-    try {
-      setChecking(true);
-      await attendanceService.checkOut();
-      await fetchTodayAttendance();
-    } catch (error: any) {
-      console.error('Check-out failed:', error);
-      alert(error.response?.data?.message || 'Check-out thất bại');
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  const isCheckedIn = todayAttendance?.checkIn && !todayAttendance?.checkOut;
-  const isCheckedOut = todayAttendance?.checkIn && todayAttendance?.checkOut;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-secondary">Chấm công</h1>
-          <p className="text-slate-500 mt-1">Quản lý chấm công và theo dõi giờ làm việc</p>
-        </div>
-
-        {/* Main Check-in/out Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-brandBlue via-[#0047b3] to-[#003080] rounded-2xl p-8 text-white relative overflow-hidden"
-        >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <p className="text-white/70 text-sm">Hôm nay</p>
-                <h2 className="text-2xl font-bold mt-1">{formatDate(new Date())}</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-white/70 text-sm">Thời gian hiện tại</p>
-                <h2 className="text-3xl font-bold mt-1 font-mono">
-                  {currentTime.toLocaleTimeString('vi-VN')}
-                </h2>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="mt-4 text-white/70">Đang tải...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Check-in Status */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                      <CheckCircle size={24} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white/70">Check-in</p>
-                      <p className="text-xl font-bold">
-                        {todayAttendance?.checkIn ? formatTime(todayAttendance.checkIn) : '--:--'}
-                      </p>
-                    </div>
-                  </div>
-                  {todayAttendance?.isLate && (
-                    <span className="inline-flex items-center gap-1 text-xs bg-red-500/20 text-red-200 px-2 py-1 rounded-full">
-                      <AlertCircle size={12} />
-                      Đi muộn
-                    </span>
-                  )}
-                </div>
-
-                {/* Check-out Status */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                      <XCircle size={24} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white/70">Check-out</p>
-                      <p className="text-xl font-bold">
-                        {todayAttendance?.checkOut ? formatTime(todayAttendance.checkOut) : '--:--'}
-                      </p>
-                    </div>
-                  </div>
-                  {todayAttendance?.isEarlyLeave && (
-                    <span className="inline-flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-200 px-2 py-1 rounded-full">
-                      <AlertCircle size={12} />
-                      Về sớm
-                    </span>
-                  )}
-                </div>
-
-                {/* Work Hours */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                      <Clock size={24} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white/70">Giờ làm việc</p>
-                      <p className="text-xl font-bold">
-                        {todayAttendance?.workHours ? Number(todayAttendance.workHours).toFixed(1) : '0.0'} giờ
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="mt-8 flex gap-4">
-              {!isCheckedIn && !isCheckedOut && (
-                <button
-                  onClick={handleCheckIn}
-                  disabled={checking}
-                  className="flex-1 bg-white text-brandBlue px-6 py-4 rounded-xl font-semibold hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {checking ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={20} />
-                      Check-in
-                    </>
-                  )}
-                </button>
-              )}
-
-              {isCheckedIn && (
-                <button
-                  onClick={handleCheckOut}
-                  disabled={checking}
-                  className="flex-1 bg-secondary hover:bg-secondary/90 px-6 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {checking ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={20} />
-                      Check-out
-                    </>
-                  )}
-                </button>
-              )}
-
-              {isCheckedOut && (
-                <div className="flex-1 bg-green-500 px-6 py-4 rounded-xl font-semibold text-center flex items-center justify-center gap-2">
-                  <CheckCircle size={20} />
-                  Đã hoàn thành
-                </div>
-              )}
-            </div>
+        {/* Action Bar - Replace PageHeader */}
+        <div className="flex items-center justify-between">
+          <TimePeriodTabs
+            activePeriod={activePeriod}
+            onPeriodChange={setActivePeriod}
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/dashboard/attendance/corrections')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:border-brandBlue hover:text-brandBlue font-semibold text-sm transition-all"
+            >
+              <FileText size={18} />
+              Điều chỉnh
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/attendance/reports')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-brandBlue text-white rounded-xl hover:bg-blue-700 font-semibold text-sm transition-all shadow-lg shadow-brandBlue/30"
+            >
+              <Plus size={18} />
+              Báo cáo
+            </button>
           </div>
-        </motion.div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {statistics ? (
-            <>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl p-6 border border-slate-200"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="text-blue-600" size={20} />
-                  </div>
-                  <p className="text-sm text-slate-600">Tháng này</p>
-                </div>
-                <p className="text-2xl font-bold text-primary">{statistics.employeeSummary?.presentDays || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">Ngày công</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-xl p-6 border border-slate-200"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <AlertCircle className="text-red-600" size={20} />
-                  </div>
-                  <p className="text-sm text-slate-600">Đi muộn</p>
-                </div>
-                <p className="text-2xl font-bold text-primary">{statistics.employeeSummary?.lateDays || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">Lần</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-xl p-6 border border-slate-200"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Clock className="text-yellow-600" size={20} />
-                  </div>
-                  <p className="text-sm text-slate-600">Về sớm</p>
-                </div>
-                <p className="text-2xl font-bold text-primary">{statistics.employeeSummary?.earlyLeaveDays || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">Lần</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="bg-white rounded-xl p-6 border border-slate-200"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="text-green-600" size={20} />
-                  </div>
-                  <p className="text-sm text-slate-600">Tỷ lệ</p>
-                </div>
-                <p className="text-2xl font-bold text-primary">
-                  {statistics.employeeSummary?.presentDays && statistics.employeeSummary?.totalDays
-                    ? Math.round((statistics.employeeSummary.presentDays / statistics.employeeSummary.totalDays) * 100)
-                    : 0}%
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Chấm công đúng giờ</p>
-              </motion.div>
-            </>
-          ) : (
-            [...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-white rounded-xl p-6 border border-slate-200">
-                <div className="h-10 bg-slate-100 rounded mb-2"></div>
-                <div className="h-8 bg-slate-100 rounded mb-1"></div>
-                <div className="h-4 bg-slate-100 rounded"></div>
-              </div>
-            ))
-          )}
         </div>
 
-        {/* Quick Links */}
+        {/* Stats Bar */}
+        <AttendanceStatsBar
+          totalEmployees={totalEmployees}
+          present={presentCount}
+          late={lateCount}
+          absent={absentCount}
+          pendingCorrections={pendingCorrections}
+          loading={loading}
+          onViewCorrections={() => router.push('/dashboard/attendance/corrections')}
+        />
+
+        {/* Analytics Dashboard - 3 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5">
+            <AttendanceTrendChart data={trendData} loading={loading} />
+          </div>
+          <div className="lg:col-span-3">
+            <AttendanceQuickStats
+              totalEmployees={totalEmployees}
+              present={presentCount}
+              late={lateCount}
+              absent={absentCount}
+              notCheckedOut={notCheckedOutCount}
+              loading={loading}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <AttendanceLiveFeed
+              recentCheckIns={attendances.slice(0, 10)}
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        {/* Filter Panel */}
+        <AttendanceFilterPanel
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          departmentFilter={departmentFilter}
+          onDepartmentChange={setDepartmentFilter}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          dateFilter={dateFilter}
+          onDateChange={setDateFilter}
+          departments={departments}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={handleClearFilters}
+          onExport={handleExport}
+          resultCount={filteredAttendances.length}
+          totalCount={attendances.length}
+        />
+
+        {/* Main Table - Full Width */}
+        <div>
+          <TodayAttendanceTable
+            attendances={paginatedAttendances}
+            loading={loading}
+            onViewDetail={handleViewDetail}
+            onManualCheckIn={isAdmin ? handleManualCheckIn : undefined}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredAttendances.length}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        </div>
+
+        {/* Insights Card */}
+        <AttendanceInsights
+          totalEmployees={totalEmployees}
+          present={presentCount}
+          late={lateCount}
+          absent={absentCount}
+          notCheckedOut={notCheckedOutCount}
+        />
+
+        {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
+          <button
             onClick={() => router.push('/dashboard/attendance/history')}
-            className="bg-white rounded-xl p-4 border border-slate-200 hover:border-brandBlue hover:shadow-md transition-all text-left"
+            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all text-left group"
           >
-            <h3 className="font-semibold text-primary mb-1">Lịch sử chấm công</h3>
-            <p className="text-sm text-slate-500">Xem lịch sử và báo cáo chi tiết</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                <FileText size={20} className="text-blue-600" strokeWidth={2} />
+              </div>
+              <h3 className="font-semibold text-slate-900">Lịch sử chấm công</h3>
+            </div>
+            <p className="text-sm text-slate-600">Xem lịch sử và báo cáo chi tiết theo tháng</p>
           </button>
-          <button 
+
+          <button
             onClick={() => router.push('/dashboard/attendance/corrections')}
-            className="bg-white rounded-xl p-4 border border-slate-200 hover:border-brandBlue hover:shadow-md transition-all text-left"
+            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all text-left group"
           >
-            <h3 className="font-semibold text-primary mb-1">Điều chỉnh chấm công</h3>
-            <p className="text-sm text-slate-500">Yêu cầu điều chỉnh giờ check-in/out</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                <Settings size={20} className="text-orange-600" strokeWidth={2} />
+              </div>
+              <h3 className="font-semibold text-slate-900">Điều chỉnh chấm công</h3>
+            </div>
+            <p className="text-sm text-slate-600">Phê duyệt yêu cầu điều chỉnh giờ làm</p>
           </button>
-          <button 
+
+          <button
             onClick={() => router.push('/dashboard/attendance/reports')}
-            className="bg-white rounded-xl p-4 border border-slate-200 hover:border-brandBlue hover:shadow-md transition-all text-left"
+            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all text-left group"
           >
-            <h3 className="font-semibold text-primary mb-1">Báo cáo tháng</h3>
-            <p className="text-sm text-slate-500">Xuất báo cáo chấm công</p>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                <FileText size={20} className="text-emerald-600" strokeWidth={2} />
+              </div>
+              <h3 className="font-semibold text-slate-900">Báo cáo tháng</h3>
+            </div>
+            <p className="text-sm text-slate-600">Xuất báo cáo chấm công theo tháng</p>
           </button>
         </div>
       </div>

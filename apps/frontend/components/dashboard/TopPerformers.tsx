@@ -27,36 +27,13 @@ export default function TopPerformers() {
     try {
       const axiosInstance = (await import('@/lib/axios')).default;
       
-      // Get employees - use dashboard API instead of individual attendance calls
-      const [employeesRes, dashboardRes] = await Promise.all([
-        axiosInstance.get('/employees', { params: { status: 'ACTIVE', limit: 20 } }),
-        axiosInstance.get('/dashboard/attendance-summary')
-      ]);
+      // Fetch top performers from API
+      const response = await axiosInstance.get('/employees/top-performers', {
+        params: { limit: 5, period: 'month' }
+      });
 
-      if (employeesRes.data) {
-        const employees = employeesRes.data;
-        
-        // Calculate performance score based on random factors (simplified)
-        // In real app, you would calculate based on actual metrics
-        const performersWithScores = employees.slice(0, 20).map((emp: any) => {
-          // Simple score calculation (70-100)
-          const score = Math.floor(Math.random() * 30) + 70;
-          
-          return {
-            id: emp.id,
-            name: emp.fullName,
-            department: emp.department?.name || 'N/A',
-            score,
-            achievements: Math.floor(score / 10),
-          };
-        });
-        
-        // Sort by score and take top 5
-        const topPerformers = performersWithScores
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 5);
-        
-        setPerformers(topPerformers);
+      if (response.data?.data) {
+        setPerformers(response.data.data);
       }
     } catch (error) {
       console.error('Failed to fetch top performers:', error);

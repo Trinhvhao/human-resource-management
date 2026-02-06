@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { QueryEmployeesDto } from './dto/query-employees.dto';
+import { EmployeeActivityService, GetActivitiesDto } from './employee-activity.service';
 
 @Injectable()
 export class EmployeesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activityService: EmployeeActivityService,
+  ) {}
 
   async create(dto: CreateEmployeeDto) {
     // Validate age (minimum 18 years old - Vietnamese labor law)
@@ -90,7 +94,7 @@ export class EmployeesService {
   }
 
   async findAll(query: QueryEmployeesDto) {
-    const { search, departmentId, position, status, gender, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const { search, departmentId, position, status, gender, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -114,7 +118,19 @@ export class EmployeesService {
         where,
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          employeeCode: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          position: true,
+          status: true,
+          gender: true,
+          baseSalary: true,
+          startDate: true,
+          avatarUrl: true,
+          departmentId: true,
           department: {
             select: { id: true, code: true, name: true },
           },
@@ -209,9 +225,47 @@ export class EmployeesService {
     if (dto.departmentId && dto.departmentId !== employee.departmentId) {
       const department = await this.prisma.department.findUnique({
         where: { id: dto.departmentId },
+        include: {
+          parent: true
+        }
       });
       if (!department) {
         throw new BadRequestException('Department not found');
+      }
+
+      // Business Rule: Cannot move employee to inactive department
+      if (!department.isActive) {
+        throw new BadRequestException('Cannot assign employee to inactive department');
+      }
+
+      // Business Rule: If employee is a manager, check implications
+      const managedDepartment = await this.prisma.department.findFirst({
+        where: {
+          managerId: id,
+          isActive: true
+        }
+      });
+
+      if (managedDepartment) {
+        // Business Rule: Manager should belong to the department they manage (or its parent)
+        if (managedDepartment.id !== dto.departmentId && managedDepartment.parentId !== dto.departmentId) {
+          throw new BadRequestException(
+            `This employee manages ${managedDepartment.name}. ` +
+            `They must belong to that department or its parent department. ` +
+            `Please reassign department manager first.`
+          );
+        }
+      }
+
+      // Business Rule: Employees should belong to main departments, not team departments
+      // Teams are logical groupings, actual departmentId should be the parent
+      if (department.parentId) {
+        const parentName = department.parent ? department.parent.name : 'parent department';
+        throw new BadRequestException(
+          `Cannot assign employee directly to team "${department.name}". ` +
+          `Employees must belong to main departments. ` +
+          `Assign to "${parentName}" instead and use position field to indicate team.`
+        );
       }
     }
 
@@ -392,5 +446,476 @@ export class EmployeesService {
     }
 
     return `EMP${year}${nextNumber.toString().padStart(3, '0')}`;
+  }
+
+  async getTopPerformers(limit: number = 5, period: 'week' | 'month' = 'month') {
+    const now = new Date();
+    const startDate = period === 'week'
+      ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      : new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get active employees with their attendance and rewards
+    const employees = await this.prisma.employee.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        position: true,
+        department: {
+          select: { name: true },
+        },
+        attendances: {
+          where: {
+            date: { gte: startDate },
+          },
+          select: {
+            status: true,
+            isLate: true,
+            workHours: true,
+          },
+        },
+        rewards: {
+          where: {
+            createdAt: { gte: startDate },
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+      take: 50, // Limit to top 50 for performance
+    });
+
+    // Calculate performance score for each employee
+    const performersWithScores = employees.map(emp => {
+      const totalAttendance = emp.attendances.length;
+      const presentDays = emp.attendances.filter(a => a.status === 'PRESENT').length;
+      const lateDays = emp.attendances.filter(a => a.isLate).length;
+      const totalWorkHours = emp.attendances.reduce((sum, a) => sum + (Number(a.workHours) || 0), 0);
+      const rewardsCount = emp.rewards.length;
+
+      // Calculate metrics (0-100 scale)
+      const attendanceRate = totalAttendance > 0 ? (presentDays / totalAttendance) * 100 : 0;
+      const onTimeRate = totalAttendance > 0 ? ((totalAttendance - lateDays) / totalAttendance) * 100 : 0;
+      const avgWorkHours = totalAttendance > 0 ? totalWorkHours / totalAttendance : 0;
+      
+      // Work hours score (8 hours = 100%, max 10 hours = 125%)
+      const workHoursScore = Math.min((avgWorkHours / 8) * 100, 125);
+
+      // Rewards bonus (each reward = 5 points, max 20 points)
+      const rewardsBonus = Math.min(rewardsCount * 5, 20);
+
+      // Calculate weighted performance score
+      // Attendance: 40%, On-time: 30%, Work hours: 20%, Rewards: 10%
+      const baseScore = (
+        attendanceRate * 0.4 +
+        onTimeRate * 0.3 +
+        workHoursScore * 0.2
+      );
+
+      const finalScore = Math.min(baseScore + rewardsBonus, 100);
+
+      return {
+        id: emp.id,
+        employeeCode: emp.employeeCode,
+        name: emp.fullName,
+        position: emp.position,
+        department: emp.department?.name || 'N/A',
+        score: Math.round(finalScore * 10) / 10, // Round to 1 decimal
+        metrics: {
+          attendanceRate: Math.round(attendanceRate * 10) / 10,
+          onTimeRate: Math.round(onTimeRate * 10) / 10,
+          avgWorkHours: Math.round(avgWorkHours * 10) / 10,
+          rewardsCount,
+        },
+        achievements: rewardsCount,
+      };
+    });
+
+    // Sort by score and take top N
+    const topPerformers = performersWithScores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    return {
+      success: true,
+      data: topPerformers,
+      meta: {
+        period,
+        startDate,
+        endDate: now,
+        totalEvaluated: employees.length,
+      },
+    };
+  }
+
+  // =====================================================
+  // EMPLOYEE PROFILE METHODS
+  // =====================================================
+
+  /**
+   * Get employee profile with extended information
+   */
+  async getEmployeeProfile(id: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: {
+        department: {
+          select: { id: true, code: true, name: true },
+        },
+        profile: true,
+        documents: {
+          orderBy: { uploadedAt: 'desc' },
+        },
+        user: {
+          select: { id: true, email: true, role: true },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Convert BigInt to Number for JSON serialization
+    const documentsWithNumberSize = employee.documents.map(doc => ({
+      ...doc,
+      fileSize: Number(doc.fileSize),
+    }));
+
+    return {
+      success: true,
+      data: {
+        ...employee,
+        documents: documentsWithNumberSize,
+      },
+    };
+  }
+
+  /**
+   * Update employee profile
+   */
+  async updateEmployeeProfile(id: string, dto: any) {
+    // Check if employee exists
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: { profile: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Update or create profile
+    const profile = await this.prisma.employeeProfile.upsert({
+      where: { employeeId: id },
+      create: {
+        employeeId: id,
+        ...dto,
+      },
+      update: {
+        ...dto,
+        lastProfileUpdate: new Date(),
+      },
+    });
+
+    // Calculate and update completion percentage
+    await this.updateProfileCompletion(id);
+
+    // Log activity
+    await this.activityService.logActivity({
+      employeeId: id,
+      activityType: 'profile_update',
+      action: 'updated',
+      description: 'Cập nhật thông tin hồ sơ chi tiết',
+      newValue: dto,
+    });
+
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      data: profile,
+    };
+  }
+
+  /**
+   * Calculate profile completion percentage
+   */
+  private async updateProfileCompletion(employeeId: string) {
+    const profile = await this.prisma.employeeProfile.findUnique({
+      where: { employeeId },
+    });
+
+    if (!profile) return;
+
+    let completion = 0;
+
+    // Personal Info (20%)
+    if (profile.placeOfBirth && profile.nationality && profile.maritalStatus) {
+      completion += 20;
+    }
+
+    // Emergency Contact (20%)
+    if (profile.emergencyContactName && profile.emergencyContactPhone && profile.emergencyContactRelationship) {
+      completion += 20;
+    }
+
+    // Education (20%)
+    if (profile.highestEducation && profile.major && profile.university) {
+      completion += 20;
+    }
+
+    // Bank Info (20%)
+    if (profile.bankName && profile.bankAccountNumber && profile.bankBranch) {
+      completion += 20;
+    }
+
+    // Documents (20%)
+    const documents = await this.prisma.employeeDocument.findMany({
+      where: {
+        employeeId,
+        documentType: { in: ['RESUME', 'ID_CARD_FRONT'] },
+      },
+    });
+    if (documents.length >= 2) {
+      completion += 20;
+    }
+
+    // Update profile and employee
+    await this.prisma.employeeProfile.update({
+      where: { employeeId },
+      data: {
+        profileCompletionPercentage: completion,
+        lastProfileUpdate: new Date(),
+      },
+    });
+
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: {
+        hasCompleteProfile: completion >= 80,
+        profileLastUpdated: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Upload employee document
+   */
+  async uploadDocument(
+    employeeId: string,
+    file: Express.Multer.File,
+    documentType: string,
+    description?: string,
+    uploadedBy?: string,
+  ) {
+    // Check if employee exists
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // For avatar, delete old avatar first
+    if (documentType === 'AVATAR') {
+      const oldAvatar = await this.prisma.employeeDocument.findFirst({
+        where: {
+          employeeId,
+          documentType: 'AVATAR',
+        },
+      });
+
+      if (oldAvatar) {
+        await this.prisma.employeeDocument.delete({
+          where: { id: oldAvatar.id },
+        });
+      }
+
+      // Update employee avatarUrl
+      const avatarUrl = `/uploads/avatars/${file.filename}`;
+      await this.prisma.employee.update({
+        where: { id: employeeId },
+        data: { avatarUrl },
+      });
+
+      // Create document record
+      const document = await this.prisma.employeeDocument.create({
+        data: {
+          employeeId,
+          documentType,
+          fileName: file.originalname,
+          fileUrl: avatarUrl,
+          fileSize: BigInt(file.size),
+          mimeType: file.mimetype,
+          description,
+          uploadedBy,
+        },
+      });
+
+      // Update profile completion
+      await this.updateProfileCompletion(employeeId);
+
+      // Log activity
+      await this.activityService.logActivity({
+        employeeId,
+        activityType: 'profile_update',
+        action: 'updated',
+        description: 'Cập nhật ảnh đại diện',
+        metadata: { documentType: 'AVATAR' },
+        performedBy: uploadedBy,
+      });
+
+      return {
+        success: true,
+        message: 'Avatar uploaded successfully',
+        data: {
+          ...document,
+          fileSize: Number(document.fileSize),
+          avatarUrl, // Return avatarUrl for frontend
+        },
+      };
+    }
+
+    // Create document record
+    const document = await this.prisma.employeeDocument.create({
+      data: {
+        employeeId,
+        documentType,
+        fileName: file.originalname,
+        fileUrl: `/uploads/${documentType.toLowerCase()}/${file.filename}`,
+        fileSize: BigInt(file.size),
+        mimeType: file.mimetype,
+        description,
+        uploadedBy,
+      },
+    });
+
+    // Update profile completion
+    await this.updateProfileCompletion(employeeId);
+
+    // Log activity
+    await this.activityService.logActivity({
+      employeeId,
+      activityType: 'document_upload',
+      action: 'created',
+      description: `Tải lên tài liệu: ${file.originalname}`,
+      metadata: { documentType, fileName: file.originalname },
+      performedBy: uploadedBy,
+    });
+
+    return {
+      success: true,
+      message: 'Document uploaded successfully',
+      data: {
+        ...document,
+        fileSize: Number(document.fileSize), // Convert BigInt to Number for JSON
+      },
+    };
+  }
+
+  /**
+   * Get employee documents
+   */
+  async getEmployeeDocuments(employeeId: string, documentType?: string) {
+    const where: any = { employeeId };
+    if (documentType) {
+      where.documentType = documentType;
+    }
+
+    const documents = await this.prisma.employeeDocument.findMany({
+      where,
+      orderBy: { uploadedAt: 'desc' },
+      include: {
+        uploader: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: documents.map(doc => ({
+        ...doc,
+        fileSize: Number(doc.fileSize), // Convert BigInt to Number
+      })),
+    };
+  }
+
+  /**
+   * Delete employee document
+   */
+  async deleteDocument(employeeId: string, documentId: string) {
+    const document = await this.prisma.employeeDocument.findFirst({
+      where: {
+        id: documentId,
+        employeeId,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    await this.prisma.employeeDocument.delete({
+      where: { id: documentId },
+    });
+
+    // Update profile completion
+    await this.updateProfileCompletion(employeeId);
+
+    return {
+      success: true,
+      message: 'Document deleted successfully',
+    };
+  }
+
+  /**
+   * Get profile completion stats
+   */
+  async getProfileCompletionStats() {
+    const stats = await this.prisma.$queryRaw<any[]>`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE has_complete_profile = true) as complete,
+        COUNT(*) FILTER (WHERE has_complete_profile = false) as incomplete,
+        AVG(COALESCE(ep.profile_completion_percentage, 0))::INT as avg_completion
+      FROM employees e
+      LEFT JOIN employee_profiles ep ON e.id = ep.employee_id
+      WHERE e.status = 'ACTIVE'
+    `;
+
+    return {
+      success: true,
+      data: {
+        total: Number(stats[0].total),
+        complete: Number(stats[0].complete),
+        incomplete: Number(stats[0].incomplete),
+        avgCompletion: Number(stats[0].avg_completion),
+      },
+    };
+  }
+
+  // =====================================================
+  // EMPLOYEE ACTIVITY METHODS
+  // =====================================================
+
+  /**
+   * Get employee activities
+   */
+  async getEmployeeActivities(dto: GetActivitiesDto) {
+    return this.activityService.getActivities(dto);
+  }
+
+  /**
+   * Get activity statistics
+   */
+  async getActivityStats(employeeId: string) {
+    return this.activityService.getActivityStats(employeeId);
   }
 }

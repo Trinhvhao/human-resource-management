@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import axiosInstance from '@/lib/axios';
 
 interface DepartmentStats {
-  name: string;
-  employees: number;
-  attendance: number;
-  performance: number;
+  departmentName: string;
+  employeeCount: number;
+  attendanceRate: number;
+  performanceScore: number;
   trend: 'up' | 'down' | 'stable';
 }
 
@@ -22,32 +24,15 @@ export default function DepartmentPerformance() {
 
   const fetchDepartmentStats = async () => {
     try {
-      const dashboardService = (await import('@/services/dashboardService')).default;
-      const response = await dashboardService.getEmployeeStats();
+      const response = await axiosInstance.get('/departments/performance-stats');
       
-      if (response.data?.byDepartment) {
-        const deptData = response.data.byDepartment;
+      if (response.data?.data) {
+        const deptData = response.data.data;
         
-        // Calculate performance metrics for each department
-        const formattedDepts = await Promise.all(
-          deptData.map(async (dept: any) => {
-            // Calculate attendance rate (simplified - using random for now as we need more complex query)
-            const attendance = Math.floor(Math.random() * 10) + 90; // 90-100%
-            const performance = Math.floor(Math.random() * 15) + 85; // 85-100%
-            const trends: ('up' | 'down' | 'stable')[] = ['up', 'down', 'stable'];
-            const trend = trends[Math.floor(Math.random() * trends.length)];
-            
-            return {
-              name: dept.department,
-              employees: dept.count,
-              attendance,
-              performance,
-              trend,
-            };
-          })
-        );
+        // Take top 5 departments
+        const topDepts = deptData.slice(0, 5);
         
-        setDepartments(formattedDepts);
+        setDepartments(topDepts);
       }
     } catch (error) {
       console.error('Failed to fetch department stats:', error);
@@ -72,11 +57,33 @@ export default function DepartmentPerformance() {
     );
   }
 
-  const getPerformanceColor = (performance: number) => {
-    if (performance >= 90) return 'text-green-600';
-    if (performance >= 80) return 'text-brandBlue';
-    if (performance >= 70) return 'text-secondary';
-    return 'text-red-600';
+  const getPerformanceColor = (performanceScore: number) => {
+    if (performanceScore >= 90) return '#10b981'; // green-500
+    if (performanceScore >= 80) return '#3b82f6'; // blue-500
+    if (performanceScore >= 70) return '#f59e0b'; // amber-500
+    return '#ef4444'; // red-500
+  };
+
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-200">
+          <p className="font-semibold text-primary mb-1">{data.departmentName}</p>
+          <p className="text-sm text-slate-600">Hiệu suất: <span className="font-bold">{data.performanceScore}%</span></p>
+          <p className="text-sm text-slate-600">Nhân viên: <span className="font-bold">{data.employeeCount}</span></p>
+          <p className="text-sm text-slate-600">Chấm công: <span className="font-bold">{data.attendanceRate}%</span></p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Truncate long department names
+  const truncateName = (name: string, maxLength: number = 15) => {
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + '...';
   };
 
   return (
@@ -84,86 +91,79 @@ export default function DepartmentPerformance() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-primary">Hiệu suất phòng ban</h3>
-          <p className="text-sm text-slate-500 mt-1">Tháng này</p>
+          <h3 className="text-lg font-bold text-primary">Top 5 Phòng Ban Xuất Sắc</h3>
+          <p className="text-sm text-slate-500 mt-1">Theo hiệu suất tháng này</p>
         </div>
         <Building2 className="text-brandBlue" size={24} />
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="text-left text-xs font-medium text-slate-500 pb-3">Phòng ban</th>
-              <th className="text-center text-xs font-medium text-slate-500 pb-3">NV</th>
-              <th className="text-center text-xs font-medium text-slate-500 pb-3">Chấm công</th>
-              <th className="text-center text-xs font-medium text-slate-500 pb-3">Hiệu suất</th>
-              <th className="text-center text-xs font-medium text-slate-500 pb-3">Xu hướng</th>
-            </tr>
-          </thead>
-          <tbody>
-            {departments.map((dept, index) => (
-              <motion.tr
-                key={dept.name}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
-              >
-                <td className="py-3">
-                  <span className="text-sm font-medium text-primary">{dept.name}</span>
-                </td>
-                <td className="text-center">
-                  <span className="text-sm text-slate-600">{dept.employees}</span>
-                </td>
-                <td className="text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brandBlue rounded-full"
-                        style={{ width: `${dept.attendance}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-slate-600">{dept.attendance}%</span>
-                  </div>
-                </td>
-                <td className="text-center">
-                  <span className={`text-sm font-bold ${getPerformanceColor(dept.performance)}`}>
-                    {dept.performance}%
-                  </span>
-                </td>
-                <td className="text-center">
-                  {dept.trend === 'up' && <TrendingUp className="text-green-600 mx-auto" size={18} />}
-                  {dept.trend === 'down' && <TrendingDown className="text-red-600 mx-auto" size={18} />}
-                  {dept.trend === 'stable' && <span className="text-slate-400">—</span>}
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Chart */}
+      <div className="flex-1 min-h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={departments}
+            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis
+              dataKey="departmentName"
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tick={{ fill: '#64748b', fontSize: 12 }}
+              tickFormatter={truncateName}
+            />
+            <YAxis
+              tick={{ fill: '#64748b', fontSize: 12 }}
+              domain={[0, 100]}
+              label={{ value: 'Hiệu suất (%)', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 12 } }}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }} />
+            <Bar dataKey="performanceScore" radius={[8, 8, 0, 0]}>
+              {departments.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getPerformanceColor(entry.performanceScore)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* Summary */}
+      {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100">
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
           <p className="text-xs text-slate-500 mb-1">Trung bình</p>
           <p className="text-lg font-bold text-brandBlue">
-            {(departments.reduce((sum, d) => sum + d.performance, 0) / departments.length).toFixed(0)}%
+            {departments.length > 0 
+              ? (departments.reduce((sum, d) => sum + d.performanceScore, 0) / departments.length).toFixed(0)
+              : 0}%
           </p>
-        </div>
-        <div className="text-center">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-center"
+        >
           <p className="text-xs text-slate-500 mb-1">Cao nhất</p>
           <p className="text-lg font-bold text-green-600">
-            {Math.max(...departments.map(d => d.performance))}%
+            {departments.length > 0 ? Math.max(...departments.map(d => d.performanceScore)) : 0}%
           </p>
-        </div>
-        <div className="text-center">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-center"
+        >
           <p className="text-xs text-slate-500 mb-1">Thấp nhất</p>
-          <p className="text-lg font-bold text-red-600">
-            {Math.min(...departments.map(d => d.performance))}%
+          <p className="text-lg font-bold text-amber-600">
+            {departments.length > 0 ? Math.min(...departments.map(d => d.performanceScore)) : 0}%
           </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

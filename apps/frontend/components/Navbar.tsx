@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
 
   const navLinks = [
     { name: 'Tính năng', href: '#features' },
-    { name: 'Quy trình', href: '#process' },
+    { name: 'Nhân viên', href: '#employees' },
     { name: 'Đánh giá', href: '#testimonials' },
     { name: 'Liên hệ', href: '#footer' },
   ];

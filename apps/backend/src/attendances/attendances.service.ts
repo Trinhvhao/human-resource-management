@@ -136,6 +136,37 @@ export class AttendancesService {
     };
   }
 
+  async getTodayAllAttendances() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: {
+        date: today,
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employeeCode: true,
+            fullName: true,
+            department: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { checkIn: 'asc' },
+    });
+
+    return {
+      success: true,
+      data: attendances,
+    };
+  }
+
   async getEmployeeAttendances(employeeId: string, month?: number, year?: number) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -264,6 +295,140 @@ export class AttendancesService {
         avgWorkHours: Math.round((Number(avgWorkHours._avg.workHours) || 0) * 100) / 100,
       },
       meta: { month: targetMonth, year: targetYear },
+    };
+  }
+
+  async getAbsenteeismStats() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Calculate date ranges
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - 6); // Last 7 days
+    
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const startOfLastWeek = new Date(startOfWeek);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+    const endOfLastWeek = new Date(startOfWeek);
+    endOfLastWeek.setDate(endOfLastWeek.getDate() - 1);
+
+    // Get total active employees
+    const totalEmployees = await this.prisma.employee.count({
+      where: { status: 'ACTIVE' },
+    });
+
+    // Today's stats
+    const [todayAbsent, todayLate, todayTotal] = await Promise.all([
+      this.prisma.attendance.count({
+        where: {
+          date: today,
+          status: 'ABSENT',
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: today,
+          isLate: true,
+        },
+      }),
+      this.prisma.attendance.count({
+        where: { date: today },
+      }),
+    ]);
+
+    // Week's stats (last 7 days)
+    const [weekAbsent, weekLate, weekTotal] = await Promise.all([
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfWeek, lte: today },
+          status: 'ABSENT',
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfWeek, lte: today },
+          isLate: true,
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfWeek, lte: today },
+        },
+      }),
+    ]);
+
+    // Month's stats
+    const [monthAbsent, monthLate, monthTotal] = await Promise.all([
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfMonth, lte: endOfMonth },
+          status: 'ABSENT',
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfMonth, lte: endOfMonth },
+          isLate: true,
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfMonth, lte: endOfMonth },
+        },
+      }),
+    ]);
+
+    // Last week's stats for trend calculation
+    const [lastWeekAbsent, lastWeekTotal] = await Promise.all([
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfLastWeek, lte: endOfLastWeek },
+          status: 'ABSENT',
+        },
+      }),
+      this.prisma.attendance.count({
+        where: {
+          date: { gte: startOfLastWeek, lte: endOfLastWeek },
+        },
+      }),
+    ]);
+
+    // Calculate rates
+    const todayAbsentRate = todayTotal > 0 ? (todayAbsent / todayTotal) * 100 : 0;
+    const todayLateRate = todayTotal > 0 ? (todayLate / todayTotal) * 100 : 0;
+    
+    const weekAbsentRate = weekTotal > 0 ? (weekAbsent / weekTotal) * 100 : 0;
+    const lastWeekAbsentRate = lastWeekTotal > 0 ? (lastWeekAbsent / lastWeekTotal) * 100 : 0;
+    
+    // Calculate trend (negative = improvement)
+    const trend = lastWeekAbsentRate > 0 
+      ? ((weekAbsentRate - lastWeekAbsentRate) / lastWeekAbsentRate) * 100
+      : 0;
+
+    return {
+      success: true,
+      data: {
+        today: {
+          absent: todayAbsent,
+          late: todayLate,
+          absentRate: Math.round(todayAbsentRate * 10) / 10,
+          lateRate: Math.round(todayLateRate * 10) / 10,
+        },
+        week: {
+          absent: weekAbsent,
+          late: weekLate,
+          absentRate: Math.round(weekAbsentRate * 10) / 10,
+        },
+        month: {
+          absent: monthAbsent,
+          late: monthLate,
+          absentRate: Math.round((monthAbsent / monthTotal) * 100 * 10) / 10,
+        },
+        trend: Math.round(trend * 10) / 10, // % change vs last week
+        totalEmployees,
+      },
     };
   }
 }

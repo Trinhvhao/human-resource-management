@@ -136,7 +136,7 @@ export default function TopHeader() {
             </div>
             {user?.employee?.avatarUrl ? (
               <img
-                src={user.employee.avatarUrl}
+                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${user.employee.avatarUrl}`}
                 alt={displayName}
                 className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
               />

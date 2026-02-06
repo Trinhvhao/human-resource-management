@@ -54,6 +54,13 @@ export class AttendancesController {
     return this.attendancesService.getTodayAttendance(user.employeeId);
   }
 
+  @Get('today/all')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ summary: 'Get all today attendances', description: 'Get all employees attendance for today (Admin only)' })
+  getTodayAll() {
+    return this.attendancesService.getTodayAllAttendances();
+  }
+
   @Get('employee/:employeeId')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
   @ApiOperation({ summary: 'Get employee attendances', description: 'Get attendance records for an employee' })
@@ -84,5 +91,16 @@ export class AttendancesController {
   @ApiQuery({ name: 'year', required: false, type: Number })
   getStatistics(@Query('month') month?: number, @Query('year') year?: number) {
     return this.attendancesService.getStatistics(month, year);
+  }
+
+  @Get('absenteeism-stats')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ 
+    summary: 'Get absenteeism statistics', 
+    description: 'Get absenteeism and late statistics for today, week, and month with trend data' 
+  })
+  @ApiResponse({ status: 200, description: 'Absenteeism statistics retrieved' })
+  getAbsenteeismStats() {
+    return this.attendancesService.getAbsenteeismStats();
   }
 }

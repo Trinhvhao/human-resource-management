@@ -63,6 +63,11 @@ class AttendanceService {
     });
   }
 
+  // Get all employees' today attendance (for admin)
+  async getTodayAllAttendances(): Promise<ApiResponse<Attendance[]>> {
+    return axiosInstance.get('/attendances/today/all');
+  }
+
   // Attendance Corrections
   async getCorrections(params?: { status?: string; employeeId?: string }): Promise<ApiResponse<AttendanceCorrection[]>> {
     return axiosInstance.get('/attendance-corrections', { params });

@@ -32,9 +32,10 @@ export default function AttendanceCorrectionsPage() {
     try {
       setLoading(true);
       const response = await attendanceService.getMyCorrections();
-      setCorrections(response.data);
+      setCorrections(response.data || []);
     } catch (error) {
       console.error('Failed to fetch corrections:', error);
+      setCorrections([]);
     } finally {
       setLoading(false);
     }
@@ -159,7 +160,7 @@ export default function AttendanceCorrectionsPage() {
                       <td className="px-6 py-4"><div className="h-8 bg-slate-100 rounded"></div></td>
                     </tr>
                   ))
-                ) : corrections.length === 0 ? (
+                ) : !corrections || corrections.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                       Chưa có yêu cầu điều chỉnh nào

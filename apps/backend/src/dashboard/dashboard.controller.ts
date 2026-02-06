@@ -84,4 +84,27 @@ export class DashboardController {
   getRecentActivities(@Query('limit') limit?: number) {
     return this.dashboardService.getRecentActivities(limit ? +limit : 10);
   }
+
+  @Get('turnover-stats')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Get turnover statistics',
+    description: 'Get employee turnover statistics including monthly data, trend, and department breakdown'
+  })
+  @ApiQuery({ name: 'months', required: false, type: Number, example: 6, description: 'Number of months for trend data' })
+  @ApiResponse({ status: 200, description: 'Turnover statistics retrieved' })
+  getTurnoverStats(@Query('months') months?: number) {
+    return this.dashboardService.getTurnoverStats(months ? +months : 6);
+  }
+
+  @Get('today-snapshot')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
+  @ApiOperation({
+    summary: 'Get today snapshot',
+    description: 'Get quick snapshot of today\'s key metrics: working now, late today, pending approvals, expiring contracts'
+  })
+  @ApiResponse({ status: 200, description: 'Today snapshot retrieved' })
+  getTodaySnapshot() {
+    return this.dashboardService.getTodaySnapshot();
+  }
 }

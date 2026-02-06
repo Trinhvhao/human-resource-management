@@ -24,6 +24,7 @@ import { ExportModule } from './export/export.module';
 import { UploadModule } from './upload/upload.module';
 import { SalaryComponentsModule } from './salary-components/salary-components.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ChatbotModule } from './chatbot/chatbot.module';
     UploadModule,
     SalaryComponentsModule,
     ChatbotModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

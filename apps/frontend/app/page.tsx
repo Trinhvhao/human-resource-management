@@ -1,18 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/landing/Hero';
 import Features from '@/components/landing/Features';
 import Stats from '@/components/landing/Stats';
+import AppShowcase from '@/components/landing/AppShowcase';
 import Process from '@/components/landing/Process';
 import Security from '@/components/landing/Security';
+import EmployeeShowcase from '@/components/landing/EmployeeShowcase';
+import TopPerformers from '@/components/landing/TopPerformers';
+import Gallery from '@/components/landing/Gallery';
 import Testimonials from '@/components/landing/Testimonials';
 import FAQ from '@/components/landing/FAQ';
 import CallToAction from '@/components/landing/CallToAction';
 import Footer from '@/components/Footer';
+import FloatingWidgets from '@/components/landing/FloatingWidgets';
 
 export default function LandingPage() {
+  // Smooth scroll behavior for anchor links
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col font-sans overflow-x-hidden relative">
       <Navbar />
@@ -20,13 +33,18 @@ export default function LandingPage() {
         <Hero />
         <Stats />
         <Features />
+        <AppShowcase />
         <Process />
         <Security />
+        <EmployeeShowcase />
+        <TopPerformers />
+        <Gallery />
         <Testimonials />
         <FAQ />
         <CallToAction />
       </main>
       <Footer />
+      <FloatingWidgets />
     </div>
   );
 }

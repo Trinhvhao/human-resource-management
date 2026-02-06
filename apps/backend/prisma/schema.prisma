@@ -7,9 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // =====================================================
@@ -26,12 +25,19 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  employee      Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  rewards       Reward[]       @relation("CreatedByUser")
-  disciplines   Discipline[]   @relation("CreatedByUser")
-  chatMessages  ChatMessage[]
-  auditLogs     AuditLog[]
-  approvedLeaves LeaveRequest[] @relation("ApprovedByUser")
+  employee                Employee?                 @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  rewards                 Reward[]                  @relation("CreatedByUser")
+  disciplines             Discipline[]              @relation("CreatedByUser")
+  chatMessages            ChatMessage[]
+  auditLogs               AuditLog[]
+  approvedLeaves          LeaveRequest[]            @relation("ApprovedByUser")
+  requestedChanges        DepartmentChangeRequest[] @relation("RequestedBy")
+  reviewedChanges         DepartmentChangeRequest[] @relation("ReviewedBy")
+  departmentHistoryChanges DepartmentHistory[]      @relation("ChangedBy")
+  uploadedDocuments       EmployeeDocument[]
+  
+  // NEW: Performed activities
+  performedActivities     EmployeeActivity[]        @relation("PerformedActivities")
 
   @@map("users")
 }
@@ -47,12 +53,107 @@ model Department {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  parent     Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children   Department[] @relation("DepartmentHierarchy")
-  manager    Employee?    @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
-  employees  Employee[]   @relation("EmployeeDepartment")
+  parent              Department?                @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children            Department[]               @relation("DepartmentHierarchy")
+  manager             Employee?                  @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+  employees           Employee[]                 @relation("EmployeeDepartment")
+  teams               Team[]
+  changeRequests      DepartmentChangeRequest[]
+  history             DepartmentHistory[]
+  managerTransitions  ManagerTransition[]
+  oldParentRequests   DepartmentChangeRequest[]  @relation("OldParent")
+  newParentRequests   DepartmentChangeRequest[]  @relation("NewParent")
 
   @@map("departments")
+}
+
+model DepartmentChangeRequest {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId    String    @map("department_id") @db.Uuid
+  requestType     String    @map("request_type") @db.VarChar(50)
+  requestedBy     String    @map("requested_by") @db.Uuid
+  
+  oldManagerId    String?   @map("old_manager_id") @db.Uuid
+  oldParentId     String?   @map("old_parent_id") @db.Uuid
+  oldData         Json?     @map("old_data")
+  
+  newManagerId    String?   @map("new_manager_id") @db.Uuid
+  newParentId     String?   @map("new_parent_id") @db.Uuid
+  newData         Json?     @map("new_data")
+  
+  reason          String    @db.Text
+  status          String    @default("PENDING") @db.VarChar(50)
+  
+  reviewedBy      String?   @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime? @map("reviewed_at") @db.Timestamp(6)
+  reviewNote      String?   @map("review_note") @db.Text
+  
+  effectiveDate   DateTime  @map("effective_date") @db.Timestamp(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  department      Department           @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  requester       User                 @relation("RequestedBy", fields: [requestedBy], references: [id], onDelete: Restrict)
+  reviewer        User?                @relation("ReviewedBy", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  oldManager      Employee?            @relation("OldManager", fields: [oldManagerId], references: [id], onDelete: SetNull)
+  newManager      Employee?            @relation("NewManager", fields: [newManagerId], references: [id], onDelete: SetNull)
+  oldParent       Department?          @relation("OldParent", fields: [oldParentId], references: [id], onDelete: SetNull)
+  newParent       Department?          @relation("NewParent", fields: [newParentId], references: [id], onDelete: SetNull)
+  transitions     ManagerTransition[]
+
+  @@map("department_change_requests")
+}
+
+model DepartmentHistory {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId  String   @map("department_id") @db.Uuid
+  changeType    String   @map("change_type") @db.VarChar(50)
+  changedBy     String   @map("changed_by") @db.Uuid
+  
+  oldValue      Json?    @map("old_value")
+  newValue      Json?    @map("new_value")
+  changeReason  String?  @map("change_reason") @db.Text
+  
+  ipAddress     String?  @map("ip_address") @db.VarChar(45)
+  userAgent     String?  @map("user_agent") @db.Text
+  
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user          User       @relation("ChangedBy", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@map("department_history")
+}
+
+model ManagerTransition {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId        String    @map("department_id") @db.Uuid
+  changeRequestId     String?   @map("change_request_id") @db.Uuid
+  
+  oldManagerId        String?   @map("old_manager_id") @db.Uuid
+  newManagerId        String    @map("new_manager_id") @db.Uuid
+  
+  status              String    @default("INITIATED") @db.VarChar(50)
+  
+  handoverTasks       Json      @default("[]") @map("handover_tasks")
+  completedTasks      Json      @default("[]") @map("completed_tasks")
+  progressPercentage  Int       @default(0) @map("progress_percentage")
+  
+  startDate           DateTime  @default(now()) @map("start_date") @db.Timestamp(6)
+  targetEndDate       DateTime  @map("target_end_date") @db.Timestamp(6)
+  actualEndDate       DateTime? @map("actual_end_date") @db.Timestamp(6)
+  
+  notes               String?   @db.Text
+  
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  department          Department               @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  changeRequest       DepartmentChangeRequest? @relation(fields: [changeRequestId], references: [id], onDelete: SetNull)
+  oldManager          Employee?                @relation("TransitionOldManager", fields: [oldManagerId], references: [id], onDelete: SetNull)
+  newManager          Employee                 @relation("TransitionNewManager", fields: [newManagerId], references: [id], onDelete: Restrict)
+
+  @@map("manager_transitions")
 }
 
 model Employee {
@@ -75,6 +176,10 @@ model Employee {
   
   baseSalary   Decimal  @map("base_salary") @db.Decimal(12, 2)
   
+  // Profile completion tracking
+  hasCompleteProfile   Boolean   @default(false) @map("has_complete_profile")
+  profileLastUpdated   DateTime? @map("profile_last_updated") @db.Timestamp(6)
+  
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
@@ -94,8 +199,61 @@ model Employee {
   disciplines           Discipline[]
   history               EmployeeHistory[]
   chatHistory           ChatHistory[]
+  teamMemberships       TeamMember[]           @relation("EmployeeTeamMemberships")
+  ledTeams              Team[]                 @relation("TeamLead")
+  
+  // Department change request relations
+  oldManagerRequests    DepartmentChangeRequest[] @relation("OldManager")
+  newManagerRequests    DepartmentChangeRequest[] @relation("NewManager")
+  oldManagerTransitions ManagerTransition[]       @relation("TransitionOldManager")
+  newManagerTransitions ManagerTransition[]       @relation("TransitionNewManager")
+  
+  // NEW: Employee profile and documents
+  profile               EmployeeProfile?
+  documents             EmployeeDocument[]
+  
+  // NEW: Employee activities
+  activities            EmployeeActivity[]     @relation("EmployeeActivities")
 
   @@map("employees")
+}
+
+model Team {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @db.VarChar(255)
+  code          String   @unique @db.VarChar(50)
+  description   String?  @db.Text
+  departmentId  String   @map("department_id") @db.Uuid
+  teamLeadId    String?  @map("team_lead_id") @db.Uuid
+  type          String   @default("PERMANENT") @db.VarChar(50) // PERMANENT, PROJECT, CROSS_FUNCTIONAL
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  department    Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  teamLead      Employee?     @relation("TeamLead", fields: [teamLeadId], references: [id], onDelete: SetNull)
+  members       TeamMember[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId                String    @map("team_id") @db.Uuid
+  employeeId            String    @map("employee_id") @db.Uuid
+  role                  String    @default("MEMBER") @db.VarChar(50) // LEAD, MEMBER, CONTRIBUTOR
+  allocationPercentage  Int       @default(100) @map("allocation_percentage") // 0-100
+  startDate             DateTime  @default(now()) @map("start_date") @db.Date
+  endDate               DateTime? @map("end_date") @db.Date
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  employee  Employee @relation("EmployeeTeamMemberships", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, employeeId, startDate])
+  @@map("team_members")
 }
 
 model Contract {
@@ -136,6 +294,8 @@ model Attendance {
   corrections AttendanceCorrection[]
 
   @@unique([employeeId, date], name: "unique_employee_date")
+  @@index([employeeId, date])
+  @@index([date, status])
   @@map("attendances")
 }
 
@@ -403,4 +563,118 @@ model ChatHistory {
   @@map("chat_history")
   @@index([employeeId])
   @@index([createdAt])
+}
+
+// =====================================================
+// EMPLOYEE PROFILE & DOCUMENTS (NEW)
+// =====================================================
+
+model EmployeeProfile {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId            String    @unique @map("employee_id") @db.Uuid
+  
+  // Personal Information
+  placeOfBirth          String?   @map("place_of_birth") @db.VarChar(255)
+  nationality           String    @default("Việt Nam") @db.VarChar(100)
+  ethnicity             String?   @db.VarChar(100)
+  religion              String?   @db.VarChar(100)
+  maritalStatus         String?   @map("marital_status") @db.VarChar(50)
+  numberOfChildren      Int       @default(0) @map("number_of_children")
+  
+  // Address Details
+  permanentAddress      String?   @map("permanent_address") @db.Text
+  temporaryAddress      String?   @map("temporary_address") @db.Text
+  
+  // Government IDs
+  socialInsuranceNumber String?   @unique @map("social_insurance_number") @db.VarChar(50)
+  taxCode               String?   @unique @map("tax_code") @db.VarChar(50)
+  passportNumber        String?   @map("passport_number") @db.VarChar(50)
+  passportExpiry        DateTime? @map("passport_expiry") @db.Date
+  
+  // Emergency Contact
+  emergencyContactName         String? @map("emergency_contact_name") @db.VarChar(255)
+  emergencyContactRelationship String? @map("emergency_contact_relationship") @db.VarChar(100)
+  emergencyContactPhone        String? @map("emergency_contact_phone") @db.VarChar(20)
+  emergencyContactAddress      String? @map("emergency_contact_address") @db.Text
+  
+  // Education
+  highestEducation      String? @map("highest_education") @db.VarChar(100)
+  major                 String? @db.VarChar(255)
+  university            String? @db.VarChar(255)
+  graduationYear        Int?    @map("graduation_year")
+  professionalCertificates String? @map("professional_certificates") @db.Text
+  
+  // Bank Information
+  bankName              String? @map("bank_name") @db.VarChar(255)
+  bankAccountNumber     String? @map("bank_account_number") @db.VarChar(50)
+  bankBranch            String? @map("bank_branch") @db.VarChar(255)
+  
+  // Work Experience (before joining company)
+  workExperience        Json?   @map("work_experience")
+  
+  // Metadata
+  profileCompletionPercentage Int @default(0) @map("profile_completion_percentage")
+  lastProfileUpdate     DateTime? @map("last_profile_update") @db.Timestamp(6)
+  
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  
+  employee              Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@map("employee_profiles")
+}
+
+model EmployeeDocument {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId    String   @map("employee_id") @db.Uuid
+  documentType  String   @map("document_type") @db.VarChar(50)
+  fileName      String   @map("file_name") @db.VarChar(255)
+  fileUrl       String   @map("file_url") @db.Text
+  fileSize      BigInt?  @map("file_size")
+  mimeType      String?  @map("mime_type") @db.VarChar(100)
+  description   String?  @db.Text
+  uploadedAt    DateTime @default(now()) @map("uploaded_at") @db.Timestamp(6)
+  uploadedBy    String?  @map("uploaded_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  uploader      User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  
+  @@index([employeeId])
+  @@index([documentType])
+  @@map("employee_documents")
+}
+
+// =====================================================
+// EMPLOYEE ACTIVITY LOG - Track all employee activities
+// =====================================================
+
+model EmployeeActivity {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId  String   @map("employee_id") @db.Uuid
+  
+  // Activity details
+  activityType String  @map("activity_type") @db.VarChar(100) // 'profile_update', 'attendance', 'leave_request', etc.
+  action       String  @db.VarChar(50) // 'created', 'updated', 'approved', 'rejected', 'deleted'
+  description  String  @db.Text // Human-readable description
+  
+  // Metadata
+  oldValue     Json?   @map("old_value") // Old value (for updates)
+  newValue     Json?   @map("new_value") // New value (for updates)
+  metadata     Json?   // Additional data (e.g., related IDs, extra info)
+  
+  // Who performed the action
+  performedBy  String? @map("performed_by") @db.Uuid
+  
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  
+  // Relations
+  employee     Employee @relation("EmployeeActivities", fields: [employeeId], references: [id], onDelete: Cascade)
+  performer    User?    @relation("PerformedActivities", fields: [performedBy], references: [id], onDelete: SetNull)
+  
+  @@map("employee_activities")
+  @@index([employeeId, createdAt(sort: Desc)])
+  @@index([activityType])
+  @@index([createdAt(sort: Desc)])
 }

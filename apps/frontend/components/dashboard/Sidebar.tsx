@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -13,40 +13,185 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Building2
+  Building2,
+  ClipboardCheck,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '@/store/authStore';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Nhân viên', href: '/dashboard/employees' },
-  { icon: Building2, label: 'Phòng ban', href: '/dashboard/departments' },
-  { icon: Clock, label: 'Chấm công', href: '/dashboard/attendance' },
-  { icon: Calendar, label: 'Nghỉ phép', href: '/dashboard/leaves' },
-  { icon: FileText, label: 'Làm thêm giờ', href: '/dashboard/overtime' },
-  { icon: DollarSign, label: 'Lương', href: '/dashboard/payroll' },
-  { icon: Settings, label: 'Cài đặt', href: '/dashboard/settings' },
+interface MenuItem {
+  icon: any;
+  label: string;
+  href?: string;
+  roles: string[];
+  children?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  label: string;
+  href: string;
+}
+
+const adminMenuItems: MenuItem[] = [
+  { 
+    icon: LayoutDashboard, 
+    label: 'Dashboard', 
+    href: '/dashboard', 
+    roles: ['ADMIN', 'MANAGER'] 
+  },
+  { 
+    icon: Users, 
+    label: 'Nhân viên', 
+    href: '/dashboard/employees',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Danh sách', href: '/dashboard/employees' },
+      { label: 'Thêm mới', href: '/dashboard/employees/new' },
+    ]
+  },
+  { 
+    icon: Building2, 
+    label: 'Phòng ban', 
+    href: '/dashboard/departments',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Danh sách', href: '/dashboard/departments' },
+      { label: 'Cây tổ chức', href: '/dashboard/departments/tree' },
+      { label: 'Yêu cầu thay đổi', href: '/dashboard/departments/change-requests' },
+    ]
+  },
+  { 
+    icon: Clock, 
+    label: 'Chấm công', 
+    href: '/dashboard/attendance',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Tổng quan', href: '/dashboard/attendance' },
+      { label: 'Lịch sử', href: '/dashboard/attendance/history' },
+      { label: 'Yêu cầu sửa', href: '/dashboard/attendance/corrections' },
+      { label: 'Báo cáo', href: '/dashboard/attendance/reports' },
+    ]
+  },
+  { 
+    icon: Calendar, 
+    label: 'Nghỉ phép', 
+    href: '/dashboard/leaves',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Yêu cầu', href: '/dashboard/leaves' },
+      { label: 'Số dư phép', href: '/dashboard/leaves/balances' },
+    ]
+  },
+  { 
+    icon: FileText, 
+    label: 'Làm thêm giờ', 
+    href: '/dashboard/overtime',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Danh sách', href: '/dashboard/overtime' },
+      { label: 'Đăng ký mới', href: '/dashboard/overtime/new' },
+    ]
+  },
+  { 
+    icon: DollarSign, 
+    label: 'Lương', 
+    href: '/dashboard/payroll',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Bảng lương', href: '/dashboard/payroll' },
+      { label: 'Quản lý', href: '/dashboard/payroll/manage' },
+    ]
+  },
+  { 
+    icon: Settings, 
+    label: 'Cài đặt', 
+    href: '/dashboard/settings', 
+    roles: ['ADMIN', 'MANAGER'] 
+  },
+];
+
+const employeeMenuItems: MenuItem[] = [
+  { icon: LayoutDashboard, label: 'Trang chủ', href: '/dashboard', roles: ['EMPLOYEE'] },
+  { icon: ClipboardCheck, label: 'Chấm công', href: '/dashboard/my-attendance', roles: ['EMPLOYEE'] },
+  { icon: Calendar, label: 'Nghỉ phép', href: '/dashboard/my-leaves', roles: ['EMPLOYEE'] },
+  { icon: FileText, label: 'Làm thêm giờ', href: '/dashboard/my-overtime', roles: ['EMPLOYEE'] },
+  { icon: DollarSign, label: 'Lương của tôi', href: '/dashboard/my-payroll', roles: ['EMPLOYEE'] },
+  { icon: Settings, label: 'Cài đặt', href: '/dashboard/settings', roles: ['EMPLOYEE'] },
 ];
 
 export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  // Select menu items based on user role
+  const menuItems = user?.role === 'EMPLOYEE' ? employeeMenuItems : adminMenuItems;
+
+  // Check if a menu item or its children are active
+  const isItemActive = (item: MenuItem): boolean => {
+    if (item.href === pathname) return true;
+    if (item.children) {
+      return item.children.some(child => pathname.startsWith(child.href));
+    }
+    return false;
+  };
+
+  // Check if a submenu item is active
+  const isSubItemActive = (href: string): boolean => {
+    // Exact match first
+    if (pathname === href) return true;
+    
+    // For dynamic routes like /departments/[id], check if it starts with the href
+    // but make sure it's not matching a different submenu item
+    if (href === '/dashboard/departments' && pathname.startsWith('/dashboard/departments/')) {
+      // Don't match if it's a specific submenu route
+      if (pathname.startsWith('/dashboard/departments/tree')) return false;
+      if (pathname.startsWith('/dashboard/departments/change-requests')) return false;
+      if (pathname.startsWith('/dashboard/departments/new')) return false;
+      // Match for /dashboard/departments/[id] (detail/edit pages)
+      return true;
+    }
+    
+    // For other routes, use startsWith but ensure it's followed by / or end of string
+    return pathname.startsWith(href + '/');
+  };
+
+  // Toggle dropdown
+  const toggleExpand = (label: string) => {
+    setExpandedItems(prev => 
+      prev.includes(label) 
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  // Auto-expand active parent on mount
+  useState(() => {
+    menuItems.forEach(item => {
+      if (item.children && isItemActive(item)) {
+        setExpandedItems(prev => [...prev, item.label]);
+      }
+    });
+  });
 
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isOpen ? 256 : 80 }}
-      className="fixed left-0 top-0 h-screen bg-white border-r border-slate-200 z-40 flex flex-col"
+      animate={{ width: isOpen ? 280 : 80 }}
+      className="fixed left-0 top-0 h-screen bg-white border-r border-slate-200 z-40 flex flex-col shadow-lg"
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-primary">
@@ -54,7 +199,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </span>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center mx-auto">
+          <div className="w-8 h-8 bg-gradient-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center mx-auto shadow-lg">
             <Clock className="w-5 h-5 text-white" />
           </div>
         )}
@@ -63,7 +208,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-20 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center hover:bg-slate-50 transition-colors"
+        className="absolute -right-3 top-20 w-6 h-6 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center hover:bg-slate-50 transition-all shadow-md hover:shadow-lg"
       >
         {isOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
       </button>
@@ -73,26 +218,93 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <ul className="space-y-1 px-3">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = isItemActive(item);
+            const isExpanded = expandedItems.includes(item.label);
+            const hasChildren = item.children && item.children.length > 0;
 
             return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`
-                    flex items-center gap-3 px-3 py-3 rounded-lg transition-all
-                    ${isActive 
-                      ? 'bg-brandBlue text-white shadow-lg shadow-brandBlue/20' 
-                      : 'text-slate-600 hover:bg-slate-50'
-                    }
-                    ${!isOpen && 'justify-center'}
-                  `}
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isOpen && (
-                    <span className="font-medium text-sm">{item.label}</span>
-                  )}
-                </Link>
+              <li key={item.label}>
+                {/* Parent Item */}
+                {hasChildren ? (
+                  <button
+                    onClick={() => {
+                      if (isOpen) {
+                        toggleExpand(item.label);
+                      } else {
+                        onToggle();
+                        setTimeout(() => toggleExpand(item.label), 100);
+                      }
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all
+                      ${isActive 
+                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg' 
+                        : 'text-slate-600 hover:bg-slate-50'
+                      }
+                      ${!isOpen && 'justify-center'}
+                    `}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    {isOpen && (
+                      <>
+                        <span className="font-semibold text-sm flex-1 text-left">{item.label}</span>
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href!}
+                    className={`
+                      flex items-center gap-3 px-3 py-3 rounded-lg transition-all
+                      ${isActive 
+                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg' 
+                        : 'text-slate-600 hover:bg-slate-50'
+                      }
+                      ${!isOpen && 'justify-center'}
+                    `}
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    {isOpen && (
+                      <span className="font-semibold text-sm">{item.label}</span>
+                    )}
+                  </Link>
+                )}
+
+                {/* Submenu Items */}
+                {hasChildren && isOpen && (
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.ul
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="mt-1 ml-9 space-y-1 overflow-hidden"
+                      >
+                        {item.children!.map((child) => {
+                          const isChildActive = isSubItemActive(child.href);
+                          return (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                className={`
+                                  block px-3 py-2 rounded-lg text-sm transition-all
+                                  ${isChildActive
+                                    ? 'bg-blue-50 text-brandBlue font-bold border-l-2 border-brandBlue'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-brandBlue'
+                                  }
+                                `}
+                              >
+                                {child.label}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                )}
               </li>
             );
           })}
@@ -100,15 +312,18 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       </nav>
 
       {/* User Info */}
-      {isOpen && (
-        <div className="p-4 border-t border-slate-200">
+      {isOpen && user && (
+        <div className="p-4 border-t border-slate-200 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brandBlue text-white flex items-center justify-center font-bold">
-              AD
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white flex items-center justify-center font-bold shadow-lg">
+              {user.email?.substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-primary truncate">Admin User</p>
-              <p className="text-xs text-slate-500 truncate">admin@company.vn</p>
+              <p className="text-sm font-bold text-primary truncate">{user.email}</p>
+              <p className="text-xs text-slate-500 truncate font-medium">
+                {user.role === 'ADMIN' ? 'Quản trị viên' : 
+                 user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
+              </p>
             </div>
           </div>
         </div>

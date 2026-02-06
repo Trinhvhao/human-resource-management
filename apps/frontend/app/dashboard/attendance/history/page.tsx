@@ -166,14 +166,14 @@ export default function AttendanceHistoryPage() {
                       <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded"></div></td>
                     </tr>
                   ))
-                ) : attendances.length === 0 ? (
+                ) : (attendances?.length ?? 0) === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                       Không có dữ liệu chấm công
                     </td>
                   </tr>
                 ) : (
-                  attendances.map((attendance, index) => (
+                  attendances?.map((attendance, index) => (
                     <motion.tr
                       key={attendance.id}
                       initial={{ opacity: 0 }}

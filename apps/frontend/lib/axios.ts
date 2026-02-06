@@ -29,7 +29,13 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Return data directly if it's an ApiResponse
+    // Don't process blob responses (for file downloads)
+    if (response.config.responseType === 'blob') {
+      return response;
+    }
+    
+    // Backend returns: { success: true, data: {...}, message: '...' }
+    // Return the whole response.data to preserve the structure
     return response.data;
   },
   async (error: AxiosError<ApiError>) => {
@@ -42,19 +48,34 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
-      return Promise.reject(error.response?.data || { message: 'Unauthorized' });
     }
 
-    // Handle other errors
-    const apiError: ApiError = error.response?.data || {
+    // Handle other errors - return a proper error object
+    const apiError: ApiError = {
       success: false,
       statusCode: error.response?.status || 500,
-      message: error.message || 'An error occurred',
-      timestamp: new Date().toISOString(),
+      message: error.response?.data?.message || error.message || 'An error occurred',
+      timestamp: error.response?.data?.timestamp || new Date().toISOString(),
       path: originalRequest?.url || '',
+      errors: error.response?.data?.errors || null,
     };
+
+    // Only log errors in development mode and exclude 401 (already handled above)
+    // Disabled to reduce console noise
+    // if (process.env.NODE_ENV === 'development' && apiError.statusCode !== 401) {
+    //   console.error('API Error:', {
+    //     url: originalRequest?.url,
+    //     method: originalRequest?.method,
+    //     status: apiError.statusCode,
+    //     message: apiError.message,
+    //   });
+    // }
 
     return Promise.reject(apiError);
   }

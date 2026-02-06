@@ -1,0 +1,27 @@
+'use client';
+
+import { ReactNode } from 'react';
+
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+}
+
+export default function PageHeader({ title, subtitle, action }: PageHeaderProps) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-brandBlue to-blue-600 bg-clip-text text-transparent">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-sm text-slate-500 mt-1 font-medium">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {action && <div>{action}</div>}
+    </div>
+  );
+}

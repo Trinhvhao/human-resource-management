@@ -34,6 +34,10 @@ class DepartmentService {
   async getStatistics(): Promise<ApiResponse<DepartmentStatistics>> {
     return axiosInstance.get('/departments/statistics');
   }
+
+  async getPerformance(id: string): Promise<ApiResponse<any>> {
+    return axiosInstance.get(`/departments/${id}/performance`);
+  }
 }
 
 export default new DepartmentService();
