@@ -32,15 +32,14 @@ lerna-debug.log*
 .turbo
 
 # IDEs
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 .idea
 *.swp
 *.swo
 *~
+
+# Kiro
+.kiro/
 
 # OS
 Thumbs.db
