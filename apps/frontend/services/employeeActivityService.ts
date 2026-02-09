@@ -13,15 +13,23 @@ export const employeeActivityService = {
       limit?: number;
     }
   ): Promise<EmployeeActivityResponse> {
-    const response = await axios.get(`/employees/${employeeId}/activities`, { params });
-    return response.data;
+    console.log('📡 API Call: GET /employees/' + employeeId + '/activities');
+    console.log('   Params:', params);
+
+    // axios interceptor already returns response.data
+    // so we don't need to access .data again
+    const data = await axios.get(`/employees/${employeeId}/activities`, { params });
+
+    console.log('📥 API Response:', data);
+    return data as unknown as EmployeeActivityResponse;
   },
 
   /**
    * Get activity statistics
    */
   async getStats(employeeId: string): Promise<ActivityStatsResponse> {
-    const response = await axios.get(`/employees/${employeeId}/activities/stats`);
-    return response.data;
+    // axios interceptor already returns response.data
+    const data = await axios.get(`/employees/${employeeId}/activities/stats`);
+    return data as unknown as ActivityStatsResponse;
   },
 };

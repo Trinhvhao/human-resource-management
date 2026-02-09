@@ -18,7 +18,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @Controller('employees')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class EmployeesController {
-  constructor(private readonly employeesService: EmployeesService) {}
+  constructor(private readonly employeesService: EmployeesService) { }
 
   @Get()
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
@@ -36,11 +36,34 @@ export class EmployeesController {
     return this.employeesService.getStatistics();
   }
 
+  @Get('without-active-contract')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Get employees without active contract',
+    description: 'Get list of active employees who do not have an active contract. Used for creating new contracts.'
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 100, description: 'Max results to return' })
+  @ApiResponse({ status: 200, description: 'Employees retrieved successfully' })
+  getEmployeesWithoutActiveContract(@Query('limit') limit?: string) {
+    return this.employeesService.getEmployeesWithoutActiveContract(limit ? +limit : 100);
+  }
+
+  @Post('recalculate-profiles')
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary: 'Recalculate all profile completions',
+    description: 'Recalculate profile completion percentage for all employees. Use after updating calculation logic.'
+  })
+  @ApiResponse({ status: 200, description: 'Profile completions recalculated successfully' })
+  recalculateProfiles() {
+    return this.employeesService.recalculateAllProfileCompletions();
+  }
+
   @Get('top-performers')
   @Roles('ADMIN', 'HR_MANAGER')
-  @ApiOperation({ 
-    summary: 'Get top performing employees', 
-    description: 'Get top employees based on attendance, punctuality, and rewards' 
+  @ApiOperation({
+    summary: 'Get top performing employees',
+    description: 'Get top employees based on attendance, punctuality, and rewards'
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 5, description: 'Number of top performers to return' })
   @ApiQuery({ name: 'period', required: false, enum: ['week', 'month'], example: 'month', description: 'Performance period' })

@@ -1,16 +1,21 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
+import { DashboardAlertService } from './dashboard-alert.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) { }
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly alertService: DashboardAlertService,
+  ) { }
 
   @Get('overview')
   @Roles('ADMIN', 'HR_MANAGER')
@@ -106,5 +111,43 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Today snapshot retrieved' })
   getTodaySnapshot() {
     return this.dashboardService.getTodaySnapshot();
+  }
+
+  @Get('contract-alerts')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Get contract expiration alerts',
+    description: 'Get contracts expiring within 60 days with severity levels (HIGH/MEDIUM/LOW/INFO)'
+  })
+  @ApiQuery({ name: 'days', required: false, type: Number, example: 60, description: 'Number of days to look ahead' })
+  @ApiResponse({ status: 200, description: 'Contract alerts retrieved successfully' })
+  async getContractAlerts(
+    @Query('days') days?: number,
+    @CurrentUser() user?: any,
+  ) {
+    const daysNum = days ? Number(days) : 60;
+    return {
+      success: true,
+      data: await this.alertService.getDashboardAlerts(user?.id),
+      meta: { days: daysNum },
+    };
+  }
+
+  @Get('contract-alerts/expiring')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Get expiring contracts list',
+    description: 'Get detailed list of contracts expiring within specified days'
+  })
+  @ApiQuery({ name: 'days', required: false, type: Number, example: 60 })
+  @ApiResponse({ status: 200, description: 'Expiring contracts retrieved' })
+  async getExpiringContracts(@Query('days') days?: number) {
+    const daysNum = days ? Number(days) : 60;
+    const contracts = await this.alertService.getExpiringContracts(daysNum);
+    return {
+      success: true,
+      data: contracts,
+      meta: { total: contracts.length, days: daysNum },
+    };
   }
 }

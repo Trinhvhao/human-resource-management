@@ -2,9 +2,9 @@ import { IsString, IsDateString, IsOptional, IsNumber, Min, IsEnum, MaxLength } 
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateContractDto {
-  @ApiProperty({ example: 'PERMANENT', enum: ['PROBATION', 'FIXED_TERM', 'PERMANENT'], required: false })
+  @ApiProperty({ example: 'FIXED_TERM', enum: ['PROBATION', 'FIXED_TERM', 'INDEFINITE'], required: false })
   @IsOptional()
-  @IsEnum(['PROBATION', 'FIXED_TERM', 'PERMANENT'])
+  @IsEnum(['PROBATION', 'FIXED_TERM', 'INDEFINITE'])
   contractType?: string;
 
   @ApiProperty({ example: '2025-12-31', required: false })
@@ -18,10 +18,26 @@ export class UpdateContractDto {
   @Min(0)
   salary?: number;
 
+  @ApiProperty({ example: 'FULL_TIME', enum: ['FULL_TIME', 'PART_TIME'], required: false })
+  @IsOptional()
+  @IsEnum(['FULL_TIME', 'PART_TIME'])
+  workType?: string;
+
+  @ApiProperty({ example: 40, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  workHoursPerWeek?: number;
+
   @ApiProperty({ example: 'Điều khoản cập nhật...', required: false })
   @IsOptional()
   @IsString()
   terms?: string;
+
+  @ApiProperty({ example: 'Ghi chú cập nhật', required: false })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @ApiProperty({ example: 'ACTIVE', enum: ['ACTIVE', 'EXPIRED', 'TERMINATED'], required: false })
   @IsOptional()
@@ -40,9 +56,9 @@ export class RenewContractDto {
   @Min(0)
   newSalary?: number;
 
-  @ApiProperty({ example: 'PERMANENT', enum: ['PROBATION', 'FIXED_TERM', 'PERMANENT'], required: false })
+  @ApiProperty({ example: 'FIXED_TERM', enum: ['PROBATION', 'FIXED_TERM', 'INDEFINITE'], required: false })
   @IsOptional()
-  @IsEnum(['PROBATION', 'FIXED_TERM', 'PERMANENT'])
+  @IsEnum(['PROBATION', 'FIXED_TERM', 'INDEFINITE'])
   newContractType?: string;
 }
 

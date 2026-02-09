@@ -26,12 +26,11 @@ export default function ChangeRequestsPage() {
       const response = await departmentChangeRequestService.getChangeRequests(
         filter !== 'ALL' ? { status: filter } : undefined
       );
-      setRequests(response.data);
+      setRequests(response.data || []);
     } catch (error: any) {
-      // Set empty array on error to prevent crashes
+      console.error('Error fetching change requests:', error);
       setRequests([]);
-      // Don't show error, just show empty state
-      // Most likely the endpoint is not implemented yet or returns empty data
+      setError(error.response?.data?.message || 'Không thể tải danh sách yêu cầu');
     } finally {
       setLoading(false);
     }
@@ -105,7 +104,7 @@ export default function ChangeRequestsPage() {
               </div>
               <div>
                 <p className="text-sm text-slate-600">Tất cả</p>
-                <p className="text-2xl font-bold text-slate-900">{requests.length}</p>
+                <p className="text-2xl font-bold text-slate-900">{requests?.length || 0}</p>
               </div>
             </div>
           </div>
@@ -117,7 +116,7 @@ export default function ChangeRequestsPage() {
               <div>
                 <p className="text-sm text-slate-600">Chờ duyệt</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {requests.filter(r => r.status === 'PENDING').length}
+                  {requests?.filter(r => r.status === 'PENDING').length || 0}
                 </p>
               </div>
             </div>
@@ -130,7 +129,7 @@ export default function ChangeRequestsPage() {
               <div>
                 <p className="text-sm text-slate-600">Đã duyệt</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {requests.filter(r => r.status === 'APPROVED').length}
+                  {requests?.filter(r => r.status === 'APPROVED').length || 0}
                 </p>
               </div>
             </div>
@@ -143,7 +142,7 @@ export default function ChangeRequestsPage() {
               <div>
                 <p className="text-sm text-slate-600">Từ chối</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {requests.filter(r => r.status === 'REJECTED').length}
+                  {requests?.filter(r => r.status === 'REJECTED').length || 0}
                 </p>
               </div>
             </div>

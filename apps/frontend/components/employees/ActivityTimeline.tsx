@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  Clock, User, FileText, Upload, Edit, CheckCircle, XCircle, 
+import {
+  Clock, User, FileText, Upload, Edit, CheckCircle, XCircle,
   Calendar, Award, AlertCircle, Briefcase, ChevronDown, Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,15 +62,27 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
   const fetchActivities = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching activities for employee:', employeeId);
+      console.log('   Page:', page, 'Filter:', filterType || 'none');
+
       const response = await employeeActivityService.getActivities(employeeId, {
         page,
         limit: 20,
         type: filterType || undefined,
       });
-      setActivities(response.data);
-      setTotalPages(response.meta.totalPages);
+
+      console.log('✅ Activities response:', response);
+      console.log('   Data:', response.data);
+      console.log('   Meta:', response.meta);
+      console.log('   Activities count:', response.data?.length || 0);
+
+      setActivities(response.data || []);
+      setTotalPages(response.meta?.totalPages || 1);
     } catch (error) {
-      console.error('Failed to fetch activities:', error);
+      console.error('❌ Failed to fetch activities:', error);
+      console.error('   Error details:', error);
+      setActivities([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -93,6 +105,20 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
   const getPerformerAvatar = (activity: EmployeeActivity) => {
     if (!activity.performer?.employee?.avatarUrl) return null;
     return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${activity.performer.employee.avatarUrl}`;
+  };
+
+  const getFilterLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      profile_update: 'Cập nhật hồ sơ',
+      document_upload: 'Tài liệu',
+      attendance: 'Chấm công',
+      leave_request: 'Nghỉ phép',
+      overtime: 'Tăng ca',
+      reward: 'Khen thưởng',
+      discipline: 'Kỷ luật',
+      contract: 'Hợp đồng',
+    };
+    return labels[type] || type;
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -126,11 +152,24 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
     );
   }
 
-  if (activities.length === 0) {
+  if (activities.length === 0 && !loading) {
     return (
       <div className="text-center py-12">
         <Clock className="mx-auto text-slate-300 mb-4" size={48} />
-        <p className="text-slate-500">Chưa có hoạt động nào</p>
+        <p className="text-slate-500 font-medium">
+          {filterType ? `Không có hoạt động "${getFilterLabel(filterType)}"` : 'Chưa có hoạt động nào'}
+        </p>
+        {filterType && (
+          <button
+            onClick={() => {
+              setFilterType('');
+              setPage(1);
+            }}
+            className="mt-4 text-sm text-brandBlue hover:underline font-medium"
+          >
+            Xóa bộ lọc
+          </button>
+        )}
       </div>
     );
   }
@@ -139,15 +178,28 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
     <div className="space-y-6">
       {/* Filter */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-600 uppercase">
-          Lịch sử hoạt động ({activities.length})
-        </h3>
+        <div>
+          <h3 className="text-sm font-bold text-slate-600 uppercase">
+            Lịch sử hoạt động ({activities.length})
+          </h3>
+          {filterType && (
+            <p className="text-xs text-slate-500 mt-1">
+              Đang lọc: <span className="font-semibold text-brandBlue">{getFilterLabel(filterType)}</span>
+            </p>
+          )}
+        </div>
         <button
           onClick={() => setShowFilter(!showFilter)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+          className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all ${showFilter
+            ? 'bg-brandBlue text-white shadow-md'
+            : 'text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
         >
           <Filter size={16} />
           <span>Lọc</span>
+          {filterType && !showFilter && (
+            <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-bold">1</span>
+          )}
           <ChevronDown size={16} className={`transition-transform ${showFilter ? 'rotate-180' : ''}`} />
         </button>
       </div>
@@ -161,54 +213,112 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
             className="flex flex-wrap gap-2"
           >
             <button
-              onClick={() => setFilterType('')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterType === '' 
-                  ? 'bg-brandBlue text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+              onClick={() => {
+                setFilterType('');
+                setPage(1); // Reset to first page
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === ''
+                ? 'bg-brandBlue text-white shadow-md'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
             >
               Tất cả
             </button>
             <button
-              onClick={() => setFilterType('profile_update')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterType === 'profile_update' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-              }`}
+              onClick={() => {
+                setFilterType('profile_update');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'profile_update'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                }`}
             >
               Cập nhật hồ sơ
             </button>
             <button
-              onClick={() => setFilterType('document_upload')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterType === 'document_upload' 
-                  ? 'bg-purple-600 text-white' 
-                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-              }`}
+              onClick={() => {
+                setFilterType('document_upload');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'document_upload'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                }`}
             >
               Tài liệu
             </button>
             <button
-              onClick={() => setFilterType('attendance')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterType === 'attendance' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-green-50 text-green-600 hover:bg-green-100'
-              }`}
+              onClick={() => {
+                setFilterType('attendance');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'attendance'
+                ? 'bg-green-600 text-white shadow-md'
+                : 'bg-green-50 text-green-600 hover:bg-green-100'
+                }`}
             >
               Chấm công
             </button>
             <button
-              onClick={() => setFilterType('leave_request')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterType === 'leave_request' 
-                  ? 'bg-orange-600 text-white' 
-                  : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-              }`}
+              onClick={() => {
+                setFilterType('leave_request');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'leave_request'
+                ? 'bg-orange-600 text-white shadow-md'
+                : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                }`}
             >
               Nghỉ phép
+            </button>
+            <button
+              onClick={() => {
+                setFilterType('overtime');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'overtime'
+                ? 'bg-yellow-600 text-white shadow-md'
+                : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+                }`}
+            >
+              Tăng ca
+            </button>
+            <button
+              onClick={() => {
+                setFilterType('reward');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'reward'
+                ? 'bg-pink-600 text-white shadow-md'
+                : 'bg-pink-50 text-pink-600 hover:bg-pink-100'
+                }`}
+            >
+              Khen thưởng
+            </button>
+            <button
+              onClick={() => {
+                setFilterType('discipline');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'discipline'
+                ? 'bg-red-600 text-white shadow-md'
+                : 'bg-red-50 text-red-600 hover:bg-red-100'
+                }`}
+            >
+              Kỷ luật
+            </button>
+            <button
+              onClick={() => {
+                setFilterType('contract');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${filterType === 'contract'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                }`}
+            >
+              Hợp đồng
             </button>
           </motion.div>
         )}
@@ -216,6 +326,16 @@ export default function ActivityTimeline({ employeeId }: ActivityTimelineProps) 
 
       {/* Timeline */}
       <div className="relative">
+        {/* Loading overlay */}
+        {loading && activities.length > 0 && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+            <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-xl shadow-lg border border-slate-200">
+              <div className="w-5 h-5 border-3 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-medium text-slate-700">Đang tải...</span>
+            </div>
+          </div>
+        )}
+
         {/* Timeline line */}
         <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200"></div>
 

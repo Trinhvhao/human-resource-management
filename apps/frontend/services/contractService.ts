@@ -24,7 +24,7 @@ class ContractService {
   }
 
   async getExpiring(days: number = 30): Promise<ApiResponse<ExpiringContract[]>> {
-    return axiosInstance.get(`/contracts/expiring/${days}`);
+    return axiosInstance.get('/contracts/expiring', { params: { days } });
   }
 
   async create(data: CreateContractData): Promise<ApiResponse<Contract>> {

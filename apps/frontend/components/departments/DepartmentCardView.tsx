@@ -2,8 +2,30 @@
 
 import { Department } from '@/types/department';
 import DepartmentCard from './DepartmentCard';
-import DepartmentCardSkeleton from './DepartmentCardSkeleton';
 import { Crown, Building2, Users } from 'lucide-react';
+
+// Inline skeleton component
+function DepartmentCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border-2 border-slate-200 p-6 animate-pulse">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
+        <div className="flex-1">
+          <div className="h-5 bg-slate-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-4 bg-slate-200 rounded w-full"></div>
+        <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+        <div className="flex gap-2">
+          <div className="h-6 bg-slate-200 rounded w-16"></div>
+          <div className="h-6 bg-slate-200 rounded w-16"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface DepartmentCardViewProps {
   departments: Department[];

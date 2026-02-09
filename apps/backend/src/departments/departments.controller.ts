@@ -47,6 +47,71 @@ export class DepartmentsController {
     return this.departmentsService.getPerformanceStats();
   }
 
+  @Get('validate/hierarchy')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ 
+    summary: 'Validate hierarchy integrity', 
+    description: 'Check for issues in department hierarchy (orphaned departments, circular references, etc.)' 
+  })
+  @ApiResponse({ status: 200, description: 'Validation completed' })
+  validateHierarchy() {
+    return this.departmentsService.validateHierarchyIntegrity();
+  }
+
+  // ==================== CHANGE REQUEST ENDPOINTS ====================
+
+  @Get('change-requests')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ summary: 'List change requests', description: 'Get all department change requests with filters' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] })
+  @ApiQuery({ name: 'departmentId', required: false, type: 'string' })
+  @ApiResponse({ status: 200, description: 'Change requests retrieved' })
+  getChangeRequests(
+    @Query('status') status?: string,
+    @Query('departmentId') departmentId?: string,
+  ) {
+    return this.changeRequestsService.findAll({ status, departmentId });
+  }
+
+  @Get('change-requests/:requestId')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
+  @ApiOperation({ summary: 'Get change request details', description: 'Get detailed information about a change request' })
+  @ApiParam({ name: 'requestId', description: 'Change request UUID' })
+  @ApiResponse({ status: 200, description: 'Change request found' })
+  @ApiResponse({ status: 404, description: 'Change request not found' })
+  getChangeRequest(@Param('requestId') requestId: string) {
+    return this.changeRequestsService.findOne(requestId);
+  }
+
+  @Patch('change-requests/:requestId/review')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ summary: 'Review change request', description: 'Approve or reject a change request' })
+  @ApiParam({ name: 'requestId', description: 'Change request UUID' })
+  @ApiResponse({ status: 200, description: 'Change request reviewed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid review or request already reviewed' })
+  @ApiResponse({ status: 404, description: 'Change request not found' })
+  reviewChangeRequest(
+    @Param('requestId') requestId: string,
+    @Body() dto: ReviewChangeRequestDto,
+    @Request() req: any,
+  ) {
+    return this.changeRequestsService.review(requestId, req.user.id, dto);
+  }
+
+  @Post(':id/change-requests')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
+  @ApiOperation({ summary: 'Create change request', description: 'Request a change to department (manager, parent, etc.)' })
+  @ApiParam({ name: 'id', description: 'Department UUID' })
+  @ApiResponse({ status: 201, description: 'Change request created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request or validation failed' })
+  createChangeRequest(
+    @Param('id') id: string,
+    @Body() dto: CreateChangeRequestDto,
+    @Request() req: any,
+  ) {
+    return this.changeRequestsService.create(id, req.user.id, dto);
+  }
+
   @Get(':id/performance')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
   @ApiOperation({ summary: 'Get department performance details' })
@@ -106,70 +171,5 @@ export class DepartmentsController {
   @ApiResponse({ status: 404, description: 'Department or manager not found' })
   assignManager(@Param('id') id: string, @Body('managerId') managerId: string) {
     return this.departmentsService.assignManager(id, managerId);
-  }
-
-  @Get('validate/hierarchy')
-  @Roles('ADMIN', 'HR_MANAGER')
-  @ApiOperation({ 
-    summary: 'Validate hierarchy integrity', 
-    description: 'Check for issues in department hierarchy (orphaned departments, circular references, etc.)' 
-  })
-  @ApiResponse({ status: 200, description: 'Validation completed' })
-  validateHierarchy() {
-    return this.departmentsService.validateHierarchyIntegrity();
-  }
-
-  // ==================== CHANGE REQUEST ENDPOINTS ====================
-
-  @Post(':id/change-requests')
-  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
-  @ApiOperation({ summary: 'Create change request', description: 'Request a change to department (manager, parent, etc.)' })
-  @ApiParam({ name: 'id', description: 'Department UUID' })
-  @ApiResponse({ status: 201, description: 'Change request created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid request or validation failed' })
-  createChangeRequest(
-    @Param('id') id: string,
-    @Body() dto: CreateChangeRequestDto,
-    @Request() req: any,
-  ) {
-    return this.changeRequestsService.create(id, req.user.id, dto);
-  }
-
-  @Get('change-requests')
-  @Roles('ADMIN', 'HR_MANAGER')
-  @ApiOperation({ summary: 'List change requests', description: 'Get all department change requests with filters' })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] })
-  @ApiQuery({ name: 'departmentId', required: false, type: 'string' })
-  @ApiResponse({ status: 200, description: 'Change requests retrieved' })
-  getChangeRequests(
-    @Query('status') status?: string,
-    @Query('departmentId') departmentId?: string,
-  ) {
-    return this.changeRequestsService.findAll({ status, departmentId });
-  }
-
-  @Get('change-requests/:requestId')
-  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
-  @ApiOperation({ summary: 'Get change request details', description: 'Get detailed information about a change request' })
-  @ApiParam({ name: 'requestId', description: 'Change request UUID' })
-  @ApiResponse({ status: 200, description: 'Change request found' })
-  @ApiResponse({ status: 404, description: 'Change request not found' })
-  getChangeRequest(@Param('requestId') requestId: string) {
-    return this.changeRequestsService.findOne(requestId);
-  }
-
-  @Patch('change-requests/:requestId/review')
-  @Roles('ADMIN', 'HR_MANAGER')
-  @ApiOperation({ summary: 'Review change request', description: 'Approve or reject a change request' })
-  @ApiParam({ name: 'requestId', description: 'Change request UUID' })
-  @ApiResponse({ status: 200, description: 'Change request reviewed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid review or request already reviewed' })
-  @ApiResponse({ status: 404, description: 'Change request not found' })
-  reviewChangeRequest(
-    @Param('requestId') requestId: string,
-    @Body() dto: ReviewChangeRequestDto,
-    @Request() req: any,
-  ) {
-    return this.changeRequestsService.review(requestId, req.user.id, dto);
   }
 }

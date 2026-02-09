@@ -10,7 +10,7 @@ export class EmployeesService {
   constructor(
     private prisma: PrismaService,
     private activityService: EmployeeActivityService,
-  ) {}
+  ) { }
 
   async create(dto: CreateEmployeeDto) {
     // Validate age (minimum 18 years old - Vietnamese labor law)
@@ -28,7 +28,7 @@ export class EmployeesService {
     const now = new Date();
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     const sixMonthsLater = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
-    
+
     if (startDate < oneYearAgo) {
       throw new BadRequestException('Start date cannot be more than 1 year in the past');
     }
@@ -423,6 +423,68 @@ export class EmployeesService {
     };
   }
 
+  /**
+   * Get employees without active contract
+   * Used for contract creation to show only eligible employees
+   */
+  async getEmployeesWithoutActiveContract(limit: number = 100) {
+    // Get all active employees
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        position: true,
+        avatarUrl: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        contracts: {
+          where: {
+            status: 'ACTIVE',
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+      take: Math.min(limit, 100), // Max 100
+      orderBy: {
+        fullName: 'asc',
+      },
+    });
+
+    // Filter out employees with active contracts
+    const employeesWithoutContract = employees.filter(
+      emp => emp.contracts.length === 0
+    );
+
+    // Remove contracts field from response
+    const cleanedEmployees = employeesWithoutContract.map(emp => {
+      const { contracts, ...rest } = emp;
+      return rest;
+    });
+
+    return {
+      success: true,
+      data: cleanedEmployees,
+      meta: {
+        total: cleanedEmployees.length,
+        totalActive: employees.length,
+        withContract: employees.length - cleanedEmployees.length,
+      },
+    };
+  }
+
   // Public method to generate next employee code
   async generateNextEmployeeCode(): Promise<string> {
     return this.generateEmployeeCode();
@@ -430,7 +492,7 @@ export class EmployeesService {
 
   private async generateEmployeeCode(): Promise<string> {
     const year = new Date().getFullYear().toString().slice(-2);
-    
+
     // Find the latest employee code for this year
     const latestEmployee = await this.prisma.employee.findFirst({
       where: {
@@ -499,7 +561,7 @@ export class EmployeesService {
       const attendanceRate = totalAttendance > 0 ? (presentDays / totalAttendance) * 100 : 0;
       const onTimeRate = totalAttendance > 0 ? ((totalAttendance - lateDays) / totalAttendance) * 100 : 0;
       const avgWorkHours = totalAttendance > 0 ? totalWorkHours / totalAttendance : 0;
-      
+
       // Work hours score (8 hours = 100%, max 10 hours = 125%)
       const workHoursScore = Math.min((avgWorkHours / 8) * 100, 125);
 
@@ -578,6 +640,9 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
 
+    // Calculate profile completion in real-time
+    const profileCompletionPercentage = await this.calculateProfileCompletion(id);
+
     // Convert BigInt to Number for JSON serialization
     const documentsWithNumberSize = employee.documents.map(doc => ({
       ...doc,
@@ -589,6 +654,10 @@ export class EmployeesService {
       data: {
         ...employee,
         documents: documentsWithNumberSize,
+        profile: employee.profile ? {
+          ...employee.profile,
+          profileCompletionPercentage, // Override with real-time calculation
+        } : null,
       },
     };
   }
@@ -640,7 +709,76 @@ export class EmployeesService {
   }
 
   /**
-   * Calculate profile completion percentage
+   * Calculate profile completion percentage (real-time, not stored in DB)
+   */
+  private async calculateProfileCompletion(employeeId: string): Promise<number> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        phone: true,
+        address: true,
+        gender: true,
+        email: true,
+        dateOfBirth: true,
+        idCard: true,
+      },
+    });
+
+    const profile = await this.prisma.employeeProfile.findUnique({
+      where: { employeeId },
+    });
+
+    if (!employee) return 0;
+
+    let completion = 0;
+
+    // Basic Employee Info (30%) - Most important
+    if (employee.phone) completion += 5;
+    if (employee.address) completion += 5;
+    if (employee.gender) completion += 5;
+    if (employee.email) completion += 5; // Always has email
+    if (employee.dateOfBirth) completion += 5; // Always has DOB
+    if (employee.idCard) completion += 5; // Always has ID card
+
+    if (profile) {
+      // Personal Info (15%)
+      if (profile.placeOfBirth) completion += 5;
+      if (profile.nationality) completion += 5;
+      if (profile.maritalStatus) completion += 5;
+
+      // Emergency Contact (15%)
+      if (profile.emergencyContactName) completion += 5;
+      if (profile.emergencyContactPhone) completion += 5;
+      if (profile.emergencyContactRelationship) completion += 5;
+
+      // Education (15%)
+      if (profile.highestEducation) completion += 5;
+      if (profile.major) completion += 5;
+      if (profile.university) completion += 5;
+
+      // Bank Info (15%)
+      if (profile.bankName) completion += 5;
+      if (profile.bankAccountNumber) completion += 5;
+      if (profile.bankBranch) completion += 5;
+    }
+
+    // Documents (10%)
+    const documents = await this.prisma.employeeDocument.findMany({
+      where: {
+        employeeId,
+        documentType: { in: ['RESUME', 'ID_CARD_FRONT'] },
+      },
+    });
+    if (documents.length >= 2) {
+      completion += 10;
+    }
+
+    return Math.round(completion);
+  }
+
+  /**
+   * Calculate profile completion percentage (DEPRECATED - kept for backward compatibility)
+   * Now we calculate on-the-fly instead of storing in DB
    */
   private async updateProfileCompletion(employeeId: string) {
     const profile = await this.prisma.employeeProfile.findUnique({
@@ -649,29 +787,62 @@ export class EmployeesService {
 
     if (!profile) return;
 
+    // Get employee basic info
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        phone: true,
+        address: true,
+        gender: true,
+        email: true,
+        dateOfBirth: true,
+        idCard: true,
+      },
+    });
+
+    if (!employee) return;
+
     let completion = 0;
 
-    // Personal Info (20%)
-    if (profile.placeOfBirth && profile.nationality && profile.maritalStatus) {
-      completion += 20;
-    }
+    // Basic Employee Info (30%) - Most important
+    let basicInfoScore = 0;
+    if (employee.phone) basicInfoScore += 5;
+    if (employee.address) basicInfoScore += 5;
+    if (employee.gender) basicInfoScore += 5;
+    if (employee.email) basicInfoScore += 5; // Always has email
+    if (employee.dateOfBirth) basicInfoScore += 5; // Always has DOB
+    if (employee.idCard) basicInfoScore += 5; // Always has ID card
+    completion += basicInfoScore;
 
-    // Emergency Contact (20%)
-    if (profile.emergencyContactName && profile.emergencyContactPhone && profile.emergencyContactRelationship) {
-      completion += 20;
-    }
+    // Personal Info (15%)
+    let personalScore = 0;
+    if (profile.placeOfBirth) personalScore += 5;
+    if (profile.nationality) personalScore += 5;
+    if (profile.maritalStatus) personalScore += 5;
+    completion += personalScore;
 
-    // Education (20%)
-    if (profile.highestEducation && profile.major && profile.university) {
-      completion += 20;
-    }
+    // Emergency Contact (15%)
+    let emergencyScore = 0;
+    if (profile.emergencyContactName) emergencyScore += 5;
+    if (profile.emergencyContactPhone) emergencyScore += 5;
+    if (profile.emergencyContactRelationship) emergencyScore += 5;
+    completion += emergencyScore;
 
-    // Bank Info (20%)
-    if (profile.bankName && profile.bankAccountNumber && profile.bankBranch) {
-      completion += 20;
-    }
+    // Education (15%)
+    let educationScore = 0;
+    if (profile.highestEducation) educationScore += 5;
+    if (profile.major) educationScore += 5;
+    if (profile.university) educationScore += 5;
+    completion += educationScore;
 
-    // Documents (20%)
+    // Bank Info (15%)
+    let bankScore = 0;
+    if (profile.bankName) bankScore += 5;
+    if (profile.bankAccountNumber) bankScore += 5;
+    if (profile.bankBranch) bankScore += 5;
+    completion += bankScore;
+
+    // Documents (10%)
     const documents = await this.prisma.employeeDocument.findMany({
       where: {
         employeeId,
@@ -679,7 +850,7 @@ export class EmployeesService {
       },
     });
     if (documents.length >= 2) {
-      completion += 20;
+      completion += 10;
     }
 
     // Update profile and employee
@@ -917,5 +1088,34 @@ export class EmployeesService {
    */
   async getActivityStats(employeeId: string) {
     return this.activityService.getActivityStats(employeeId);
+  }
+
+  /**
+   * Recalculate profile completion for all employees
+   * Useful after updating the calculation logic
+   */
+  async recalculateAllProfileCompletions() {
+    const employees = await this.prisma.employee.findMany({
+      select: { id: true },
+    });
+
+    let updated = 0;
+    for (const employee of employees) {
+      try {
+        await this.updateProfileCompletion(employee.id);
+        updated++;
+      } catch (error) {
+        console.error(`Failed to update profile completion for employee ${employee.id}:`, error);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Recalculated profile completion for ${updated} employees`,
+      data: {
+        total: employees.length,
+        updated,
+      },
+    };
   }
 }

@@ -1,14 +1,16 @@
-import type { Metadata } from "next";
+'use client';
 
-export const metadata: Metadata = {
-  title: "Dashboard - HRMS Pro",
-  description: "Hệ thống quản lý nhân sự",
-};
+import { ToastContainer } from '@/lib/toast';
 
 export default function DashboardRootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return (
+    <>
+      {children}
+      <ToastContainer />
+    </>
+  );
 }

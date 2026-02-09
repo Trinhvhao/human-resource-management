@@ -46,6 +46,12 @@ class EmployeeService {
   async generateCode(): Promise<ApiResponse<{ employeeCode: string }>> {
     return axiosInstance.get('/employees/generate-code');
   }
+
+  async getWithoutActiveContract(limit?: number): Promise<ApiResponse<Employee[]>> {
+    return axiosInstance.get('/employees/without-active-contract', {
+      params: { limit: limit || 100 }
+    });
+  }
 }
 
 export default new EmployeeService();

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { User, AlertCircle, GraduationCap, CreditCard } from 'lucide-react';
 import { EmployeeProfile, MARITAL_STATUS_LABELS, EDUCATION_LABELS, RELATIONSHIP_OPTIONS, VIETNAM_BANKS } from '@/types/employee-profile';
 
 interface EmployeeProfileFormProps {
@@ -16,11 +17,16 @@ export default function EmployeeProfileForm({ profile, onSave, disabled = false 
   const [formData, setFormData] = useState<Partial<EmployeeProfile>>(profile);
   const [saving, setSaving] = useState(false);
 
+  // Update formData when profile prop changes
+  useEffect(() => {
+    setFormData(profile);
+  }, [profile]);
+
   const tabs = [
-    { id: 'personal' as TabId, label: 'Thông tin cá nhân', icon: '👤' },
-    { id: 'emergency' as TabId, label: 'Liên hệ khẩn cấp', icon: '🚨' },
-    { id: 'education' as TabId, label: 'Học vấn', icon: '🎓' },
-    { id: 'bank' as TabId, label: 'Ngân hàng', icon: '🏦' },
+    { id: 'personal' as TabId, label: 'Thông tin cá nhân', Icon: User },
+    { id: 'emergency' as TabId, label: 'Liên hệ khẩn cấp', Icon: AlertCircle },
+    { id: 'education' as TabId, label: 'Học vấn', Icon: GraduationCap },
+    { id: 'bank' as TabId, label: 'Ngân hàng', Icon: CreditCard },
   ];
 
   const handleChange = (field: keyof EmployeeProfile, value: any) => {
@@ -29,9 +35,11 @@ export default function EmployeeProfileForm({ profile, onSave, disabled = false 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with data:', formData);
     try {
       setSaving(true);
       await onSave(formData);
+      console.log('Save completed successfully');
     } catch (error) {
       console.error('Save failed:', error);
       alert('Lưu thất bại. Vui lòng thử lại.');
@@ -45,21 +53,24 @@ export default function EmployeeProfileForm({ profile, onSave, disabled = false 
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex gap-2 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const Icon = tab.Icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 font-semibold text-sm whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? 'border-brandBlue text-brandBlue'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <Icon size={18} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -3,20 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Clock, 
-  Calendar, 
-  FileText, 
-  DollarSign, 
+import {
+  LayoutDashboard,
+  Users,
+  Clock,
+  Calendar,
+  FileText,
+  DollarSign,
   Settings,
   ChevronLeft,
   ChevronRight,
   Building2,
   ClipboardCheck,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileSignature
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
@@ -40,15 +41,15 @@ interface SubMenuItem {
 }
 
 const adminMenuItems: MenuItem[] = [
-  { 
-    icon: LayoutDashboard, 
-    label: 'Dashboard', 
-    href: '/dashboard', 
-    roles: ['ADMIN', 'MANAGER'] 
+  {
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+    href: '/dashboard',
+    roles: ['ADMIN', 'MANAGER']
   },
-  { 
-    icon: Users, 
-    label: 'Nhân viên', 
+  {
+    icon: Users,
+    label: 'Nhân viên',
     href: '/dashboard/employees',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -56,9 +57,9 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Thêm mới', href: '/dashboard/employees/new' },
     ]
   },
-  { 
-    icon: Building2, 
-    label: 'Phòng ban', 
+  {
+    icon: Building2,
+    label: 'Phòng ban',
     href: '/dashboard/departments',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -67,9 +68,20 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Yêu cầu thay đổi', href: '/dashboard/departments/change-requests' },
     ]
   },
-  { 
-    icon: Clock, 
-    label: 'Chấm công', 
+  {
+    icon: FileSignature,
+    label: 'Hợp đồng',
+    href: '/dashboard/contracts',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Danh sách', href: '/dashboard/contracts' },
+      { label: 'Tạo mới', href: '/dashboard/contracts/new' },
+      { label: 'Chấm dứt HĐ', href: '/dashboard/contracts/terminations' },
+    ]
+  },
+  {
+    icon: Clock,
+    label: 'Chấm công',
     href: '/dashboard/attendance',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -79,9 +91,9 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Báo cáo', href: '/dashboard/attendance/reports' },
     ]
   },
-  { 
-    icon: Calendar, 
-    label: 'Nghỉ phép', 
+  {
+    icon: Calendar,
+    label: 'Nghỉ phép',
     href: '/dashboard/leaves',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -89,9 +101,9 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Số dư phép', href: '/dashboard/leaves/balances' },
     ]
   },
-  { 
-    icon: FileText, 
-    label: 'Làm thêm giờ', 
+  {
+    icon: FileText,
+    label: 'Làm thêm giờ',
     href: '/dashboard/overtime',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -99,9 +111,9 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Đăng ký mới', href: '/dashboard/overtime/new' },
     ]
   },
-  { 
-    icon: DollarSign, 
-    label: 'Lương', 
+  {
+    icon: DollarSign,
+    label: 'Lương',
     href: '/dashboard/payroll',
     roles: ['ADMIN', 'MANAGER'],
     children: [
@@ -109,11 +121,11 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Quản lý', href: '/dashboard/payroll/manage' },
     ]
   },
-  { 
-    icon: Settings, 
-    label: 'Cài đặt', 
-    href: '/dashboard/settings', 
-    roles: ['ADMIN', 'MANAGER'] 
+  {
+    icon: Settings,
+    label: 'Cài đặt',
+    href: '/dashboard/settings',
+    roles: ['ADMIN', 'MANAGER']
   },
 ];
 
@@ -147,9 +159,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const isSubItemActive = (href: string): boolean => {
     // Exact match first
     if (pathname === href) return true;
-    
-    // For dynamic routes like /departments/[id], check if it starts with the href
-    // but make sure it's not matching a different submenu item
+
+    // For dynamic routes, check carefully to avoid false positives
     if (href === '/dashboard/departments' && pathname.startsWith('/dashboard/departments/')) {
       // Don't match if it's a specific submenu route
       if (pathname.startsWith('/dashboard/departments/tree')) return false;
@@ -158,15 +169,32 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       // Match for /dashboard/departments/[id] (detail/edit pages)
       return true;
     }
-    
-    // For other routes, use startsWith but ensure it's followed by / or end of string
-    return pathname.startsWith(href + '/');
+
+    // For contracts, be more specific
+    if (href === '/dashboard/contracts' && pathname.startsWith('/dashboard/contracts/')) {
+      // Don't match if it's a specific submenu route
+      if (pathname.startsWith('/dashboard/contracts/new')) return false;
+      if (pathname.startsWith('/dashboard/contracts/terminations')) return false;
+      // Match for /dashboard/contracts/[id] (detail/edit pages)
+      return true;
+    }
+
+    // For employees, be more specific
+    if (href === '/dashboard/employees' && pathname.startsWith('/dashboard/employees/')) {
+      // Don't match if it's the new page
+      if (pathname.startsWith('/dashboard/employees/new')) return false;
+      // Match for /dashboard/employees/[id] (detail/edit pages)
+      return true;
+    }
+
+    // For other routes, exact match only
+    return false;
   };
 
   // Toggle dropdown
   const toggleExpand = (label: string) => {
-    setExpandedItems(prev => 
-      prev.includes(label) 
+    setExpandedItems(prev =>
+      prev.includes(label)
         ? prev.filter(item => item !== label)
         : [...prev, label]
     );
@@ -237,8 +265,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     }}
                     className={`
                       w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all
-                      ${isActive 
-                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg' 
+                      ${isActive
+                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
                         : 'text-slate-600 hover:bg-slate-50'
                       }
                       ${!isOpen && 'justify-center'}
@@ -257,8 +285,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     href={item.href!}
                     className={`
                       flex items-center gap-3 px-3 py-3 rounded-lg transition-all
-                      ${isActive 
-                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg' 
+                      ${isActive
+                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
                         : 'text-slate-600 hover:bg-slate-50'
                       }
                       ${!isOpen && 'justify-center'}
@@ -321,8 +349,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-primary truncate">{user.email}</p>
               <p className="text-xs text-slate-500 truncate font-medium">
-                {user.role === 'ADMIN' ? 'Quản trị viên' : 
-                 user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
+                {user.role === 'ADMIN' ? 'Quản trị viên' :
+                  user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
               </p>
             </div>
           </div>

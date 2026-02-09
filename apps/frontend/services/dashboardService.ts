@@ -36,6 +36,25 @@ export interface RecentActivity {
   timestamp: string;
 }
 
+export type AlertSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+
+export interface ContractAlert {
+  contractId: string;
+  employeeName: string;
+  employeeCode: string;
+  contractNumber: string | null;
+  contractType: string;
+  expirationDate: string;
+  daysRemaining: number;
+  severity: AlertSeverity;
+}
+
+export interface ContractAlertsResponse {
+  total: number;
+  bySeverity: Record<AlertSeverity, number>;
+  alerts: ContractAlert[];
+}
+
 class DashboardService {
   async getOverview(): Promise<ApiResponse<any>> {
     return axiosInstance.get('/dashboard/overview');
@@ -43,6 +62,14 @@ class DashboardService {
 
   async getAlerts(): Promise<ApiResponse<AlertsData>> {
     return axiosInstance.get('/dashboard/alerts');
+  }
+
+  async getContractAlerts(days: number = 60): Promise<ApiResponse<ContractAlertsResponse>> {
+    return axiosInstance.get('/dashboard/contract-alerts', { params: { days } });
+  }
+
+  async getExpiringContracts(days: number = 60): Promise<ApiResponse<ContractAlert[]>> {
+    return axiosInstance.get('/dashboard/contract-alerts/expiring', { params: { days } });
   }
 
   async getRecentActivities(limit: number = 10): Promise<ApiResponse<RecentActivity[]>> {

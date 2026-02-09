@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContractValidationService } from './contract-validation.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto, RenewContractDto, TerminateContractDto } from './dto/update-contract.dto';
 
 @Injectable()
 export class ContractsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private validationService: ContractValidationService,
+  ) { }
 
   async create(dto: CreateContractDto) {
     // Validate employee
@@ -28,18 +32,98 @@ export class ContractsService {
       throw new ConflictException('Employee already has an active contract');
     }
 
+    // Parse dates
+    const startDate = new Date(dto.startDate);
+    const endDate = dto.endDate ? new Date(dto.endDate) : null;
+
+    // Apply new validation rules (only for new contracts created after validation update)
+    // Note: All new contracts will be validated. Existing contracts are not affected.
+
+    // Validate contract duration based on type
+    if (dto.contractType === 'PROBATION') {
+      if (!endDate) {
+        throw new BadRequestException('Probation contracts must have an end date');
+      }
+      const validation = this.validationService.validateProbationDuration(
+        startDate,
+        endDate,
+      );
+      if (!validation.isValid) {
+        throw new BadRequestException({
+          message: validation.errorMessage,
+          code: validation.errorCode,
+          details: validation.details,
+        });
+      }
+    } else if (dto.contractType === 'FIXED_TERM') {
+      if (!endDate) {
+        throw new BadRequestException('Fixed-term contracts must have an end date');
+      }
+      const validation = this.validationService.validateFixedTermDuration(
+        startDate,
+        endDate,
+      );
+      if (!validation.isValid) {
+        throw new BadRequestException({
+          message: validation.errorMessage,
+          code: validation.errorCode,
+          details: validation.details,
+        });
+      }
+
+      // Validate contract conversion rules
+      const conversionValidation =
+        await this.validationService.validateContractConversion(
+          dto.employeeId,
+          dto.contractType,
+        );
+      if (!conversionValidation.isValid) {
+        throw new BadRequestException({
+          message: conversionValidation.errorMessage,
+          code: conversionValidation.errorCode,
+          details: conversionValidation.details,
+        });
+      }
+    } else if (dto.contractType === 'INDEFINITE') {
+      if (endDate) {
+        throw new BadRequestException('Indefinite contracts must not have an end date');
+      }
+    }
+
+    // Validate workType and workHoursPerWeek
+    const workType = dto.workType || 'FULL_TIME';
+    let workHoursPerWeek = dto.workHoursPerWeek || 40;
+
+    if (workType === 'FULL_TIME') {
+      workHoursPerWeek = 40;
+    } else if (workType === 'PART_TIME') {
+      if (!dto.workHoursPerWeek || dto.workHoursPerWeek >= 40) {
+        throw new BadRequestException(
+          'Part-time contracts must have work hours less than 40 per week',
+        );
+      }
+      if (dto.workHoursPerWeek < 1) {
+        throw new BadRequestException(
+          'Work hours must be at least 1 hour per week',
+        );
+      }
+    }
+
     // Generate contract number if not provided
-    const contractNumber = dto.contractNumber || await this.generateContractNumber();
+    const contractNumber =
+      dto.contractNumber || (await this.generateContractNumber());
 
     const contract = await this.prisma.contract.create({
       data: {
         employeeId: dto.employeeId,
         contractType: dto.contractType,
         contractNumber,
-        startDate: new Date(dto.startDate),
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        startDate,
+        endDate,
         salary: dto.salary,
-        terms: dto.terms,
+        workType,
+        workHoursPerWeek,
+        terms: dto.terms || dto.notes, // Store both terms and notes in terms field for now
         status: 'ACTIVE',
       },
       include: {
@@ -62,13 +146,20 @@ export class ContractsService {
     };
   }
 
-  async findAll(query: { employeeId?: string; status?: string; page?: number; limit?: number }) {
-    const { employeeId, status, page = 1, limit = 10 } = query;
+  async findAll(query: { employeeId?: string; status?: string; page?: number | string; limit?: number | string; search?: string }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (employeeId) where.employeeId = employeeId;
-    if (status) where.status = status;
+    if (query.employeeId) where.employeeId = query.employeeId;
+    if (query.status) where.status = query.status;
+    if (query.search) {
+      where.OR = [
+        { contractNumber: { contains: query.search, mode: 'insensitive' } },
+        { employee: { fullName: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
 
     const [contracts, total] = await Promise.all([
       this.prisma.contract.findMany({
@@ -77,7 +168,7 @@ export class ContractsService {
         take: limit,
         include: {
           employee: {
-            select: { id: true, employeeCode: true, fullName: true, department: { select: { name: true } } },
+            select: { id: true, employeeCode: true, fullName: true, position: true, department: { select: { id: true, name: true } } },
           },
         },
         orderBy: { startDate: 'desc' },
@@ -98,7 +189,12 @@ export class ContractsService {
       include: {
         employee: {
           select: {
-            id: true, employeeCode: true, fullName: true, email: true, phone: true,
+            id: true,
+            employeeCode: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            position: true,
             department: { select: { id: true, code: true, name: true } },
           },
         },
@@ -252,18 +348,37 @@ export class ContractsService {
       include: {
         employee: {
           select: {
-            id: true, employeeCode: true, fullName: true, email: true,
-            department: { select: { name: true } },
+            id: true,
+            employeeCode: true,
+            fullName: true,
+            email: true,
+            position: true,
+            department: { select: { id: true, name: true } },
           },
         },
       },
       orderBy: { endDate: 'asc' },
     });
 
+    // Calculate days until expiry for each contract
+    const expiringContracts = contracts.map((contract) => {
+      const daysUntilExpiry = contract.endDate
+        ? Math.ceil(
+          (new Date(contract.endDate).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24),
+        )
+        : 0;
+
+      return {
+        contract,
+        daysUntilExpiry,
+      };
+    });
+
     return {
       success: true,
-      data: contracts,
-      meta: { total: contracts.length, days },
+      data: expiringContracts,
+      meta: { total: expiringContracts.length, days },
     };
   }
 

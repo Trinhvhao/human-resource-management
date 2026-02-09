@@ -18,8 +18,15 @@ export const employeeProfileService = {
   async uploadAvatar(employeeId: string, file: File) {
     const formData = new FormData();
     formData.append('file', file);
+
     const response = await api.post(`/employees/${employeeId}/avatar`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log('Upload progress:', percentCompleted);
+        }
+      },
     });
     return response.data;
   },

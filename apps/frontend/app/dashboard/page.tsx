@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense, lazy } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewCards from '@/components/dashboard/OverviewCards';
 import QuickActions from '@/components/dashboard/QuickActions';
