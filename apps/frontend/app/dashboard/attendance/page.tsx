@@ -18,6 +18,9 @@ import departmentService from '@/services/departmentService';
 import { useAuthStore } from '@/store/authStore';
 import { Attendance } from '@/types/attendance';
 
+// RBAC
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+
 export default function AttendancePage() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -74,7 +77,7 @@ export default function AttendancePage() {
       // Fetch today's all attendances
       const attendancesResponse = await attendanceService.getTodayAllAttendances();
       const attendanceData = attendancesResponse.data || [];
-      
+
       setAttendances(attendanceData);
 
       // Calculate stats
@@ -179,150 +182,152 @@ export default function AttendancePage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Action Bar - Replace PageHeader */}
-        <div className="flex items-center justify-between">
-          <TimePeriodTabs
-            activePeriod={activePeriod}
-            onPeriodChange={setActivePeriod}
+    <ProtectedRoute requiredPermission="VIEW_ALL_ATTENDANCE">
+      <DashboardLayout>
+        <div className="space-y-6">
+          {/* Action Bar - Replace PageHeader */}
+          <div className="flex items-center justify-between">
+            <TimePeriodTabs
+              activePeriod={activePeriod}
+              onPeriodChange={setActivePeriod}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/dashboard/attendance/corrections')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:border-brandBlue hover:text-brandBlue font-semibold text-sm transition-all"
+              >
+                <FileText size={18} />
+                Điều chỉnh
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/attendance/reports')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-brandBlue text-white rounded-xl hover:bg-blue-700 font-semibold text-sm transition-all shadow-lg shadow-brandBlue/30"
+              >
+                <Plus size={18} />
+                Báo cáo
+              </button>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <AttendanceStatsBar
+            totalEmployees={totalEmployees}
+            present={presentCount}
+            late={lateCount}
+            absent={absentCount}
+            pendingCorrections={pendingCorrections}
+            loading={loading}
+            onViewCorrections={() => router.push('/dashboard/attendance/corrections')}
           />
-          <div className="flex items-center gap-3">
+
+          {/* Analytics Dashboard - 3 columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5">
+              <AttendanceTrendChart data={trendData} loading={loading} />
+            </div>
+            <div className="lg:col-span-3">
+              <AttendanceQuickStats
+                totalEmployees={totalEmployees}
+                present={presentCount}
+                late={lateCount}
+                absent={absentCount}
+                notCheckedOut={notCheckedOutCount}
+                loading={loading}
+              />
+            </div>
+            <div className="lg:col-span-4">
+              <AttendanceLiveFeed
+                recentCheckIns={attendances.slice(0, 10)}
+                loading={loading}
+              />
+            </div>
+          </div>
+
+          {/* Filter Panel */}
+          <AttendanceFilterPanel
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            departmentFilter={departmentFilter}
+            onDepartmentChange={setDepartmentFilter}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            dateFilter={dateFilter}
+            onDateChange={setDateFilter}
+            departments={departments}
+            activeFilterCount={activeFilterCount}
+            onClearFilters={handleClearFilters}
+            onExport={handleExport}
+            resultCount={filteredAttendances.length}
+            totalCount={attendances.length}
+          />
+
+          {/* Main Table - Full Width */}
+          <div>
+            <TodayAttendanceTable
+              attendances={paginatedAttendances}
+              loading={loading}
+              onViewDetail={handleViewDetail}
+              onManualCheckIn={isAdmin ? handleManualCheckIn : undefined}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredAttendances.length}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </div>
+
+          {/* Insights Card */}
+          <AttendanceInsights
+            totalEmployees={totalEmployees}
+            present={presentCount}
+            late={lateCount}
+            absent={absentCount}
+            notCheckedOut={notCheckedOutCount}
+          />
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => router.push('/dashboard/attendance/history')}
+              className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all text-left group"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <FileText size={20} className="text-blue-600" strokeWidth={2} />
+                </div>
+                <h3 className="font-semibold text-slate-900">Lịch sử chấm công</h3>
+              </div>
+              <p className="text-sm text-slate-600">Xem lịch sử và báo cáo chi tiết theo tháng</p>
+            </button>
+
             <button
               onClick={() => router.push('/dashboard/attendance/corrections')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:border-brandBlue hover:text-brandBlue font-semibold text-sm transition-all"
+              className="bg-white rounded-xl p-5 border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all text-left group"
             >
-              <FileText size={18} />
-              Điều chỉnh
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                  <Settings size={20} className="text-orange-600" strokeWidth={2} />
+                </div>
+                <h3 className="font-semibold text-slate-900">Điều chỉnh chấm công</h3>
+              </div>
+              <p className="text-sm text-slate-600">Phê duyệt yêu cầu điều chỉnh giờ làm</p>
             </button>
+
             <button
               onClick={() => router.push('/dashboard/attendance/reports')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brandBlue text-white rounded-xl hover:bg-blue-700 font-semibold text-sm transition-all shadow-lg shadow-brandBlue/30"
+              className="bg-white rounded-xl p-5 border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all text-left group"
             >
-              <Plus size={18} />
-              Báo cáo
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                  <FileText size={20} className="text-emerald-600" strokeWidth={2} />
+                </div>
+                <h3 className="font-semibold text-slate-900">Báo cáo tháng</h3>
+              </div>
+              <p className="text-sm text-slate-600">Xuất báo cáo chấm công theo tháng</p>
             </button>
           </div>
         </div>
-
-        {/* Stats Bar */}
-        <AttendanceStatsBar
-          totalEmployees={totalEmployees}
-          present={presentCount}
-          late={lateCount}
-          absent={absentCount}
-          pendingCorrections={pendingCorrections}
-          loading={loading}
-          onViewCorrections={() => router.push('/dashboard/attendance/corrections')}
-        />
-
-        {/* Analytics Dashboard - 3 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5">
-            <AttendanceTrendChart data={trendData} loading={loading} />
-          </div>
-          <div className="lg:col-span-3">
-            <AttendanceQuickStats
-              totalEmployees={totalEmployees}
-              present={presentCount}
-              late={lateCount}
-              absent={absentCount}
-              notCheckedOut={notCheckedOutCount}
-              loading={loading}
-            />
-          </div>
-          <div className="lg:col-span-4">
-            <AttendanceLiveFeed
-              recentCheckIns={attendances.slice(0, 10)}
-              loading={loading}
-            />
-          </div>
-        </div>
-
-        {/* Filter Panel */}
-        <AttendanceFilterPanel
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          departmentFilter={departmentFilter}
-          onDepartmentChange={setDepartmentFilter}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          dateFilter={dateFilter}
-          onDateChange={setDateFilter}
-          departments={departments}
-          activeFilterCount={activeFilterCount}
-          onClearFilters={handleClearFilters}
-          onExport={handleExport}
-          resultCount={filteredAttendances.length}
-          totalCount={attendances.length}
-        />
-
-        {/* Main Table - Full Width */}
-        <div>
-          <TodayAttendanceTable
-            attendances={paginatedAttendances}
-            loading={loading}
-            onViewDetail={handleViewDetail}
-            onManualCheckIn={isAdmin ? handleManualCheckIn : undefined}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredAttendances.length}
-            onPageChange={handlePageChange}
-            onItemsPerPageChange={handleItemsPerPageChange}
-          />
-        </div>
-
-        {/* Insights Card */}
-        <AttendanceInsights
-          totalEmployees={totalEmployees}
-          present={presentCount}
-          late={lateCount}
-          absent={absentCount}
-          notCheckedOut={notCheckedOutCount}
-        />
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => router.push('/dashboard/attendance/history')}
-            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                <FileText size={20} className="text-blue-600" strokeWidth={2} />
-              </div>
-              <h3 className="font-semibold text-slate-900">Lịch sử chấm công</h3>
-            </div>
-            <p className="text-sm text-slate-600">Xem lịch sử và báo cáo chi tiết theo tháng</p>
-          </button>
-
-          <button
-            onClick={() => router.push('/dashboard/attendance/corrections')}
-            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition-colors">
-                <Settings size={20} className="text-orange-600" strokeWidth={2} />
-              </div>
-              <h3 className="font-semibold text-slate-900">Điều chỉnh chấm công</h3>
-            </div>
-            <p className="text-sm text-slate-600">Phê duyệt yêu cầu điều chỉnh giờ làm</p>
-          </button>
-
-          <button
-            onClick={() => router.push('/dashboard/attendance/reports')}
-            className="bg-white rounded-xl p-5 border border-slate-200 hover:border-emerald-300 hover:shadow-md transition-all text-left group"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
-                <FileText size={20} className="text-emerald-600" strokeWidth={2} />
-              </div>
-              <h3 className="font-semibold text-slate-900">Báo cáo tháng</h3>
-            </div>
-            <p className="text-sm text-slate-600">Xuất báo cáo chấm công theo tháng</p>
-          </button>
-        </div>
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

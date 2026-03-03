@@ -1,81 +1,168 @@
 import { UserRole } from '@/types/auth';
 
-// Permission levels
+// Role-based permission structure (scalable approach)
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  ADMIN: [
+    // Full access to everything
+    'VIEW_EMPLOYEES', 'CREATE_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE',
+    'VIEW_DEPARTMENTS', 'MANAGE_DEPARTMENTS',
+    'VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE', 'APPROVE_ATTENDANCE_CORRECTION',
+    'VIEW_ALL_LEAVES', 'VIEW_OWN_LEAVES', 'CREATE_LEAVE', 'APPROVE_LEAVE',
+    'VIEW_ALL_OVERTIME', 'VIEW_OWN_OVERTIME', 'CREATE_OVERTIME', 'APPROVE_OVERTIME',
+    'VIEW_ALL_PAYROLL', 'VIEW_OWN_PAYSLIP', 'MANAGE_PAYROLL',
+    'VIEW_CONTRACTS', 'MANAGE_CONTRACTS',
+    'VIEW_REWARDS_DISCIPLINES', 'MANAGE_REWARDS_DISCIPLINES',
+    'MANAGE_SALARY_COMPONENTS',
+    'VIEW_HOLIDAYS', 'MANAGE_HOLIDAYS',
+    'VIEW_ALL_SCHEDULES', 'VIEW_OWN_SCHEDULE', 'CREATE_SCHEDULE', 'EDIT_SCHEDULE',
+    'DELETE_SCHEDULE', 'BULK_CREATE_SCHEDULES', 'MANAGE_SCHEDULES',
+    'VIEW_REPORTS', 'EXPORT_DATA',
+    'CREATE_USER', 'MANAGE_USERS',
+    'VIEW_DASHBOARD', 'VIEW_ADMIN_DASHBOARD',
+    'VIEW_SYSTEM_SETTINGS', 'EDIT_SYSTEM_SETTINGS',
+    'VIEW_OWN_PROFILE', 'EDIT_OWN_PROFILE',
+  ],
+
+  HR_MANAGER: [
+    // HR operations
+    'VIEW_EMPLOYEES', 'CREATE_EMPLOYEE', 'EDIT_EMPLOYEE', 'DELETE_EMPLOYEE',
+    'VIEW_DEPARTMENTS', 'MANAGE_DEPARTMENTS',
+    'VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE', 'APPROVE_ATTENDANCE_CORRECTION',
+    'VIEW_ALL_LEAVES', 'VIEW_OWN_LEAVES', 'CREATE_LEAVE', 'APPROVE_LEAVE',
+    'VIEW_ALL_OVERTIME', 'VIEW_OWN_OVERTIME', 'CREATE_OVERTIME', 'APPROVE_OVERTIME',
+    'VIEW_ALL_PAYROLL', 'VIEW_OWN_PAYSLIP', 'MANAGE_PAYROLL',
+    'VIEW_CONTRACTS', 'MANAGE_CONTRACTS',
+    'VIEW_REWARDS_DISCIPLINES', 'MANAGE_REWARDS_DISCIPLINES',
+    'MANAGE_SALARY_COMPONENTS',
+    'VIEW_HOLIDAYS', 'MANAGE_HOLIDAYS',
+    'VIEW_ALL_SCHEDULES', 'VIEW_OWN_SCHEDULE', 'CREATE_SCHEDULE', 'EDIT_SCHEDULE',
+    'DELETE_SCHEDULE', 'BULK_CREATE_SCHEDULES', 'MANAGE_SCHEDULES',
+    'VIEW_REPORTS', 'EXPORT_DATA',
+    'CREATE_USER',
+    'VIEW_DASHBOARD', 'VIEW_ADMIN_DASHBOARD',
+    'VIEW_OWN_PROFILE', 'EDIT_OWN_PROFILE',
+  ],
+
+  MANAGER: [
+    // Department management
+    'VIEW_EMPLOYEES', 'VIEW_DEPARTMENTS',
+    'VIEW_ALL_ATTENDANCE', 'VIEW_OWN_ATTENDANCE',
+    'VIEW_ALL_LEAVES', 'VIEW_OWN_LEAVES', 'CREATE_LEAVE',
+    'VIEW_ALL_OVERTIME', 'VIEW_OWN_OVERTIME', 'CREATE_OVERTIME',
+    'VIEW_OWN_PAYSLIP',
+    'VIEW_REWARDS_DISCIPLINES',
+    'VIEW_HOLIDAYS',
+    'VIEW_OWN_SCHEDULE',
+    'VIEW_REPORTS',
+    'VIEW_DASHBOARD',
+    'VIEW_OWN_PROFILE', 'EDIT_OWN_PROFILE',
+  ],
+
+  EMPLOYEE: [
+    // Basic employee access
+    'VIEW_OWN_ATTENDANCE',
+    'VIEW_OWN_LEAVES', 'CREATE_LEAVE',
+    'VIEW_OWN_OVERTIME', 'CREATE_OVERTIME',
+    'VIEW_OWN_PAYSLIP',
+    'VIEW_HOLIDAYS',
+    'VIEW_OWN_SCHEDULE',
+    'VIEW_DASHBOARD',
+    'VIEW_OWN_PROFILE', 'EDIT_OWN_PROFILE',
+  ],
+};
+
+// Legacy permission structure (for backward compatibility)
 export const PERMISSIONS = {
   // Employee management
   VIEW_EMPLOYEES: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   CREATE_EMPLOYEE: ['ADMIN', 'HR_MANAGER'],
   EDIT_EMPLOYEE: ['ADMIN', 'HR_MANAGER'],
   DELETE_EMPLOYEE: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Department management
   VIEW_DEPARTMENTS: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   MANAGE_DEPARTMENTS: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Attendance
   VIEW_ALL_ATTENDANCE: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   VIEW_OWN_ATTENDANCE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   APPROVE_ATTENDANCE_CORRECTION: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Leave requests
   VIEW_ALL_LEAVES: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   VIEW_OWN_LEAVES: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   CREATE_LEAVE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   APPROVE_LEAVE: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Overtime
   VIEW_ALL_OVERTIME: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   VIEW_OWN_OVERTIME: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   CREATE_OVERTIME: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   APPROVE_OVERTIME: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Payroll
   VIEW_ALL_PAYROLL: ['ADMIN', 'HR_MANAGER'],
   VIEW_OWN_PAYSLIP: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   MANAGE_PAYROLL: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Contracts
   VIEW_CONTRACTS: ['ADMIN', 'HR_MANAGER'],
   MANAGE_CONTRACTS: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Rewards & Disciplines
   VIEW_REWARDS_DISCIPLINES: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   MANAGE_REWARDS_DISCIPLINES: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Salary components
   MANAGE_SALARY_COMPONENTS: ['ADMIN', 'HR_MANAGER'],
-  
+
   // Holidays
   VIEW_HOLIDAYS: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   MANAGE_HOLIDAYS: ['ADMIN', 'HR_MANAGER'],
-  
+
+  // Work Schedule
+  VIEW_ALL_SCHEDULES: ['ADMIN', 'HR_MANAGER'],
+  VIEW_OWN_SCHEDULE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
+  CREATE_SCHEDULE: ['ADMIN', 'HR_MANAGER'],
+  EDIT_SCHEDULE: ['ADMIN', 'HR_MANAGER'],
+  DELETE_SCHEDULE: ['ADMIN', 'HR_MANAGER'],
+  BULK_CREATE_SCHEDULES: ['ADMIN', 'HR_MANAGER'],
+  MANAGE_SCHEDULES: ['ADMIN', 'HR_MANAGER'],
+
   // Reports & Export
   VIEW_REPORTS: ['ADMIN', 'HR_MANAGER', 'MANAGER'],
   EXPORT_DATA: ['ADMIN', 'HR_MANAGER'],
-  
+
   // User management
   CREATE_USER: ['ADMIN', 'HR_MANAGER'],
   MANAGE_USERS: ['ADMIN'],
-  
+
   // Dashboard
   VIEW_DASHBOARD: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   VIEW_ADMIN_DASHBOARD: ['ADMIN', 'HR_MANAGER'],
+
+  // Settings
+  VIEW_SYSTEM_SETTINGS: ['ADMIN'],
+  EDIT_SYSTEM_SETTINGS: ['ADMIN'],
+  VIEW_OWN_PROFILE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
+  EDIT_OWN_PROFILE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
 } as const;
 
-// Check if user has permission
+// Fast permission check using role-based lookup
 export const hasPermission = (userRole: UserRole, permission: keyof typeof PERMISSIONS): boolean => {
-  const allowedRoles = PERMISSIONS[permission] as readonly UserRole[];
-  return allowedRoles.includes(userRole);
+  return ROLE_PERMISSIONS[userRole]?.includes(permission) ?? false;
 };
 
 // Check if user has any of the permissions
 export const hasAnyPermission = (userRole: UserRole, permissions: Array<keyof typeof PERMISSIONS>): boolean => {
-  return permissions.some(permission => hasPermission(userRole, permission));
+  const userPermissions = ROLE_PERMISSIONS[userRole] ?? [];
+  return permissions.some(permission => userPermissions.includes(permission));
 };
 
 // Check if user has all permissions
 export const hasAllPermissions = (userRole: UserRole, permissions: Array<keyof typeof PERMISSIONS>): boolean => {
-  return permissions.every(permission => hasPermission(userRole, permission));
+  const userPermissions = ROLE_PERMISSIONS[userRole] ?? [];
+  return permissions.every(permission => userPermissions.includes(permission));
 };
 
 // Role hierarchy
@@ -117,19 +204,18 @@ export const canViewEmployee = (userRole: UserRole, targetEmployeeId: string, cu
   if (hasPermission(userRole, 'VIEW_EMPLOYEES')) {
     return true;
   }
-  
+
   // Employee can only view their own data
-  return targetEmployeeId === currentEmployeeId;
+  if (currentEmployeeId) {
+    return targetEmployeeId === currentEmployeeId;
+  }
+
+  return false;
 };
 
 // Check if user can edit employee data
-export const canEditEmployee = (userRole: UserRole, targetEmployeeId: string, currentEmployeeId?: string): boolean => {
-  // Admin and HR can edit all
-  if (hasPermission(userRole, 'EDIT_EMPLOYEE')) {
-    return true;
-  }
-  
-  return false;
+export const canEditEmployee = (userRole: UserRole): boolean => {
+  return hasPermission(userRole, 'EDIT_EMPLOYEE');
 };
 
 // Check if user can approve requests
@@ -140,40 +226,54 @@ export const canApproveRequest = (userRole: UserRole): boolean => {
 // Get accessible routes based on role
 export const getAccessibleRoutes = (userRole: UserRole): string[] => {
   const routes: string[] = ['/dashboard'];
-  
+
   if (hasPermission(userRole, 'VIEW_EMPLOYEES')) {
     routes.push('/dashboard/employees');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_DEPARTMENTS')) {
     routes.push('/dashboard/departments');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_ALL_ATTENDANCE')) {
     routes.push('/dashboard/attendance');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_ALL_LEAVES')) {
     routes.push('/dashboard/leaves');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_ALL_OVERTIME')) {
     routes.push('/dashboard/overtime');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_ALL_PAYROLL')) {
     routes.push('/dashboard/payroll');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_CONTRACTS')) {
     routes.push('/dashboard/contracts');
   }
-  
+
   if (hasPermission(userRole, 'VIEW_REPORTS')) {
     routes.push('/dashboard/reports');
   }
-  
+
   routes.push('/dashboard/profile');
-  
+
   return routes;
+};
+
+// Get default route after login based on role
+export const getDefaultRouteForRole = (userRole: UserRole): string => {
+  switch (userRole) {
+    case 'ADMIN':
+    case 'HR_MANAGER':
+    case 'MANAGER':
+      return '/dashboard';
+    case 'EMPLOYEE':
+      return '/dashboard/my-calendar';
+    default:
+      return '/dashboard';
+  }
 };

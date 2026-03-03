@@ -13,10 +13,10 @@ const roleLabels: Record<string, string> = {
 };
 
 const pageInfo: Record<string, { title: string; subtitle: string; icon?: any }> = {
-  '/dashboard': { 
-    title: 'Dashboard', 
+  '/dashboard': {
+    title: 'Dashboard',
     subtitle: 'Tổng quan hệ thống quản lý nhân sự',
-    icon: LayoutGrid 
+    icon: LayoutGrid
   },
   '/dashboard/employees': { title: 'Quản lý Nhân viên', subtitle: 'Quản lý thông tin nhân viên' },
   '/dashboard/departments': { title: 'Quản lý Phòng ban', subtitle: 'Quản lý cơ cấu tổ chức' },
@@ -150,10 +150,17 @@ export default function TopHeader() {
 
           {/* Dropdown Menu */}
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
               <div className="px-4 py-3 border-b border-slate-100">
                 <p className="text-sm font-medium text-primary">{displayName}</p>
-                <p className="text-xs text-slate-500">{user?.email}</p>
+                <p className="text-xs text-slate-500 mb-2">{user?.email}</p>
+                {/* Role Badge */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-xs font-semibold text-blue-700">
+                    {roleLabels[user?.role || 'EMPLOYEE']}
+                  </span>
+                </div>
               </div>
 
               <div className="py-1">
@@ -166,6 +173,16 @@ export default function TopHeader() {
                 >
                   <User size={16} />
                   Thông tin cá nhân
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    router.push('/dashboard/payroll');
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                  Phiếu lương của tôi
                 </button>
                 <button
                   onClick={() => {

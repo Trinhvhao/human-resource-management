@@ -1,24 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Plus, Award, TrendingUp, DollarSign, Trash2, Search, Filter } from 'lucide-react';
+import { Plus, Award, TrendingUp, DollarSign, Trash2, Search, Filter, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
-import rewardService from '@/services/rewardService';
+import rewardService, { Reward } from '@/services/rewardService';
 import employeeService from '@/services/employeeService';
-import { Reward, RewardType, CreateRewardData } from '@/types/reward';
 import { Employee } from '@/types/employee';
 import { formatDate, formatCurrency } from '@/utils/formatters';
 
-const rewardTypeLabels: Record<RewardType, string> = {
+const rewardTypeLabels: Record<string, string> = {
   BONUS: 'Thưởng tiền',
   CERTIFICATE: 'Giấy khen',
   PROMOTION: 'Thăng chức',
   OTHER: 'Khác',
 };
 
-const rewardTypeColors: Record<RewardType, string> = {
+const rewardTypeColors: Record<string, string> = {
   BONUS: 'bg-green-100 text-green-700',
   CERTIFICATE: 'bg-blue-100 text-blue-700',
   PROMOTION: 'bg-purple-100 text-purple-700',
@@ -32,14 +31,14 @@ export default function RewardsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<RewardType | 'ALL'>('ALL');
-  
-  const [formData, setFormData] = useState<CreateRewardData>({
+  const [filterType, setFilterType] = useState<string>('ALL');
+
+  const [formData, setFormData] = useState({
     employeeId: '',
     reason: '',
+    rewardType: 'BONUS' as 'BONUS' | 'CERTIFICATE' | 'PROMOTION' | 'OTHER',
     amount: 0,
     rewardDate: new Date().toISOString().split('T')[0],
-    rewardType: 'BONUS',
   });
 
   const [stats, setStats] = useState({
@@ -59,10 +58,10 @@ export default function RewardsPage() {
         rewardService.getAll(),
         employeeService.getAll({ status: 'ACTIVE' }),
       ]);
-      
+
       setRewards(rewardsRes.data);
       setEmployees(employeesRes.data);
-      
+
       // Calculate stats
       const total = rewardsRes.data.length;
       const totalAmount = rewardsRes.data.reduce((sum: number, r: Reward) => sum + Number(r.amount), 0);
@@ -71,10 +70,10 @@ export default function RewardsPage() {
         const now = new Date();
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
       }).length;
-      
+
       setStats({ total, totalAmount, thisMonth });
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Không thể tải dữ liệu:', error);
       alert('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
@@ -82,7 +81,7 @@ export default function RewardsPage() {
   };
 
   const handleCreate = async () => {
-    if (!formData.employeeId || !formData.reason || formData.amount <= 0) {
+    if (!formData.employeeId || !formData.reason) {
       alert('Vui lòng điền đầy đủ thông tin');
       return;
     }
@@ -94,13 +93,13 @@ export default function RewardsPage() {
       setFormData({
         employeeId: '',
         reason: '',
+        rewardType: 'BONUS',
         amount: 0,
         rewardDate: new Date().toISOString().split('T')[0],
-        rewardType: 'BONUS',
       });
       fetchData();
     } catch (error: any) {
-      console.error('Failed to create reward:', error);
+      console.error('Không thể tạo khen thưởng:', error);
       alert(error.response?.data?.message || 'Tạo khen thưởng thất bại');
     }
   };
@@ -113,14 +112,14 @@ export default function RewardsPage() {
       alert('Xóa thành công');
       fetchData();
     } catch (error: any) {
-      console.error('Failed to delete reward:', error);
+      console.error('Không thể xóa:', error);
       alert(error.response?.data?.message || 'Xóa thất bại');
     }
   };
 
   const filteredRewards = rewards.filter((reward) => {
     const matchSearch = reward.employee?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       reward.reason.toLowerCase().includes(searchTerm.toLowerCase());
+      reward.reason.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = filterType === 'ALL' || reward.rewardType === filterType;
     return matchSearch && matchType;
   });
@@ -151,7 +150,7 @@ export default function RewardsPage() {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:shadow-lg transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all font-semibold shadow-lg shadow-green-500/30"
           >
             <Plus size={20} />
             Tạo khen thưởng
@@ -228,7 +227,7 @@ export default function RewardsPage() {
               <Filter size={20} className="text-slate-400" />
               <select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value as RewardType | 'ALL')}
+                onChange={(e) => setFilterType(e.target.value)}
                 className="px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20"
               >
                 <option value="ALL">Tất cả loại</option>
@@ -247,6 +246,7 @@ export default function RewardsPage() {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Nhân viên</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Phòng ban</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Lý do</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Loại</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Số tiền</th>
@@ -257,22 +257,27 @@ export default function RewardsPage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredRewards.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                      Không có khen thưởng nào
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                      <Award size={48} className="text-slate-300 mx-auto mb-3" />
+                      <p className="font-medium">Chưa có khen thưởng nào</p>
                     </td>
                   </tr>
                 ) : (
                   filteredRewards.map((reward) => (
                     <tr key={reward.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div>
+                        <button
+                          onClick={() => router.push(`/dashboard/employees/${reward.employee.id}`)}
+                          className="text-left hover:text-brandBlue transition-colors"
+                        >
                           <p className="font-medium text-primary">{reward.employee?.fullName}</p>
                           <p className="text-sm text-slate-500">{reward.employee?.employeeCode}</p>
-                        </div>
+                        </button>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm text-slate-700">{reward.reason}</p>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {reward.employee?.department?.name || '-'}
                       </td>
+                      <td className="px-6 py-4 text-sm text-slate-700">{reward.reason}</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${rewardTypeColors[reward.rewardType]}`}>
                           {rewardTypeLabels[reward.rewardType]}
@@ -287,8 +292,16 @@ export default function RewardsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            onClick={() => router.push(`/dashboard/employees/${reward.employee.id}`)}
+                            className="p-2 hover:bg-blue-50 rounded-lg text-brandBlue transition-colors"
+                            title="Xem nhân viên"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
                             onClick={() => handleDelete(reward.id)}
                             className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                            title="Xóa"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -337,7 +350,7 @@ export default function RewardsPage() {
                   </label>
                   <select
                     value={formData.rewardType}
-                    onChange={(e) => setFormData({ ...formData, rewardType: e.target.value as RewardType })}
+                    onChange={(e) => setFormData({ ...formData, rewardType: e.target.value as any })}
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20"
                   >
                     {Object.entries(rewardTypeLabels).map(([key, label]) => (
@@ -361,14 +374,14 @@ export default function RewardsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Số tiền thưởng <span className="text-red-500">*</span>
+                    Số tiền thưởng
                   </label>
                   <input
                     type="number"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20"
-                    placeholder="Nhập số tiền"
+                    placeholder="Nhập số tiền (nếu có)"
                   />
                 </div>
 
@@ -402,6 +415,17 @@ export default function RewardsPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Info */}
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+          <h4 className="text-sm font-semibold text-green-700 mb-2">ℹ️ Lưu ý:</h4>
+          <ul className="text-sm text-slate-700 space-y-1 list-disc list-inside">
+            <li>Khen thưởng sẽ được tự động tính vào lương tháng tương ứng</li>
+            <li>Số tiền thưởng sẽ CỘNG vào tổng lương</li>
+            <li>Chỉ tính các khoản trong kỳ lương (theo ngày khen thưởng)</li>
+            <li>Có thể xem chi tiết trong phiếu lương của nhân viên</li>
+          </ul>
+        </div>
       </div>
     </DashboardLayout>
   );

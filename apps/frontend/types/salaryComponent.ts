@@ -1,5 +1,6 @@
-export type ComponentType = 
+export type ComponentType =
   | 'BASIC'      // Lương cơ bản
+  | 'ALLOWANCE'  // Phụ cấp (generic)
   | 'LUNCH'      // Phụ cấp ăn trưa
   | 'TRANSPORT'  // Phụ cấp xăng xe
   | 'PHONE'      // Phụ cấp điện thoại

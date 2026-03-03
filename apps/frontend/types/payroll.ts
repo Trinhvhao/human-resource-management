@@ -1,4 +1,4 @@
-export type PayrollStatus = 'DRAFT' | 'FINALIZED';
+export type PayrollStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LOCKED';
 
 export interface Payroll {
   id: string;
@@ -8,6 +8,18 @@ export interface Payroll {
   totalAmount: number;
   finalizedBy?: string;
   finalizedAt?: string;
+  submittedAt?: string;
+  submittedBy?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+  lockedAt?: string;
+  lockedBy?: string;
+  version?: number;
+  previousVersionId?: string;
+  notes?: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
   items: PayrollItem[];
@@ -21,24 +33,20 @@ export interface PayrollItem {
   payrollId: string;
   employeeId: string;
   baseSalary: number;
-  allowances: number;
-  bonuses: number;
-  overtimePay: number;
-  deductions: number;
-  socialInsurance: number;
-  healthInsurance: number;
-  unemploymentInsurance: number;
-  taxableIncome: number;
-  personalIncomeTax: number;
-  netSalary: number;
   workDays: number;
-  paidLeaveDays: number;
-  unpaidLeaveDays: number;
+  actualWorkDays: number;
+  allowances: number;
+  bonus: number;
+  deduction: number;
   overtimeHours: number;
+  overtimePay: number;
+  insurance: number; // Total insurance (BHXH + BHYT + BHTN)
+  tax: number; // Personal income tax
+  netSalary: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  employee: {
+  employee?: {
     id: string;
     employeeCode: string;
     fullName: string;
@@ -57,8 +65,9 @@ export interface CreatePayrollData {
 
 export interface UpdatePayrollItemData {
   allowances?: number;
-  bonuses?: number;
-  deductions?: number;
+  bonus?: number;
+  deduction?: number;
+  overtimeHours?: number;
   notes?: string;
 }
 
@@ -76,22 +85,19 @@ export interface Payslip {
   earnings: {
     baseSalary: number;
     allowances: number;
-    bonuses: number;
+    bonus: number;
     overtimePay: number;
     total: number;
   };
   deductions: {
-    socialInsurance: number;
-    healthInsurance: number;
-    unemploymentInsurance: number;
-    personalIncomeTax: number;
-    other: number;
+    insurance: number; // Total insurance (BHXH + BHYT + BHTN)
+    tax: number; // Personal income tax
+    other: number; // Other deductions
     total: number;
   };
   attendance: {
     workDays: number;
-    paidLeaveDays: number;
-    unpaidLeaveDays: number;
+    actualWorkDays: number;
     overtimeHours: number;
   };
   netSalary: number;

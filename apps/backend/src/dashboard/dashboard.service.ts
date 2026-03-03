@@ -250,7 +250,7 @@ export class DashboardService {
     }));
 
     const totalPaid = payrolls
-      .filter((p) => p.status === 'FINALIZED')
+      .filter((p) => p.status === 'LOCKED')
       .reduce((sum, p) => sum + Number(p.totalAmount), 0);
 
     return {

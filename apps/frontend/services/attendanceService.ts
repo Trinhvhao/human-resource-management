@@ -1,9 +1,9 @@
 import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types/api';
-import { 
-  Attendance, 
-  CheckInData, 
-  AttendanceReport, 
+import {
+  Attendance,
+  CheckInData,
+  AttendanceReport,
   AttendanceCorrection,
   CreateCorrectionData,
   AttendanceStatistics
@@ -99,6 +99,17 @@ class AttendanceService {
 
   async cancelCorrection(id: string): Promise<ApiResponse<AttendanceCorrection>> {
     return axiosInstance.delete(`/attendance-corrections/${id}`);
+  }
+
+  // Attendance Management (Admin only)
+  async validateAttendance(month: number, year: number): Promise<ApiResponse<any>> {
+    return axiosInstance.get('/attendances/validate', {
+      params: { month, year }
+    });
+  }
+
+  async autoMarkAbsent(): Promise<ApiResponse<any>> {
+    return axiosInstance.post('/attendances/auto-mark-absent');
   }
 }
 

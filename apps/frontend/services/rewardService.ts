@@ -1,15 +1,36 @@
 import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types/api';
-import { Reward, CreateRewardData } from '@/types/reward';
 
-interface QueryParams {
-  employeeId?: string;
-  page?: number;
-  limit?: number;
+export type RewardType = 'BONUS' | 'CERTIFICATE' | 'PROMOTION' | 'OTHER';
+
+export interface Reward {
+  id: string;
+  employeeId: string;
+  reason: string;
+  amount: number;
+  rewardDate: string;
+  rewardType: RewardType;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  employee: {
+    id: string;
+    employeeCode: string;
+    fullName: string;
+    department?: { name: string };
+  };
+}
+
+export interface CreateRewardData {
+  employeeId: string;
+  reason: string;
+  amount: number;
+  rewardDate: string;
+  rewardType?: RewardType;
 }
 
 class RewardService {
-  async getAll(params?: QueryParams): Promise<ApiResponse<Reward[]>> {
+  async getAll(params?: { employeeId?: string; page?: number; limit?: number }): Promise<ApiResponse<Reward[]>> {
     return axiosInstance.get('/rewards', { params });
   }
 

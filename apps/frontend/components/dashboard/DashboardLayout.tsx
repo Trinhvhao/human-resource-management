@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
+import ChatbotWidget from '../chatbot/ChatbotWidget';
 import { useAuthStore } from '@/store/authStore';
 
 interface DashboardLayoutProps {
@@ -63,6 +64,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </main>
       </div>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </div>
   );
 }

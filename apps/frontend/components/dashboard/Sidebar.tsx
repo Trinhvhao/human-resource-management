@@ -8,6 +8,7 @@ import {
   Users,
   Clock,
   Calendar,
+  CalendarDays,
   FileText,
   DollarSign,
   Settings,
@@ -17,7 +18,8 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronUp,
-  FileSignature
+  FileSignature,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
@@ -89,6 +91,17 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Lịch sử', href: '/dashboard/attendance/history' },
       { label: 'Yêu cầu sửa', href: '/dashboard/attendance/corrections' },
       { label: 'Báo cáo', href: '/dashboard/attendance/reports' },
+      { label: 'Quản lý', href: '/dashboard/attendance/management' },
+    ]
+  },
+  {
+    icon: CalendarDays,
+    label: 'Lịch làm việc',
+    href: '/dashboard/schedules',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Lịch tổng quan', href: '/dashboard/schedules/overview' },
+      { label: 'Ca làm việc', href: '/dashboard/schedules/shifts' },
     ]
   },
   {
@@ -112,13 +125,25 @@ const adminMenuItems: MenuItem[] = [
     ]
   },
   {
+    icon: Award,
+    label: 'Thưởng & Phạt',
+    href: '/dashboard/rewards-disciplines',
+    roles: ['ADMIN', 'MANAGER'],
+    children: [
+      { label: 'Tổng quan', href: '/dashboard/rewards-disciplines' },
+      { label: 'Khen thưởng', href: '/dashboard/rewards' },
+      { label: 'Kỷ luật', href: '/dashboard/disciplines' },
+    ]
+  },
+  {
     icon: DollarSign,
-    label: 'Lương',
+    label: 'Quản lý lương',
     href: '/dashboard/payroll',
     roles: ['ADMIN', 'MANAGER'],
     children: [
-      { label: 'Bảng lương', href: '/dashboard/payroll' },
-      { label: 'Quản lý', href: '/dashboard/payroll/manage' },
+      { label: 'Bảng lương', href: '/dashboard/payroll/manage' },
+      { label: 'Phê duyệt', href: '/dashboard/payroll/approvals' },
+      { label: 'Cấu trúc lương', href: '/dashboard/payroll/salary-structure' },
     ]
   },
   {
@@ -132,9 +157,10 @@ const adminMenuItems: MenuItem[] = [
 const employeeMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Trang chủ', href: '/dashboard', roles: ['EMPLOYEE'] },
   { icon: ClipboardCheck, label: 'Chấm công', href: '/dashboard/my-attendance', roles: ['EMPLOYEE'] },
+  { icon: CalendarDays, label: 'Lịch của tôi', href: '/dashboard/my-calendar', roles: ['EMPLOYEE'] },
   { icon: Calendar, label: 'Nghỉ phép', href: '/dashboard/my-leaves', roles: ['EMPLOYEE'] },
   { icon: FileText, label: 'Làm thêm giờ', href: '/dashboard/my-overtime', roles: ['EMPLOYEE'] },
-  { icon: DollarSign, label: 'Lương của tôi', href: '/dashboard/my-payroll', roles: ['EMPLOYEE'] },
+  { icon: DollarSign, label: 'Lương của tôi', href: '/dashboard/payroll', roles: ['EMPLOYEE'] },
   { icon: Settings, label: 'Cài đặt', href: '/dashboard/settings', roles: ['EMPLOYEE'] },
 ];
 

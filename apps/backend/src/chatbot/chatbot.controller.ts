@@ -9,10 +9,10 @@ import { ChatDto } from './dto/chat.dto';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('JWT-auth')
 export class ChatbotController {
-  constructor(private readonly chatbotService: ChatbotService) {}
+  constructor(private readonly chatbotService: ChatbotService) { }
 
   @Post('chat')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Chat với AI assistant',
     description: 'Gửi tin nhắn và nhận phản hồi từ AI chatbot nội bộ công ty'
   })
@@ -30,7 +30,7 @@ export class ChatbotController {
     );
 
     // Save chat history
-    if (context.employeeId) {
+    if (response && context.employeeId) {
       await this.chatbotService.saveChatHistory(
         context.employeeId,
         dto.message,
@@ -42,7 +42,7 @@ export class ChatbotController {
   }
 
   @Get('history')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Lấy lịch sử chat',
     description: 'Lấy lịch sử chat của nhân viên'
   })
@@ -64,7 +64,7 @@ export class ChatbotController {
   }
 
   @Get('suggestions')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Lấy gợi ý câu hỏi',
     description: 'Lấy danh sách câu hỏi gợi ý cho người dùng'
   })

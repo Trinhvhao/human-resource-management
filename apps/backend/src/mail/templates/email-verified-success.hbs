@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email đã được xác thực</title>
+</head>
+
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0"
+                    style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td
+                            style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 30px; text-align: center;">
+                            <div
+                                style="width: 80px; height: 80px; background-color: #ffffff; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 48px;">✓</span>
+                            </div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Email đã được xác thực!</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{email}}</strong>,
+                            </p>
+
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                Email của bạn đã được xác thực thành công! Bây giờ bạn có thể sử dụng đầy đủ các tính
+                                năng của hệ thống HRMS Pro.
+                            </p>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{loginUrl}}"
+                                            style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
+                                            Đăng nhập ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div
+                                style="background-color: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 30px 0;">
+                                <p style="color: #0c5460; font-size: 14px; line-height: 1.6; margin: 0;">
+                                    <strong>Mẹo:</strong> Hãy cập nhật đầy đủ thông tin cá nhân để trải nghiệm tốt nhất!
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                            <p style="color: #6c757d; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
+                                © 2026 HRMS Pro. All rights reserved.
+                            </p>
+                            <p style="color: #6c757d; font-size: 12px; line-height: 1.6; margin: 0;">
+                                Email này được gửi tự động, vui lòng không trả lời.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

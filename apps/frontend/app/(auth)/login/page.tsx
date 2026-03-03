@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles, Shield, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { getDefaultRouteForRole } from '@/utils/permissions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,7 +24,17 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-      router.push('/dashboard');
+
+      // Get user from store after successful login
+      const user = useAuthStore.getState().user;
+
+      // Role-based redirect
+      if (user?.role) {
+        const defaultRoute = getDefaultRouteForRole(user.role);
+        router.push(defaultRoute);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       // Error can be ApiError object with message property

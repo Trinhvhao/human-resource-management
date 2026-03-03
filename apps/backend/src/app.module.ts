@@ -25,6 +25,7 @@ import { UploadModule } from './upload/upload.module';
 import { SalaryComponentsModule } from './salary-components/salary-components.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { TeamsModule } from './teams/teams.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
   imports: [
@@ -54,8 +55,9 @@ import { TeamsModule } from './teams/teams.module';
     SalaryComponentsModule,
     ChatbotModule,
     TeamsModule,
+    CalendarModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

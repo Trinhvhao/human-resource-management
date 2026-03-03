@@ -23,9 +23,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('overtime')
 export class OvertimeController {
-  constructor(private readonly overtimeService: OvertimeService) {}
+  constructor(private readonly overtimeService: OvertimeService) { }
 
   @Post()
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Đăng ký tăng ca' })
   create(@CurrentUser() user: any, @Body() createDto: CreateOvertimeDto) {
     return this.overtimeService.create(user.employeeId, createDto);
@@ -65,6 +66,7 @@ export class OvertimeController {
   }
 
   @Get('my-requests')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Đơn tăng ca của tôi' })
   findMyRequests(@CurrentUser() user: any) {
     return this.overtimeService.findByEmployee(user.employeeId);
@@ -99,6 +101,7 @@ export class OvertimeController {
   }
 
   @Get(':id')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Chi tiết đơn tăng ca' })
   findOne(@Param('id') id: string) {
     return this.overtimeService.findOne(id);
@@ -123,6 +126,7 @@ export class OvertimeController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Hủy đơn tăng ca' })
   cancel(@Param('id') id: string, @CurrentUser() user: any) {
     return this.overtimeService.cancel(id, user.employeeId);

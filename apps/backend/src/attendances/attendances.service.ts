@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,7 +9,7 @@ export class AttendancesService {
   private readonly WORK_END = 17 * 60 + 30;  // 5:30 PM in minutes
   private readonly LATE_THRESHOLD = 15;       // 15 minutes grace period
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async checkIn(employeeId: string) {
     const employee = await this.prisma.employee.findUnique({
@@ -39,18 +40,18 @@ export class AttendancesService {
 
     const attendance = existing
       ? await this.prisma.attendance.update({
-          where: { id: existing.id },
-          data: { checkIn: now, isLate, status: 'PRESENT' },
-        })
+        where: { id: existing.id },
+        data: { checkIn: now, isLate, status: 'PRESENT' },
+      })
       : await this.prisma.attendance.create({
-          data: {
-            employeeId,
-            date: today,
-            checkIn: now,
-            isLate,
-            status: 'PRESENT',
-          },
-        });
+        data: {
+          employeeId,
+          date: today,
+          checkIn: now,
+          isLate,
+          status: 'PRESENT',
+        },
+      });
 
     return {
       success: true,
@@ -93,7 +94,7 @@ export class AttendancesService {
     // Calculate work hours
     const checkInTime = new Date(attendance.checkIn);
     let workHours = (now.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
-    
+
     // Deduct lunch break (1 hour) if worked more than 4 hours
     if (workHours > 4) {
       workHours -= 1;
@@ -301,14 +302,14 @@ export class AttendancesService {
   async getAbsenteeismStats() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // Calculate date ranges
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - 6); // Last 7 days
-    
+
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
+
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
     const endOfLastWeek = new Date(startOfWeek);
@@ -398,12 +399,12 @@ export class AttendancesService {
     // Calculate rates
     const todayAbsentRate = todayTotal > 0 ? (todayAbsent / todayTotal) * 100 : 0;
     const todayLateRate = todayTotal > 0 ? (todayLate / todayTotal) * 100 : 0;
-    
+
     const weekAbsentRate = weekTotal > 0 ? (weekAbsent / weekTotal) * 100 : 0;
     const lastWeekAbsentRate = lastWeekTotal > 0 ? (lastWeekAbsent / lastWeekTotal) * 100 : 0;
-    
+
     // Calculate trend (negative = improvement)
-    const trend = lastWeekAbsentRate > 0 
+    const trend = lastWeekAbsentRate > 0
       ? ((weekAbsentRate - lastWeekAbsentRate) / lastWeekAbsentRate) * 100
       : 0;
 
@@ -430,5 +431,235 @@ export class AttendancesService {
         totalEmployees,
       },
     };
+  }
+
+  /**
+   * CRON JOB: Auto-mark absent employees
+   * Runs daily at 7 PM (19:00) Vietnam time
+   * Marks employees as ABSENT if they didn't check-in and have no approved leave
+   */
+  @Cron('0 0 19 * * *', {
+    name: 'auto-mark-absent',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  })
+  async autoMarkAbsent() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    console.log(`[Cron] Starting auto-absent marking for ${today.toLocaleDateString('vi-VN')}`);
+
+    // Get all active employees
+    const activeEmployees = await this.prisma.employee.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        email: true,
+        department: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const absentEmployees: any[] = [];
+    const employeesWithLeave: any[] = [];
+
+    for (const employee of activeEmployees) {
+      // Check if attendance record exists
+      const attendance = await this.prisma.attendance.findUnique({
+        where: {
+          unique_employee_date: {
+            employeeId: employee.id,
+            date: today,
+          },
+        },
+      });
+
+      // If no attendance record
+      if (!attendance) {
+        // Check if employee has approved leave for today
+        const leave = await this.prisma.leaveRequest.findFirst({
+          where: {
+            employeeId: employee.id,
+            status: 'APPROVED',
+            startDate: { lte: today },
+            endDate: { gte: today },
+          },
+        });
+
+        if (leave) {
+          // Employee has approved leave - skip
+          employeesWithLeave.push({
+            ...employee,
+            leaveType: leave.leaveType,
+          });
+        } else {
+          // No leave - mark as absent
+          await this.prisma.attendance.create({
+            data: {
+              employeeId: employee.id,
+              date: today,
+              status: 'ABSENT',
+              notes: 'Tự động đánh vắng (không check-in)',
+            },
+          });
+
+          absentEmployees.push(employee);
+        }
+      }
+    }
+
+    console.log(`[Cron] Auto-marked ${absentEmployees.length} employees as absent`);
+    console.log(`[Cron] ${employeesWithLeave.length} employees on approved leave`);
+    console.log(`[Cron] ${activeEmployees.length - absentEmployees.length - employeesWithLeave.length} employees checked in`);
+
+    return {
+      success: true,
+      message: `Auto-marked ${absentEmployees.length} employees as absent`,
+      data: {
+        date: today,
+        totalActive: activeEmployees.length,
+        markedAbsent: absentEmployees.length,
+        onLeave: employeesWithLeave.length,
+        checkedIn: activeEmployees.length - absentEmployees.length - employeesWithLeave.length,
+        absentEmployees: absentEmployees.map(e => ({
+          id: e.id,
+          code: e.employeeCode,
+          name: e.fullName,
+          department: e.department?.name,
+        })),
+      },
+    };
+  }
+
+  /**
+   * Validate attendance data for a month
+   * Checks for missing days and incomplete records
+   */
+  async validateAttendanceData(month: number, year: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    // Get all active employees
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        status: 'ACTIVE',
+        startDate: { lte: endDate },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: startDate } },
+        ],
+      },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        startDate: true,
+        endDate: true,
+        department: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const issues: any[] = [];
+
+    for (const employee of employees) {
+      // Calculate expected work days for this employee
+      const empStartDate = employee.startDate > startDate ? employee.startDate : startDate;
+      const empEndDate = employee.endDate && employee.endDate < endDate ? employee.endDate : endDate;
+
+      const expectedDays = await this.calculateExpectedWorkDays(empStartDate, empEndDate);
+
+      // Count attendance records
+      const attendanceCount = await this.prisma.attendance.count({
+        where: {
+          employeeId: employee.id,
+          date: { gte: empStartDate, lte: empEndDate },
+        },
+      });
+
+      // Check for missing days
+      if (attendanceCount < expectedDays) {
+        issues.push({
+          employeeId: employee.id,
+          employeeCode: employee.employeeCode,
+          employeeName: employee.fullName,
+          department: employee.department?.name,
+          expectedDays,
+          actualDays: attendanceCount,
+          missingDays: expectedDays - attendanceCount,
+          severity: 'WARNING',
+          type: 'MISSING_DAYS',
+        });
+      }
+
+      // Check for incomplete records (check-in but no check-out)
+      const incompleteRecords = await this.prisma.attendance.count({
+        where: {
+          employeeId: employee.id,
+          date: { gte: empStartDate, lte: empEndDate },
+          checkIn: { not: null },
+          checkOut: null,
+          status: 'PRESENT', // Only check PRESENT status
+        },
+      });
+
+      if (incompleteRecords > 0) {
+        issues.push({
+          employeeId: employee.id,
+          employeeCode: employee.employeeCode,
+          employeeName: employee.fullName,
+          department: employee.department?.name,
+          incompleteRecords,
+          severity: 'ERROR',
+          type: 'INCOMPLETE_RECORDS',
+        });
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        month,
+        year,
+        totalEmployees: employees.length,
+        issuesFound: issues.length,
+        issues: issues.sort((a, b) => {
+          // Sort by severity (ERROR first, then WARNING)
+          if (a.severity === 'ERROR' && b.severity === 'WARNING') return -1;
+          if (a.severity === 'WARNING' && b.severity === 'ERROR') return 1;
+          return 0;
+        }),
+      },
+    };
+  }
+
+  /**
+   * Calculate expected work days between two dates
+   * Excludes weekends and holidays
+   */
+  private async calculateExpectedWorkDays(startDate: Date, endDate: Date): Promise<number> {
+    let count = 0;
+    const current = new Date(startDate);
+
+    while (current <= endDate) {
+      const dayOfWeek = current.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+      // Check if it's a holiday
+      const holiday = await this.prisma.holiday.findUnique({
+        where: { date: new Date(current) },
+      });
+
+      if (!isWeekend && !holiday) {
+        count++;
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return count;
   }
 }

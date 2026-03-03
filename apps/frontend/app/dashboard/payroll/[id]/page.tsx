@@ -42,8 +42,9 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
     setEditingItem(item.id);
     setEditValues({
       allowances: Number(item.allowances),
-      bonuses: Number(item.bonuses),
-      deductions: Number(item.deductions),
+      bonus: Number(item.bonus),
+      deduction: Number(item.deduction),
+      overtimeHours: Number(item.overtimeHours),
       notes: item.notes || '',
     });
   };
@@ -110,13 +111,29 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex gap-2">
-            {payroll.status === 'DRAFT' ? (
-              <span className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-semibold">
+            {payroll.status === 'DRAFT' && (
+              <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold">
                 Nháp
               </span>
-            ) : (
+            )}
+            {payroll.status === 'PENDING_APPROVAL' && (
+              <span className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-semibold">
+                Chờ duyệt
+              </span>
+            )}
+            {payroll.status === 'APPROVED' && (
+              <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold">
+                Đã duyệt
+              </span>
+            )}
+            {payroll.status === 'REJECTED' && (
+              <span className="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-semibold">
+                Từ chối
+              </span>
+            )}
+            {payroll.status === 'LOCKED' && (
               <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold">
-                Đã chốt
+                Đã khóa
               </span>
             )}
             {canEdit && (
@@ -140,16 +157,16 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
           <div className="bg-white rounded-xl p-6 border-2 border-green-200">
             <p className="text-sm text-slate-600 mb-1">Tổng thu nhập</p>
             <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(payroll.items?.reduce((sum, item) => 
-                sum + Number(item.baseSalary) + Number(item.allowances) + Number(item.bonuses) + Number(item.overtimePay), 0) || 0
+              {formatCurrency(payroll.items?.reduce((sum, item) =>
+                sum + Number(item.baseSalary) + Number(item.allowances) + Number(item.bonus) + Number(item.overtimePay), 0) || 0
               )}
             </p>
           </div>
           <div className="bg-white rounded-xl p-6 border-2 border-red-200">
             <p className="text-sm text-slate-600 mb-1">Tổng khấu trừ</p>
             <p className="text-2xl font-bold text-red-600">
-              {formatCurrency(payroll.items?.reduce((sum, item) => 
-                sum + Number(item.socialInsurance) + Number(item.healthInsurance) + Number(item.unemploymentInsurance) + Number(item.personalIncomeTax) + Number(item.deductions), 0) || 0
+              {formatCurrency(payroll.items?.reduce((sum, item) =>
+                sum + Number(item.insurance) + Number(item.tax) + Number(item.deduction), 0) || 0
               )}
             </p>
           </div>
@@ -170,9 +187,9 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
                   <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Phụ cấp</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Thưởng</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Tăng ca</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Khấu trừ</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Khấu trừ khác</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Bảo hiểm</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Thuế</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Thuế TNCN</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-slate-700">Thực lãnh</th>
                   {canEdit && <th className="px-4 py-3 text-center text-xs font-semibold text-slate-700">Thao tác</th>}
                 </tr>
@@ -182,8 +199,8 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-semibold text-primary text-sm">{item.employee.fullName}</p>
-                        <p className="text-xs text-slate-500">{item.employee.employeeCode}</p>
+                        <p className="font-semibold text-primary text-sm">{item.employee?.fullName}</p>
+                        <p className="text-xs text-slate-500">{item.employee?.employeeCode}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-sm">{formatCurrency(Number(item.baseSalary))}</td>
@@ -192,7 +209,7 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
                         <input
                           type="number"
                           value={editValues.allowances}
-                          onChange={(e) => setEditValues({...editValues, allowances: Number(e.target.value)})}
+                          onChange={(e) => setEditValues({ ...editValues, allowances: Number(e.target.value) })}
                           className="w-24 px-2 py-1 border rounded text-right"
                         />
                       ) : (
@@ -203,12 +220,12 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
                       {editingItem === item.id ? (
                         <input
                           type="number"
-                          value={editValues.bonuses}
-                          onChange={(e) => setEditValues({...editValues, bonuses: Number(e.target.value)})}
+                          value={editValues.bonus}
+                          onChange={(e) => setEditValues({ ...editValues, bonus: Number(e.target.value) })}
                           className="w-24 px-2 py-1 border rounded text-right"
                         />
                       ) : (
-                        formatCurrency(Number(item.bonuses))
+                        formatCurrency(Number(item.bonus))
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-blue-600">{formatCurrency(Number(item.overtimePay))}</td>
@@ -216,18 +233,18 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
                       {editingItem === item.id ? (
                         <input
                           type="number"
-                          value={editValues.deductions}
-                          onChange={(e) => setEditValues({...editValues, deductions: Number(e.target.value)})}
+                          value={editValues.deduction}
+                          onChange={(e) => setEditValues({ ...editValues, deduction: Number(e.target.value) })}
                           className="w-24 px-2 py-1 border rounded text-right"
                         />
                       ) : (
-                        formatCurrency(Number(item.deductions))
+                        formatCurrency(Number(item.deduction))
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-red-600">
-                      {formatCurrency(Number(item.socialInsurance) + Number(item.healthInsurance) + Number(item.unemploymentInsurance))}
+                      {formatCurrency(Number(item.insurance))}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-red-600">{formatCurrency(Number(item.personalIncomeTax))}</td>
+                    <td className="px-4 py-3 text-right text-sm text-red-600">{formatCurrency(Number(item.tax))}</td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-bold text-green-600">{formatCurrency(Number(item.netSalary))}</span>
                     </td>

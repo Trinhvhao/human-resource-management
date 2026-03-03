@@ -16,14 +16,17 @@ datasource db {
 // =====================================================
 
 model User {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  role         String   @db.VarChar(50)
-  employeeId   String?  @unique @map("employee_id") @db.Uuid
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                  String    @unique @db.VarChar(255)
+  passwordHash           String    @map("password_hash") @db.VarChar(255)
+  role                   String    @db.VarChar(50)
+  employeeId             String?   @unique @map("employee_id") @db.Uuid
+  isActive               Boolean   @default(true) @map("is_active")
+  isEmailVerified        Boolean   @default(false) @map("is_email_verified")
+  emailVerificationToken String?   @map("email_verification_token") @db.VarChar(255)
+  emailVerifiedAt        DateTime? @map("email_verified_at") @db.Timestamp(6)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
   employee                 Employee?                 @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   rewards                  Reward[]                  @relation("CreatedByUser")
@@ -43,6 +46,7 @@ model User {
   requestedTerminations TerminationRequest[] @relation("RequestedTerminations")
   approvedTerminations  TerminationRequest[] @relation("ApprovedTerminations")
   createdAppendices     ContractAppendix[]   @relation("CreatedAppendices")
+  companyKnowledges     CompanyKnowledge[]   @relation("UserKnowledge")
 
   @@map("users")
 }
@@ -218,7 +222,8 @@ model Employee {
   documents EmployeeDocument[]
 
   // NEW: Employee activities
-  activities EmployeeActivity[] @relation("EmployeeActivities")
+  activities    EmployeeActivity[] @relation("EmployeeActivities")
+  workSchedules WorkSchedule[]     @relation("EmployeeWorkSchedules")
 
   @@map("employees")
 }
@@ -330,21 +335,46 @@ model LeaveRequest {
   @@map("leave_requests")
 }
 
-model Payroll {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  month       Int
-  year        Int
-  status      String    @default("DRAFT") @db.VarChar(50)
-  totalAmount Decimal   @default(0) @map("total_amount") @db.Decimal(15, 2)
-  finalizedAt DateTime? @map("finalized_at") @db.Timestamp(6)
-  finalizedBy String?   @map("finalized_by") @db.Uuid
-  notes       String?   @db.Text
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+enum PayrollStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  LOCKED
+}
 
-  items PayrollItem[]
+model Payroll {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  month             Int
+  year              Int
+  status            PayrollStatus @default(DRAFT)
+  totalAmount       Decimal       @default(0) @map("total_amount") @db.Decimal(15, 2)
+  finalizedAt       DateTime?     @map("finalized_at") @db.Timestamp(6)
+  finalizedBy       String?       @map("finalized_by") @db.Uuid
+  approvedBy        String?       @map("approved_by") @db.Uuid
+  approvedAt        DateTime?     @map("approved_at") @db.Timestamp(6)
+  rejectedBy        String?       @map("rejected_by") @db.Uuid
+  rejectedAt        DateTime?     @map("rejected_at") @db.Timestamp(6)
+  rejectionReason   String?       @map("rejection_reason") @db.Text
+  lockedAt          DateTime?     @map("locked_at") @db.Timestamp(6)
+  lockedBy          String?       @map("locked_by") @db.Uuid
+  version           Int           @default(1)
+  previousVersionId String?       @map("previous_version_id") @db.Uuid
+  submittedAt       DateTime?     @map("submitted_at") @db.Timestamp(6)
+  submittedBy       String?       @map("submitted_by") @db.Uuid
+  notes             String?       @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  items           PayrollItem[]
+  previousVersion Payroll?      @relation("PayrollVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  nextVersions    Payroll[]     @relation("PayrollVersions")
 
   @@unique([month, year], name: "unique_month_year")
+  @@index([status])
+  @@index([approvedBy])
+  @@index([version])
+  @@index([previousVersionId])
   @@map("payrolls")
 }
 
@@ -740,4 +770,60 @@ model ContractAppendix {
   @@index([contractId])
   @@index([effectiveDate])
   @@map("contract_appendices")
+}
+
+// =====================================================
+// WORK CALENDAR & SCHEDULE
+// =====================================================
+
+enum ShiftType {
+  MORNING // 8:00 - 12:00
+  AFTERNOON // 13:00 - 17:00
+  FULL_DAY // 8:00 - 17:00
+  NIGHT // 18:00 - 22:00
+  CUSTOM
+}
+
+// Work Schedule for Personal Calendar
+model WorkSchedule {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId String    @map("employee_id") @db.Uuid
+  date       DateTime  @db.Date
+  shiftType  ShiftType @default(FULL_DAY) @map("shift_type")
+  startTime  DateTime  @map("start_time") @db.Timestamp(6)
+  endTime    DateTime  @map("end_time") @db.Timestamp(6)
+  isWorkDay  Boolean   @default(true) @map("is_work_day")
+  notes      String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  employee Employee @relation("EmployeeWorkSchedules", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, date])
+  @@map("work_schedules")
+}
+
+// =====================================================
+// COMPANY KNOWLEDGE BASE (for RAG Chatbot)
+// =====================================================
+
+model CompanyKnowledge {
+  id        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  content   String                      @db.Text
+  category  String
+  tags      String[]
+  embedding Unsupported("vector(384)")?
+  metadata  Json?
+  isActive  Boolean                     @default(true) @map("is_active")
+  createdBy String                      @map("created_by") @db.Uuid
+  createdAt DateTime                    @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  creator User @relation("UserKnowledge", fields: [createdBy], references: [id])
+
+  @@index([category])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("company_knowledge")
 }

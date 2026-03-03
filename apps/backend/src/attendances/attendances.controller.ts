@@ -11,7 +11,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @Controller('attendances')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendancesController {
-  constructor(private readonly attendancesService: AttendancesService) {}
+  constructor(private readonly attendancesService: AttendancesService) { }
 
   @Post('check-in')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
@@ -95,12 +95,36 @@ export class AttendancesController {
 
   @Get('absenteeism-stats')
   @Roles('ADMIN', 'HR_MANAGER')
-  @ApiOperation({ 
-    summary: 'Get absenteeism statistics', 
-    description: 'Get absenteeism and late statistics for today, week, and month with trend data' 
+  @ApiOperation({
+    summary: 'Get absenteeism statistics',
+    description: 'Get absenteeism and late statistics for today, week, and month with trend data'
   })
   @ApiResponse({ status: 200, description: 'Absenteeism statistics retrieved' })
   getAbsenteeismStats() {
     return this.attendancesService.getAbsenteeismStats();
+  }
+
+  @Post('auto-mark-absent')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Manually trigger auto-absent marking',
+    description: 'Mark employees as absent if they did not check-in (normally runs automatically at 7 PM)'
+  })
+  @ApiResponse({ status: 201, description: 'Auto-absent marking completed' })
+  manualAutoMarkAbsent() {
+    return this.attendancesService.autoMarkAbsent();
+  }
+
+  @Get('validate')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({
+    summary: 'Validate attendance data',
+    description: 'Check for missing days and incomplete records for a specific month'
+  })
+  @ApiQuery({ name: 'month', required: true, type: Number, example: 2 })
+  @ApiQuery({ name: 'year', required: true, type: Number, example: 2026 })
+  @ApiResponse({ status: 200, description: 'Validation results returned' })
+  validateAttendanceData(@Query('month') month: number, @Query('year') year: number) {
+    return this.attendancesService.validateAttendanceData(Number(month), Number(year));
   }
 }

@@ -13,6 +13,7 @@ interface SalaryStructureProps {
 
 const componentTypeLabels: Record<ComponentType, string> = {
   BASIC: 'Lương cơ bản',
+  ALLOWANCE: 'Phụ cấp',
   LUNCH: 'Phụ cấp ăn trưa',
   TRANSPORT: 'Phụ cấp xăng xe',
   PHONE: 'Phụ cấp điện thoại',
@@ -24,6 +25,7 @@ const componentTypeLabels: Record<ComponentType, string> = {
 
 const componentTypeColors: Record<ComponentType, string> = {
   BASIC: 'bg-blue-100 text-blue-700',
+  ALLOWANCE: 'bg-teal-100 text-teal-700',
   LUNCH: 'bg-green-100 text-green-700',
   TRANSPORT: 'bg-purple-100 text-purple-700',
   PHONE: 'bg-orange-100 text-orange-700',

@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ChatbotController } from './chatbot.controller';
+import { KnowledgeController } from './knowledge.controller';
 import { ChatbotService } from './chatbot.service';
+import { LLMService } from './llm.service';
+import { EmbeddingService } from './embedding.service';
+import { KnowledgeService } from './knowledge.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmployeesModule } from '../employees/employees.module';
 import { DepartmentsModule } from '../departments/departments.module';
@@ -17,8 +21,8 @@ import { PayrollsModule } from '../payrolls/payrolls.module';
     LeaveRequestsModule,
     PayrollsModule,
   ],
-  controllers: [ChatbotController],
-  providers: [ChatbotService],
-  exports: [ChatbotService],
+  controllers: [ChatbotController, KnowledgeController],
+  providers: [ChatbotService, LLMService, EmbeddingService, KnowledgeService],
+  exports: [ChatbotService, KnowledgeService],
 })
-export class ChatbotModule {}
+export class ChatbotModule { }

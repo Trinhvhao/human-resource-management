@@ -280,4 +280,32 @@ export class MailService {
       this.logger.error(`❌ Failed to send attendance correction rejected email to ${to}:`, error.message);
     }
   }
+
+  /**
+   * Generic send mail method for custom emails
+   */
+  async sendMail(options: {
+    to: string;
+    subject: string;
+    template: string;
+    context: any;
+  }) {
+    if (!this.isEnabled) {
+      this.logger.debug(`[DISABLED] Would send email to ${options.to}`);
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: options.to,
+        subject: options.subject,
+        template: `./${options.template}`,
+        context: options.context,
+      });
+      this.logger.log(`✅ Sent email to ${options.to}`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to send email to ${options.to}:`, error.message);
+      throw error;
+    }
+  }
 }

@@ -1,15 +1,36 @@
 import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types/api';
-import { Discipline, CreateDisciplineData } from '@/types/discipline';
 
-interface QueryParams {
-  employeeId?: string;
-  page?: number;
-  limit?: number;
+export type DisciplineType = 'WARNING' | 'FINE' | 'DEMOTION' | 'TERMINATION';
+
+export interface Discipline {
+  id: string;
+  employeeId: string;
+  reason: string;
+  amount: number;
+  disciplineDate: string;
+  disciplineType: DisciplineType;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  employee: {
+    id: string;
+    employeeCode: string;
+    fullName: string;
+    department?: { name: string };
+  };
+}
+
+export interface CreateDisciplineData {
+  employeeId: string;
+  reason: string;
+  amount: number;
+  disciplineDate: string;
+  disciplineType: DisciplineType;
 }
 
 class DisciplineService {
-  async getAll(params?: QueryParams): Promise<ApiResponse<Discipline[]>> {
+  async getAll(params?: { employeeId?: string; page?: number; limit?: number }): Promise<ApiResponse<Discipline[]>> {
     return axiosInstance.get('/disciplines', { params });
   }
 
