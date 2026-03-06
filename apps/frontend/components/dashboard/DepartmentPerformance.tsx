@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, TrendingUp, TrendingDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -14,7 +14,7 @@ interface DepartmentStats {
   trend: 'up' | 'down' | 'stable';
 }
 
-export default function DepartmentPerformance() {
+const DepartmentPerformance = memo(function DepartmentPerformance() {
   const [departments, setDepartments] = useState<DepartmentStats[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,13 +25,13 @@ export default function DepartmentPerformance() {
   const fetchDepartmentStats = async () => {
     try {
       const response = await axiosInstance.get('/departments/performance-stats');
-      
+
       if (response.data?.data) {
         const deptData = response.data.data;
-        
+
         // Take top 5 departments
         const topDepts = deptData.slice(0, 5);
-        
+
         setDepartments(topDepts);
       }
     } catch (error) {
@@ -57,15 +57,15 @@ export default function DepartmentPerformance() {
     );
   }
 
-  const getPerformanceColor = (performanceScore: number) => {
+  const getPerformanceColor = useCallback((performanceScore: number) => {
     if (performanceScore >= 90) return '#10b981'; // green-500
     if (performanceScore >= 80) return '#3b82f6'; // blue-500
     if (performanceScore >= 70) return '#f59e0b'; // amber-500
     return '#ef4444'; // red-500
-  };
+  }, []);
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = useCallback(({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -78,13 +78,25 @@ export default function DepartmentPerformance() {
       );
     }
     return null;
-  };
+  }, []);
 
   // Truncate long department names
-  const truncateName = (name: string, maxLength: number = 15) => {
+  const truncateName = useCallback((name: string, maxLength: number = 15) => {
     if (name.length <= maxLength) return name;
     return name.substring(0, maxLength) + '...';
-  };
+  }, []);
+
+  // Memoize stats calculations
+  const stats = useMemo(() => {
+    if (departments.length === 0) {
+      return { average: 0, highest: 0, lowest: 0 };
+    }
+    return {
+      average: (departments.reduce((sum, d) => sum + d.performanceScore, 0) / departments.length).toFixed(0),
+      highest: Math.max(...departments.map(d => d.performanceScore)),
+      lowest: Math.min(...departments.map(d => d.performanceScore)),
+    };
+  }, [departments]);
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-100 h-full flex flex-col">
@@ -136,11 +148,7 @@ export default function DepartmentPerformance() {
           className="text-center"
         >
           <p className="text-xs text-slate-500 mb-1">Trung bình</p>
-          <p className="text-lg font-bold text-brandBlue">
-            {departments.length > 0 
-              ? (departments.reduce((sum, d) => sum + d.performanceScore, 0) / departments.length).toFixed(0)
-              : 0}%
-          </p>
+          <p className="text-lg font-bold text-brandBlue">{stats.average}%</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -149,9 +157,7 @@ export default function DepartmentPerformance() {
           className="text-center"
         >
           <p className="text-xs text-slate-500 mb-1">Cao nhất</p>
-          <p className="text-lg font-bold text-green-600">
-            {departments.length > 0 ? Math.max(...departments.map(d => d.performanceScore)) : 0}%
-          </p>
+          <p className="text-lg font-bold text-green-600">{stats.highest}%</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -160,11 +166,11 @@ export default function DepartmentPerformance() {
           className="text-center"
         >
           <p className="text-xs text-slate-500 mb-1">Thấp nhất</p>
-          <p className="text-lg font-bold text-amber-600">
-            {departments.length > 0 ? Math.min(...departments.map(d => d.performanceScore)) : 0}%
-          </p>
+          <p className="text-lg font-bold text-amber-600">{stats.lowest}%</p>
         </motion.div>
       </div>
     </div>
   );
-}
+});
+
+export default DepartmentPerformance;

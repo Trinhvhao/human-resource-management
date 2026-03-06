@@ -23,6 +23,7 @@ import {
 import axiosInstance from '@/lib/axios';
 import { useAuthStore } from '@/store/authStore';
 import Avatar from '@/components/common/Avatar';
+import LiveClock from '@/components/common/LiveClock';
 
 interface AttendanceToday {
   id?: string;
@@ -58,18 +59,11 @@ export default function EmployeeDashboard() {
   const [recentLeaves, setRecentLeaves] = useState<LeaveRequest[]>([]);
   const [recentOvertime, setRecentOvertime] = useState<OvertimeRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
   const employee = user?.employee;
   const employeeId = employee?.id || user?.employeeId;
-
-  // Update clock every second
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch all data
   useEffect(() => {
@@ -187,12 +181,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
           <div className="text-right hidden md:block">
-            <div className="text-4xl font-bold font-mono tabular-nums">
-              {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </div>
-            <p className="text-blue-200 text-sm mt-1">
-              {currentTime.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
+            <LiveClock className="text-4xl font-bold font-mono tabular-nums" />
           </div>
         </div>
       </motion.div>

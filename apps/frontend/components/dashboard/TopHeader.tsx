@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search, Bell, Settings, LogOut, User, ChevronDown, LayoutGrid, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -37,7 +37,7 @@ const pageInfo: Record<string, { title: string; subtitle: string; icon?: any }> 
   '/dashboard/profile': { title: 'Hồ sơ', subtitle: 'Thông tin cá nhân' },
 };
 
-export default function TopHeader() {
+const TopHeader = memo(function TopHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -60,14 +60,14 @@ export default function TopHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
     router.push('/login');
-  };
+  }, [logout, router]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     window.location.reload();
-  };
+  }, []);
 
   const displayName = user?.employee?.fullName || user?.email?.split('@')[0] || 'User';
   const initials = displayName
@@ -210,4 +210,6 @@ export default function TopHeader() {
       </div>
     </header>
   );
-}
+});
+
+export default TopHeader;

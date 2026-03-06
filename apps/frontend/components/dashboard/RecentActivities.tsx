@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useCallback } from 'react';
 import { Clock, User, FileText, CheckCircle, XCircle, UserPlus, Calendar, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import dashboardService, { RecentActivity } from '@/services/dashboardService';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
-export default function RecentActivities() {
+const RecentActivities = memo(function RecentActivities() {
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +19,7 @@ export default function RecentActivities() {
     try {
       setLoading(true);
       const response = await dashboardService.getRecentActivities(10);
-      
+
       if (response.data) {
         setActivities(Array.isArray(response.data) ? response.data : []);
       }
@@ -31,7 +31,7 @@ export default function RecentActivities() {
     }
   };
 
-  const getActivityIcon = (type: string) => {
+  const getActivityIcon = useCallback((type: string) => {
     switch (type.toLowerCase()) {
       case 'employee_created':
         return UserPlus;
@@ -54,16 +54,16 @@ export default function RecentActivities() {
       default:
         return FileText;
     }
-  };
+  }, []);
 
-  const getActivityColor = (type: string) => {
+  const getActivityColor = useCallback((type: string) => {
     if (type.includes('approve') || type.includes('checkin')) return 'text-green-600 bg-green-50';
     if (type.includes('reject')) return 'text-red-600 bg-red-50';
     if (type.includes('create')) return 'text-blue-600 bg-blue-50';
     if (type.includes('payroll')) return 'text-green-600 bg-green-50';
     if (type.includes('leave')) return 'text-purple-600 bg-purple-50';
     return 'text-slate-600 bg-slate-50';
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -144,4 +144,6 @@ export default function RecentActivities() {
       </div>
     </div>
   );
-}
+});
+
+export default RecentActivities;

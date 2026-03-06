@@ -66,3 +66,15 @@ export interface EmployeeStatistics {
   byGender: Array<{ gender: Gender; count: number }>;
   averageSalary: number;
 }
+
+export interface QueryEmployeesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  departmentId?: string;
+  position?: string;
+  status?: EmployeeStatus | string;
+  gender?: Gender | string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}

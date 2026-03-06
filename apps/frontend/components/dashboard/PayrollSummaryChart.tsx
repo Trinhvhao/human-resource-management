@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import dashboardService from '@/services/dashboardService';
 
-export default function PayrollSummaryChart() {
+const PayrollSummaryChart = memo(function PayrollSummaryChart() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<any>(null);
@@ -20,7 +20,7 @@ export default function PayrollSummaryChart() {
       if (response.data) {
         const { summary: summaryData } = response.data;
         setSummary(summaryData);
-        
+
         // Get last 6 months
         const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
         const formattedData = summaryData.slice(-6).map((item: any) => ({
@@ -90,9 +90,8 @@ export default function PayrollSummaryChart() {
                       initial={{ height: 0 }}
                       animate={{ height: `${height}%` }}
                       transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className={`w-full rounded-t-lg relative group cursor-pointer ${
-                        isAboveAvg ? 'bg-green-500' : 'bg-brandBlue'
-                      }`}
+                      className={`w-full rounded-t-lg relative group cursor-pointer ${isAboveAvg ? 'bg-green-500' : 'bg-brandBlue'
+                        }`}
                     >
                       <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-3 py-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         <div className="font-bold">{(item.amount / 1000000).toFixed(1)}M VNĐ</div>
@@ -133,4 +132,6 @@ export default function PayrollSummaryChart() {
       </div>
     </div>
   );
-}
+});
+
+export default PayrollSummaryChart;

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
 import ChatbotWidget from '../chatbot/ChatbotWidget';
@@ -11,17 +11,30 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, loadUser } = useAuthStore();
+  const pathname = usePathname();
+
+  // Use selectors to prevent re-renders when unrelated state changes
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const loadUser = useAuthStore((state) => state.loadUser);
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  // Load user on mount
+  // Memoize toggle function to prevent re-creating on every render
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
+
+  // Load user only once on mount
   useEffect(() => {
     setMounted(true);
-    loadUser();
-  }, [loadUser]);
+    if (!isAuthenticated) {
+      loadUser();
+    }
+  }, [isAuthenticated, loadUser]);
 
   // Redirect if not authenticated (after mount to avoid hydration mismatch)
   useEffect(() => {
@@ -50,7 +63,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-offWhite flex">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'ml-[280px]' : 'ml-20'}`}>
@@ -69,4 +82,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <ChatbotWidget />
     </div>
   );
-}
+});
+
+export default DashboardLayout;

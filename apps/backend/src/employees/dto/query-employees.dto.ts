@@ -40,7 +40,7 @@ export class QueryEmployeesDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(500)
+  @Max(1000)
   limit?: number = 10;
 
   @ApiProperty({ example: 'fullName', required: false, description: 'Sort field' })

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, TrendingUp, UserPlus, UserMinus } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
@@ -12,7 +12,7 @@ interface MonthlyGrowth {
   left: number;
 }
 
-export default function EmployeeGrowthChart() {
+const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
   const [data, setData] = useState<MonthlyGrowth[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -28,14 +28,14 @@ export default function EmployeeGrowthChart() {
 
   const fetchEmployeeGrowth = async () => {
     try {
-      // Fetch all employees
-      const response = await axiosInstance.get('/employees');
-      
+      // Fetch all employees (large limit to get everyone for accurate growth calc)
+      const response = await axiosInstance.get('/employees', { params: { limit: 1000, page: 1 } });
+
       if (response.data) {
-        const employees = response.data;
+        const employees = Array.isArray(response.data) ? response.data : (response.data?.data || []);
         const currentTotal = employees.length;
 
-        // Calculate last 6 months growth
+        // Calculate last 6 months growth using startDate (not hireDate)
         const now = new Date();
         const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
         const growthData: MonthlyGrowth[] = [];
@@ -44,22 +44,30 @@ export default function EmployeeGrowthChart() {
           const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const monthIndex = targetDate.getMonth();
           const year = targetDate.getFullYear();
+          const endOfMonth = new Date(year, monthIndex + 1, 0);
 
-          // Count employees joined in this month
+          // Count employees who joined in this month (use startDate field)
           const joined = employees.filter((emp: any) => {
-            if (!emp.hireDate) return false;
-            const hireDate = new Date(emp.hireDate);
-            return hireDate.getMonth() === monthIndex && hireDate.getFullYear() === year;
+            const startDate = emp.startDate ? new Date(emp.startDate) : null;
+            if (!startDate) return false;
+            return startDate.getMonth() === monthIndex && startDate.getFullYear() === year;
           }).length;
 
-          // Count employees who left in this month (if we had a leftDate field)
-          const left = 0; // Placeholder - would need a leftDate field
+          // Count employees who left in this month
+          const left = employees.filter((emp: any) => {
+            const endDate = emp.endDate ? new Date(emp.endDate) : null;
+            if (!endDate) return false;
+            return endDate.getMonth() === monthIndex && endDate.getFullYear() === year;
+          }).length;
 
-          // Calculate total employees at end of month
+          // Total active employees at end of that month
           const total = employees.filter((emp: any) => {
-            if (!emp.hireDate) return false;
-            const hireDate = new Date(emp.hireDate);
-            return hireDate <= new Date(year, monthIndex + 1, 0);
+            const startDate = emp.startDate ? new Date(emp.startDate) : null;
+            if (!startDate) return false;
+            if (startDate > endOfMonth) return false;
+            const endDate = emp.endDate ? new Date(emp.endDate) : null;
+            // Not yet left, or left after this month
+            return !endDate || endDate >= endOfMonth;
           }).length;
 
           growthData.push({
@@ -72,18 +80,18 @@ export default function EmployeeGrowthChart() {
 
         setData(growthData);
 
-        // Calculate stats
+        // Calculate stats for current month
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         const joinedThisMonth = employees.filter((emp: any) => {
-          if (!emp.hireDate) return false;
-          const hireDate = new Date(emp.hireDate);
-          return hireDate.getMonth() === currentMonth && hireDate.getFullYear() === currentYear;
+          const startDate = emp.startDate ? new Date(emp.startDate) : null;
+          if (!startDate) return false;
+          return startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear;
         }).length;
 
         const previousMonthTotal = growthData.length > 1 ? growthData[growthData.length - 2].total : currentTotal;
-        const monthlyGrowth = previousMonthTotal > 0 
-          ? ((currentTotal - previousMonthTotal) / previousMonthTotal) * 100 
+        const monthlyGrowth = previousMonthTotal > 0
+          ? ((currentTotal - previousMonthTotal) / previousMonthTotal) * 100
           : 0;
 
         setStats({
@@ -172,10 +180,10 @@ export default function EmployeeGrowthChart() {
               transition={{ duration: 1 }}
               d={`
                 ${data.map((item, index) => {
-                  const x = (index / (data.length - 1)) * 400;
-                  const y = 160 - ((item.total / maxValue) * 140);
-                  return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-                }).join(' ')}
+                const x = (index / (data.length - 1)) * 400;
+                const y = 160 - ((item.total / maxValue) * 140);
+                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+              }).join(' ')}
                 L 400 160 L 0 160 Z
               `}
               fill="#3b82f6"
@@ -244,4 +252,6 @@ export default function EmployeeGrowthChart() {
       </div>
     </div>
   );
-}
+});
+
+export default EmployeeGrowthChart;

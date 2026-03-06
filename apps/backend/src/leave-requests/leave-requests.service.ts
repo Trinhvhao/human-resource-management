@@ -12,7 +12,7 @@ export class LeaveRequestsService {
     private leaveBalancesService: LeaveBalancesService,
     private holidaysService: HolidaysService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async create(dto: CreateLeaveRequestDto, userId: string, userEmployeeId?: string) {
     const employeeId = dto.employeeId || userEmployeeId;
@@ -71,7 +71,7 @@ export class LeaveRequestsService {
     const year = startDate.getFullYear();
     const balanceResult = await this.leaveBalancesService.getBalance(employeeId, year);
     const remainingDays = balanceResult.data.remainingAnnual || 0;
-    
+
     if (remainingDays < totalDays) {
       throw new BadRequestException(`Insufficient leave balance. Available: ${remainingDays} days`);
     }
@@ -102,7 +102,11 @@ export class LeaveRequestsService {
 
   async findAll(query: { employeeId?: string; status?: string; page?: number; limit?: number }) {
     const { employeeId, status, page = 1, limit = 10 } = query;
-    const skip = (page - 1) * limit;
+
+    // Convert to numbers and apply max limit
+    const pageNum = Number(page) || 1;
+    const limitNum = Math.min(Number(limit) || 10, 500); // Max 500
+    const skip = (pageNum - 1) * limitNum;
 
     const where: any = {};
     if (employeeId) where.employeeId = employeeId;
@@ -112,7 +116,7 @@ export class LeaveRequestsService {
       this.prisma.leaveRequest.findMany({
         where,
         skip,
-        take: limit,
+        take: limitNum,
         include: {
           employee: {
             select: { id: true, employeeCode: true, fullName: true, department: { select: { name: true } } },

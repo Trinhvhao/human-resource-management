@@ -24,16 +24,16 @@ export default function AbsenteeismRate() {
     try {
       const response = await axiosInstance.get('/attendances/absenteeism-stats');
       
-      if (response.data?.data) {
-        const data = response.data.data;
-        
+      // Axios interceptor returns response.data already, so response = { data: { today, week, month, trend } }
+      const data = response.data;
+      if (data) {
         setStats({
-          todayAbsent: data.today.absent,
-          weekAbsent: data.week.absent,
-          monthAbsent: data.month.absent,
-          absentRate: data.today.absentRate,
-          lateRate: data.today.lateRate,
-          trend: data.trend,
+          todayAbsent: data.today?.absent ?? 0,
+          weekAbsent: data.week?.absent ?? 0,
+          monthAbsent: data.month?.absent ?? 0,
+          absentRate: data.today?.absentRate ?? 0,
+          lateRate: data.today?.lateRate ?? 0,
+          trend: data.trend ?? 0,
         });
       }
     } catch (error) {

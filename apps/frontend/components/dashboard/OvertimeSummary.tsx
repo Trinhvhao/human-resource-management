@@ -25,11 +25,13 @@ export default function OvertimeSummary() {
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
       
-      // Fetch all overtime requests
-      const response = await axiosInstance.get('/overtime');
+      // Fetch overtime requests for current month
+      const response = await axiosInstance.get('/overtime', {
+        params: { limit: 1000, page: 1 },
+      });
 
       if (response.data) {
-        const requests = response.data;
+        const requests: any[] = Array.isArray(response.data) ? response.data : [];
         
         // Filter by current month
         const currentMonthRequests = requests.filter((req: any) => {

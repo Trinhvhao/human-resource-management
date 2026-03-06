@@ -14,6 +14,7 @@ import AttendanceQuickStats from '@/components/attendance/AttendanceQuickStats';
 import TimePeriodTabs from '@/components/attendance/TimePeriodTabs';
 import { Plus, FileText, Settings } from 'lucide-react';
 import attendanceService from '@/services/attendanceService';
+import employeeService from '@/services/employeeService';
 import departmentService from '@/services/departmentService';
 import { useAuthStore } from '@/store/authStore';
 import { Attendance } from '@/types/attendance';
@@ -80,22 +81,30 @@ export default function AttendancePage() {
 
       setAttendances(attendanceData);
 
+      // Fetch total active employees to calculate correct stats
+      const employeesResponse = await employeeService.getAll({ status: 'ACTIVE', limit: 1000 });
+      const totalActiveEmployees = employeesResponse.meta?.total || employeesResponse.data?.length || 0;
+
       // Calculate stats
-      setTotalEmployees(attendanceData.length);
-      setPresentCount(attendanceData.filter((a: Attendance) => a.status === 'PRESENT').length);
-      setLateCount(attendanceData.filter((a: Attendance) => a.isLate).length);
-      setAbsentCount(attendanceData.filter((a: Attendance) => a.status === 'ABSENT').length);
+      const presentToday = attendanceData.filter((a: Attendance) => a.status === 'PRESENT').length;
+      const lateToday = attendanceData.filter((a: Attendance) => a.isLate).length;
+      const absentToday = totalActiveEmployees - presentToday; // Absent = total - present
+
+      setTotalEmployees(totalActiveEmployees);
+      setPresentCount(presentToday);
+      setLateCount(lateToday);
+      setAbsentCount(absentToday);
       setNotCheckedOutCount(attendanceData.filter((a: Attendance) => a.checkIn && !a.checkOut).length);
 
       // Mock trend data for now (you can fetch real data from API later)
       setTrendData([
-        { date: 'T2', attendanceRate: 92, lateRate: 8, total: attendanceData.length },
-        { date: 'T3', attendanceRate: 95, lateRate: 5, total: attendanceData.length },
-        { date: 'T4', attendanceRate: 88, lateRate: 12, total: attendanceData.length },
-        { date: 'T5', attendanceRate: 93, lateRate: 7, total: attendanceData.length },
-        { date: 'T6', attendanceRate: 90, lateRate: 10, total: attendanceData.length },
-        { date: 'T7', attendanceRate: 96, lateRate: 4, total: attendanceData.length },
-        { date: 'CN', attendanceRate: 100, lateRate: 0, total: attendanceData.length },
+        { date: 'T2', attendanceRate: 92, lateRate: 8, total: totalActiveEmployees },
+        { date: 'T3', attendanceRate: 95, lateRate: 5, total: totalActiveEmployees },
+        { date: 'T4', attendanceRate: 88, lateRate: 12, total: totalActiveEmployees },
+        { date: 'T5', attendanceRate: 93, lateRate: 7, total: totalActiveEmployees },
+        { date: 'T6', attendanceRate: 90, lateRate: 10, total: totalActiveEmployees },
+        { date: 'T7', attendanceRate: 96, lateRate: 4, total: totalActiveEmployees },
+        { date: 'CN', attendanceRate: 100, lateRate: 0, total: totalActiveEmployees },
       ]);
     } catch (error) {
       console.error('Failed to fetch attendance data:', error);

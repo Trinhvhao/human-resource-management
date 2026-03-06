@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
 
-export default function LeaveRequestsChart() {
+const LeaveRequestsChart = memo(function LeaveRequestsChart() {
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,
@@ -23,16 +23,16 @@ export default function LeaveRequestsChart() {
       const now = new Date();
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
-      
-      // Fetch all leave requests (no limit to avoid type issues)
-      const response = await axiosInstance.get('/leave-requests');
 
-      console.log('Leave requests response:', response);
+      // Fetch all leave requests for the current month (large limit to avoid pagination cutoff)
+      const response = await axiosInstance.get('/leave-requests', {
+        params: { limit: 1000, page: 1 },
+      });
 
       if (response.data) {
-        const requests = response.data;
-        
-        // Filter by current month
+        const requests: any[] = Array.isArray(response.data) ? response.data : [];
+
+        // Filter by current month using createdAt
         const currentMonthRequests = requests.filter((req: any) => {
           const reqDate = new Date(req.createdAt);
           return reqDate.getMonth() + 1 === currentMonth && reqDate.getFullYear() === currentYear;
@@ -41,7 +41,7 @@ export default function LeaveRequestsChart() {
         const pending = currentMonthRequests.filter((req: any) => req.status === 'PENDING').length;
         const approved = currentMonthRequests.filter((req: any) => req.status === 'APPROVED').length;
         const rejected = currentMonthRequests.filter((req: any) => req.status === 'REJECTED').length;
-        
+
         setStats({
           pending,
           approved,
@@ -50,13 +50,7 @@ export default function LeaveRequestsChart() {
         });
       }
     } catch (error: any) {
-      console.error('Failed to fetch leave stats:', {
-        message: error?.message,
-        statusCode: error?.statusCode,
-        response: error?.response,
-        error: error
-      });
-      // Set default values on error (e.g., not authenticated)
+      console.error('Failed to fetch leave stats:', error?.message);
       setStats({ pending: 0, approved: 0, rejected: 0, total: 0 });
     } finally {
       setLoading(false);
@@ -163,4 +157,6 @@ export default function LeaveRequestsChart() {
       </div>
     </div>
   );
-}
+});
+
+export default LeaveRequestsChart;

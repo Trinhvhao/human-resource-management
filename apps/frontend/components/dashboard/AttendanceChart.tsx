@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import dashboardService from '@/services/dashboardService';
 
@@ -9,7 +9,7 @@ interface DailyAttendance {
   count: number;
 }
 
-export default function AttendanceChart() {
+const AttendanceChart = memo(function AttendanceChart() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<any>(null);
@@ -21,23 +21,30 @@ export default function AttendanceChart() {
   const fetchAttendanceData = async () => {
     try {
       const response = await dashboardService.getAttendanceSummary();
-      
+
       // Axios interceptor returns response.data directly, so response = { success: true, data: {...} }
       if (response.data) {
         const { trend, summary: summaryData } = response.data;
         setSummary(summaryData);
-        
-        // Get last 7 days of data
-        const last7Days = trend.slice(-7);
-        const formattedData = last7Days.map((item: DailyAttendance) => {
-          const date = new Date(item.date);
-          const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-          return {
-            day: dayNames[date.getDay()],
-            count: item.count,
-            date: item.date,
-          };
-        });
+
+        // Build a map of date -> count from backend trend data
+        const trendMap = new Map<string, number>(
+          (trend || []).map((item: DailyAttendance) => [item.date, item.count])
+        );
+
+        // Always generate the last 7 calendar days so all bars are shown
+        const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const formattedData = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().split('T')[0];
+          formattedData.push({
+            day: dayNames[d.getDay()],
+            count: trendMap.get(dateStr) ?? 0,
+            date: dateStr,
+          });
+        }
         setData(formattedData);
       }
     } catch (error) {
@@ -131,4 +138,6 @@ export default function AttendanceChart() {
       )}
     </div>
   );
-}
+});
+
+export default AttendanceChart;

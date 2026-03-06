@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
@@ -15,7 +16,7 @@ interface AttendanceTrendChartProps {
   loading?: boolean;
 }
 
-export default function AttendanceTrendChart({ data, loading = false }: AttendanceTrendChartProps) {
+const AttendanceTrendChart = memo(function AttendanceTrendChart({ data, loading = false }: AttendanceTrendChartProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
@@ -95,29 +96,29 @@ export default function AttendanceTrendChart({ data, loading = false }: Attendan
               <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorLate" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   stroke="#64748b"
                   style={{ fontSize: '13px', fontWeight: 500 }}
                   tick={{ fill: '#475569' }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#64748b"
                   style={{ fontSize: '12px' }}
                   tickFormatter={(value) => `${value}%`}
                   tick={{ fill: '#475569' }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend 
+                <Legend
                   wrapperStyle={{ fontSize: '13px', fontWeight: 500 }}
                   iconType="circle"
                 />
@@ -178,4 +179,6 @@ export default function AttendanceTrendChart({ data, loading = false }: Attendan
       </div>
     </div>
   );
-}
+});
+
+export default AttendanceTrendChart;

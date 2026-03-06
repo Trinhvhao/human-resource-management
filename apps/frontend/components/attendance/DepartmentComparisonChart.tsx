@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Building2, TrendingUp } from 'lucide-react';
 
@@ -15,7 +16,7 @@ interface DepartmentComparisonChartProps {
   loading?: boolean;
 }
 
-export default function DepartmentComparisonChart({ data, loading = false }: DepartmentComparisonChartProps) {
+const DepartmentComparisonChart = memo(function DepartmentComparisonChart({ data, loading = false }: DepartmentComparisonChartProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
@@ -118,44 +119,44 @@ export default function DepartmentComparisonChart({ data, loading = false }: Dep
       {/* Chart */}
       <div className="p-6">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart 
-            data={sortedData} 
+          <BarChart
+            data={sortedData}
             layout="horizontal"
             margin={{ top: 10, right: 50, left: 10, bottom: 10 }}
           >
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="#e2e8f0" 
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#e2e8f0"
               strokeOpacity={0.5}
               horizontal={true}
               vertical={false}
             />
-            
-            <XAxis 
+
+            <XAxis
               type="number"
               stroke="#94a3b8"
               tick={{ fill: '#64748b', fontSize: 12 }}
               tickFormatter={(value) => `${value}%`}
               domain={[0, 'auto']}
             />
-            
-            <YAxis 
+
+            <YAxis
               type="category"
-              dataKey="name" 
+              dataKey="name"
               stroke="#94a3b8"
               tick={{ fill: '#475569', fontSize: 13 }}
               width={120}
             />
-            
+
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
-            
-            <Bar 
-              dataKey="lateRate" 
+
+            <Bar
+              dataKey="lateRate"
               radius={[0, 8, 8, 0]}
-              label={{ 
-                position: 'right', 
-                fill: '#475569', 
-                fontSize: 12, 
+              label={{
+                position: 'right',
+                fill: '#475569',
+                fontSize: 12,
                 fontWeight: 600,
                 formatter: (value: any) => `${value}%`
               }}
@@ -199,4 +200,6 @@ export default function DepartmentComparisonChart({ data, loading = false }: Dep
       </div>
     </div>
   );
-}
+});
+
+export default DepartmentComparisonChart;

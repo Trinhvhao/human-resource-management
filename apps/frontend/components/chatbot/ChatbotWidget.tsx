@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { MessageCircle, X, Send, Sparkles, Loader2, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from '@/lib/axios';
@@ -11,7 +11,7 @@ interface Message {
     timestamp: Date;
 }
 
-export default function ChatbotWidget() {
+const ChatbotWidget = memo(function ChatbotWidget() {
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -89,7 +89,7 @@ export default function ChatbotWidget() {
         }
     };
 
-    const sendMessage = async (text?: string) => {
+    const sendMessage = useCallback(async (text?: string) => {
         const messageText = text || input.trim();
         if (!messageText || loading) return;
 
@@ -139,20 +139,20 @@ export default function ChatbotWidget() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [input, loading, messages]);
 
-    const handleSuggestionClick = (question: string) => {
+    const handleSuggestionClick = useCallback((question: string) => {
         sendMessage(question);
-    };
+    }, [sendMessage]);
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
-    };
+    }, [sendMessage]);
 
-    const formatMessage = (content: string) => {
+    const formatMessage = useCallback((content: string) => {
         // Convert markdown-like formatting to HTML
         return content
             .split('\n')
@@ -167,7 +167,7 @@ export default function ChatbotWidget() {
                 return `<div key=${i} class="leading-relaxed">${line || '<br/>'}</div>`;
             })
             .join('');
-    };
+    }, []);
 
     return (
         <>
@@ -366,3 +366,6 @@ export default function ChatbotWidget() {
         </>
     );
 }
+);
+
+export default ChatbotWidget;

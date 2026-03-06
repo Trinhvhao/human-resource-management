@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Users, TrendingUp } from 'lucide-react';
 import departmentService from '@/services/departmentService';
@@ -16,7 +16,7 @@ const COLORS = [
   '#F97316', // orange
 ];
 
-export default function DepartmentDistribution() {
+const DepartmentDistribution = memo(function DepartmentDistribution() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +28,7 @@ export default function DepartmentDistribution() {
     try {
       const response = await departmentService.getAll();
       const departments = response.data || [];
-      
+
       // Calculate employee count per department
       const distribution = departments
         .filter((dept: any) => dept._count?.employees > 0)
@@ -118,8 +118,8 @@ export default function DepartmentDistribution() {
                 dataKey="value"
               >
                 {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}
                     stroke="#fff"
                     strokeWidth={2}
@@ -135,7 +135,7 @@ export default function DepartmentDistribution() {
         <div className="grid grid-cols-2 gap-2 mb-4">
           {data.map((item, index) => (
             <div key={index} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-              <div 
+              <div
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
@@ -160,4 +160,6 @@ export default function DepartmentDistribution() {
       </div>
     </div>
   );
-}
+});
+
+export default DepartmentDistribution;

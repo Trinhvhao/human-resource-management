@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Clock, FileText, AlertTriangle, TrendingUp, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,7 @@ interface SnapshotData {
   lastUpdated: string;
 }
 
-export default function TodaySnapshot() {
+const TodaySnapshot = memo(function TodaySnapshot() {
   const router = useRouter();
   const [data, setData] = useState<SnapshotData>({
     workingNow: 0,
@@ -27,7 +27,7 @@ export default function TodaySnapshot() {
 
   useEffect(() => {
     fetchSnapshot();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchSnapshot, 30000);
     return () => clearInterval(interval);
@@ -200,4 +200,6 @@ export default function TodaySnapshot() {
       </div>
     </div>
   );
-}
+});
+
+export default TodaySnapshot;
