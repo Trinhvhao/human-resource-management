@@ -21,8 +21,8 @@ export default function RewardsDisciplinesPage() {
         try {
             setLoading(true);
             const [rewardsRes, disciplinesRes] = await Promise.all([
-                rewardService.getAll(),
-                disciplineService.getAll()
+                rewardService.getAll({ page: 1, limit: 50 }),
+                disciplineService.getAll({ page: 1, limit: 50 })
             ]);
             setRewards(rewardsRes.data);
             setDisciplines(disciplinesRes.data);

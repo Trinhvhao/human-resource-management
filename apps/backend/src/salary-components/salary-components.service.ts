@@ -58,38 +58,48 @@ export class SalaryComponentsService {
     };
   }
 
-  async findAll(employeeId?: string, componentType?: string, isActive?: boolean) {
+  async findAll(employeeId?: string, componentType?: string, isActive?: boolean, page: number = 1, limit: number = 20) {
     const where: any = {};
 
     if (employeeId) where.employeeId = employeeId;
     if (componentType) where.componentType = componentType;
     if (isActive !== undefined) where.isActive = isActive;
 
-    const components = await this.prisma.salaryComponent.findMany({
-      where,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            fullName: true,
-            department: {
-              select: { name: true },
+    const skip = (page - 1) * limit;
+
+    const [components, total] = await Promise.all([
+      this.prisma.salaryComponent.findMany({
+        where,
+        include: {
+          employee: {
+            select: {
+              id: true,
+              employeeCode: true,
+              fullName: true,
+              department: {
+                select: { name: true },
+              },
             },
           },
         },
-      },
-      orderBy: [
-        { employeeId: 'asc' },
-        { effectiveDate: 'desc' },
-      ],
-    });
+        orderBy: [
+          { employeeId: 'asc' },
+          { effectiveDate: 'desc' },
+        ],
+        skip,
+        take: limit,
+      }),
+      this.prisma.salaryComponent.count({ where }),
+    ]);
 
     return {
       success: true,
       data: components,
       meta: {
-        total: components.length,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

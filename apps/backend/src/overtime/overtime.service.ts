@@ -122,7 +122,7 @@ export class OvertimeService {
     });
   }
 
-  async findAll(status?: string, employeeId?: string, month?: number, year?: number) {
+  async findAll(status?: string, employeeId?: string, month?: number, year?: number, page: number = 1, limit: number = 20) {
     const where: any = {};
 
     if (status) {
@@ -142,33 +142,40 @@ export class OvertimeService {
       };
     }
 
-    const requests = await this.prisma.overtimeRequest.findMany({
-      where,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            employeeCode: true,
-            fullName: true,
-            email: true,
-            department: {
-              select: {
-                id: true,
-                name: true,
+    const skip = (page - 1) * limit;
+
+    const [requests, total] = await Promise.all([
+      this.prisma.overtimeRequest.findMany({
+        where,
+        include: {
+          employee: {
+            select: {
+              id: true,
+              employeeCode: true,
+              fullName: true,
+              email: true,
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        date: 'desc',
-      },
-    });
+        orderBy: {
+          date: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.overtimeRequest.count({ where }),
+    ]);
 
     return {
       success: true,
       data: requests,
-      meta: { total: requests.length },
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 

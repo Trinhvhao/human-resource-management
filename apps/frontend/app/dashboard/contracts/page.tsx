@@ -145,21 +145,14 @@ export default function ContractsPage() {
 
     const fetchStats = async () => {
         try {
-            const [allRes, expiringRes] = await Promise.all([
-                contractService.getAll({ limit: 1000 }),
-                contractService.getExpiring(30),
-            ]);
-
-            const allContracts = allRes.data || [];
-            const active = allContracts.filter(c => c.status === 'ACTIVE').length;
-            const expired = allContracts.filter(c => c.status === 'EXPIRED').length;
-            const expiringSoon = expiringRes.data?.length || 0;
+            const statsRes = await contractService.getStatistics();
+            const data = statsRes.data || statsRes;
 
             setStats({
-                total: allContracts.length,
-                active,
-                expired,
-                expiringSoon,
+                total: data.total || 0,
+                active: data.active || 0,
+                expired: data.expired || 0,
+                expiringSoon: data.expiringSoon || 0,
             });
         } catch (error) {
             console.error('Failed to fetch stats:', error);
@@ -461,13 +454,15 @@ export default function ContractsPage() {
                     )}
 
                     {/* Filter Panel */}
-                    <ContractFilterPanel
-                        isOpen={showFilterPanel}
-                        onClose={() => setShowFilterPanel(false)}
-                        filters={filters}
-                        onFilterChange={setFilters}
-                        departments={departments}
-                    />
+                    {showFilterPanel && (
+                        <ContractFilterPanel
+                            isOpen={showFilterPanel}
+                            onClose={() => setShowFilterPanel(false)}
+                            filters={filters}
+                            onFilterChange={setFilters}
+                            departments={departments}
+                        />
+                    )}
                 </div>
             </DashboardLayout>
         </ProtectedRoute>

@@ -17,6 +17,7 @@ import { usePermission } from '@/hooks/usePermission';
 export default function MyCalendarPage() {
     const { can } = usePermission();
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [visibleRange, setVisibleRange] = useState<{ start: Date; end: Date } | null>(null);
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [stats, setStats] = useState<CalendarStats>({
         workDays: 0,
@@ -24,7 +25,7 @@ export default function MyCalendarPage() {
         overtimeHours: 0,
         holidays: 0,
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [isBulkScheduleModalOpen, setIsBulkScheduleModalOpen] = useState(false);
@@ -33,31 +34,42 @@ export default function MyCalendarPage() {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
+    // Initial stats fetch (by current month)
     useEffect(() => {
-        fetchCalendarData();
+        fetchStats();
     }, [currentMonth, currentYear]);
 
-    const fetchCalendarData = async () => {
+    const fetchStats = async () => {
+        try {
+            const statsRes = await calendarService.getCalendarStats(currentMonth + 1, currentYear);
+            setStats(statsRes.data);
+        } catch (error) {
+            console.error('Lỗi khi tải thống kê:', error);
+        }
+    };
+
+    // Called by FullCalendar whenever the visible date range changes (view switch, prev/next navigation)
+    const handleDatesSet = async (start: Date, end: Date) => {
+        setCurrentDate(start);
+        setVisibleRange({ start, end });
         try {
             setLoading(true);
-            const startDate = new Date(currentYear, currentMonth, 1);
-            const endDate = new Date(currentYear, currentMonth + 1, 0);
-
-            const [eventsRes, statsRes] = await Promise.all([
-                calendarService.getMyCalendar(
-                    startDate.toISOString().split('T')[0],
-                    endDate.toISOString().split('T')[0]
-                ),
-                calendarService.getCalendarStats(currentMonth + 1, currentYear),
-            ]);
-
-            setEvents(eventsRes.data);
-            setStats(statsRes.data);
+            const eventsRes = await calendarService.getMyCalendar(
+                start.toISOString().split('T')[0],
+                // FullCalendar end is exclusive, subtract 1 day
+                new Date(end.getTime() - 86400000).toISOString().split('T')[0]
+            );
+            setEvents(eventsRes.data ?? []);
         } catch (error) {
             console.error('Lỗi khi tải lịch:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchCalendarData = async () => {
+        if (!visibleRange) return;
+        await handleDatesSet(visibleRange.start, visibleRange.end);
     };
 
     // Convert events to FullCalendar format
@@ -238,23 +250,25 @@ export default function MyCalendarPage() {
                         ))}
                     </div>
 
-                    {/* FullCalendar */}
-                    {loading ? (
-                        <div className="h-96 flex items-center justify-center">
-                            <div className="w-8 h-8 border-4 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : (
+                    {/* FullCalendar - always rendered, datesSet drives data loading */}
+                    <div className="relative">
+                        {loading && (
+                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
+                                <div className="w-8 h-8 border-4 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
                         <FullCalendarView
                             events={fullCalendarEvents}
                             onEventClick={handleEventClick}
                             onDateSelect={handleDateSelect}
                             onDateClick={handleDateClick}
+                            onDatesSet={handleDatesSet}
                             editable={can('EDIT_SCHEDULE')}
                             selectable={can('CREATE_SCHEDULE')}
                             initialView="dayGridMonth"
                             height="auto"
                         />
-                    )}
+                    </div>
                 </div>
 
                 {/* Selected Date Events */}

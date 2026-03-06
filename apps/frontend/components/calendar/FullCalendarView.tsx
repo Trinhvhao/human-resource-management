@@ -6,13 +6,14 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import viLocale from '@fullcalendar/core/locales/vi';
-import { EventClickArg, DateSelectArg, EventInput } from '@fullcalendar/core';
+import { EventClickArg, DateSelectArg, EventInput, DatesSetArg } from '@fullcalendar/core';
 
 interface FullCalendarViewProps {
     events: EventInput[];
     onEventClick?: (info: EventClickArg) => void;
     onDateSelect?: (info: DateSelectArg) => void;
     onDateClick?: (date: Date) => void;
+    onDatesSet?: (start: Date, end: Date) => void;
     editable?: boolean;
     selectable?: boolean;
     initialView?: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek';
@@ -29,6 +30,7 @@ export default function FullCalendarView({
     onEventClick,
     onDateSelect,
     onDateClick,
+    onDatesSet,
     editable = false,
     selectable = true,
     initialView = 'dayGridMonth',
@@ -50,16 +52,18 @@ export default function FullCalendarView({
                 eventClick={onEventClick}
                 select={onDateSelect}
                 dateClick={(info) => onDateClick?.(info.date)}
+                datesSet={(arg: DatesSetArg) => onDatesSet?.(arg.start, arg.end)}
                 editable={editable}
                 selectable={selectable}
                 selectMirror={true}
                 dayMaxEvents={3}
                 weekends={true}
                 height={height}
-                slotMinTime="07:00:00"
-                slotMaxTime="19:00:00"
+                slotMinTime="06:00:00"
+                slotMaxTime="22:00:00"
                 slotDuration="01:00:00"
-                allDaySlot={false}
+                allDaySlot={true}
+                allDayText="Cả ngày"
                 nowIndicator={true}
                 eventTimeFormat={{
                     hour: '2-digit',

@@ -77,7 +77,9 @@ export default function ChatbotWidget() {
 
             setSuggestions(roleSuggestions);
         } catch (error) {
-            console.error('Failed to fetch suggestions:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Failed to fetch suggestions:', error);
+            }
             // Default suggestions for EMPLOYEE
             setSuggestions([
                 'Tôi còn bao nhiêu ngày phép?',
@@ -123,8 +125,11 @@ export default function ChatbotWidget() {
 
             setMessages(prev => [...prev, botMessage]);
         } catch (error: any) {
-            console.error('Chat error:', error);
-            console.error('Error message:', error.message);
+            // Only log errors in development
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Chat error:', error);
+                console.error('Error message:', error.message);
+            }
             const errorMessage: Message = {
                 role: 'assistant',
                 content: '❌ Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.',

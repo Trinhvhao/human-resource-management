@@ -18,7 +18,7 @@ export class DashboardController {
   ) { }
 
   @Get('overview')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get dashboard overview',
     description: 'Get overall statistics including employees, attendance, leave requests, contracts, and payroll'
@@ -29,7 +29,7 @@ export class DashboardController {
   }
 
   @Get('employee-stats')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get employee statistics',
     description: 'Get employee distribution by department, status, and gender'
@@ -40,7 +40,7 @@ export class DashboardController {
   }
 
   @Get('attendance-summary')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get attendance summary',
     description: 'Get attendance summary with daily trend for a specific month'
@@ -56,7 +56,7 @@ export class DashboardController {
   }
 
   @Get('payroll-summary')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get payroll summary',
     description: 'Get payroll summary by month for a specific year'
@@ -68,7 +68,7 @@ export class DashboardController {
   }
 
   @Get('alerts')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get system alerts',
     description: 'Get alerts for expiring contracts, pending leave requests, and frequent late employees'
@@ -91,7 +91,7 @@ export class DashboardController {
   }
 
   @Get('turnover-stats')
-  @Roles('ADMIN', 'HR_MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'EMPLOYEE')
   @ApiOperation({
     summary: 'Get turnover statistics',
     description: 'Get employee turnover statistics including monthly data, trend, and department breakdown'

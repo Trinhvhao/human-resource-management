@@ -23,6 +23,10 @@ class EmployeeService {
     return axiosInstance.get(`/employees/${id}`);
   }
 
+  async getProfile(id: string): Promise<ApiResponse<Employee>> {
+    return axiosInstance.get(`/employees/${id}/profile`);
+  }
+
   async create(data: CreateEmployeeData): Promise<ApiResponse<Employee>> {
     return axiosInstance.post('/employees', data);
   }

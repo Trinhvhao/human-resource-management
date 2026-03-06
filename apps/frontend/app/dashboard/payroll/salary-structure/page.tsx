@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePermission } from '@/hooks/usePermission';
@@ -30,18 +30,31 @@ export default function SalaryStructurePage() {
         }
     };
 
-    const filteredComponents = components.filter(c => {
+    const filteredComponents = useMemo(() => components.filter(c => {
         if (selectedType === 'ALL') return true;
         return c.componentType === selectedType;
-    });
+    }), [components, selectedType]);
 
-    const stats = {
+    // Group components by employee for better display
+    const groupedByEmployee = useMemo(() => filteredComponents.reduce((acc, component) => {
+        const key = component.employee.id;
+        if (!acc[key]) {
+            acc[key] = {
+                employee: component.employee,
+                components: []
+            };
+        }
+        acc[key].components.push(component);
+        return acc;
+    }, {} as Record<string, { employee: any; components: SalaryComponent[] }>), [filteredComponents]);
+
+    const stats = useMemo(() => ({
         total: components.length,
         basic: components.filter(c => c.componentType === 'BASIC').length,
         allowance: components.filter(c => c.componentType === 'ALLOWANCE').length,
         bonus: components.filter(c => c.componentType === 'BONUS').length,
         totalAmount: components.reduce((sum, c) => sum + Number(c.amount), 0),
-    };
+    }), [components]);
 
     const getTypeBadge = (type: string) => {
         const styles = {
@@ -175,13 +188,11 @@ export default function SalaryStructurePage() {
                             <table className="w-full">
                                 <thead className="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Nhân viên</th>
-                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Phòng ban</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Loại</th>
-                                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">Số tiền</th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Loại / Ghi chú</th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">Mô tả</th>
                                         <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Hiệu lực</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Ghi chú</th>
-                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">Thao tác</th>
+                                        <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">Số tiền</th>
+                                        <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700" colSpan={3}>Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
@@ -202,48 +213,75 @@ export default function SalaryStructurePage() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredComponents.map((component) => (
-                                            <tr key={component.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <p className="font-semibold text-primary">{component.employee.fullName}</p>
-                                                        <p className="text-sm text-slate-500">{component.employee.employeeCode}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">
-                                                    {component.employee.department?.name || '-'}
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    {getTypeBadge(component.componentType)}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className="font-bold text-green-600">
-                                                        {formatCurrency(Number(component.amount))}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center text-sm text-slate-600">
-                                                    {new Date(component.effectiveDate).toLocaleDateString('vi-VN')}
-                                                </td>
-                                                <td className="px-6 py-4 text-center text-sm text-slate-600">
-                                                    {component.note || '-'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button
-                                                            className="p-2 hover:bg-blue-50 rounded-lg text-brandBlue transition-colors"
-                                                            title="Chỉnh sửa"
-                                                        >
-                                                            <Edit size={16} />
-                                                        </button>
-                                                        <button
-                                                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
-                                                            title="Xóa"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                        Object.values(groupedByEmployee).map((group) => (
+                                            <React.Fragment key={group.employee.id}>
+                                                {/* Employee Header Row */}
+                                                <tr className="bg-slate-100">
+                                                    <td colSpan={7} className="px-6 py-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brandBlue to-blue-600 flex items-center justify-center text-white font-bold">
+                                                                    {group.employee.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-primary text-lg">{group.employee.fullName}</p>
+                                                                    <p className="text-sm text-slate-600">
+                                                                        {group.employee.employeeCode} • {group.employee.department?.name || 'Chưa có phòng ban'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-slate-500">Tổng cộng</p>
+                                                                <p className="text-xl font-bold text-green-600">
+                                                                    {formatCurrency(group.components.reduce((sum, c) => sum + Number(c.amount), 0))}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {/* Component Rows */}
+                                                {group.components.map((component, index) => (
+                                                    <tr key={component.id} className={`hover:bg-slate-50 transition-colors ${index === group.components.length - 1 ? 'border-b-2 border-slate-300' : ''}`}>
+                                                        <td className="px-6 py-3 pl-20">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1 h-8 bg-brandBlue rounded-full"></div>
+                                                                <div>
+                                                                    {getTypeBadge(component.componentType)}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-3 text-sm text-slate-600">
+                                                            {component.note || '-'}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-center">
+                                                            <span className="text-xs text-slate-500">
+                                                                {new Date(component.effectiveDate).toLocaleDateString('vi-VN')}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-3 text-right">
+                                                            <span className="font-bold text-green-600">
+                                                                {formatCurrency(Number(component.amount))}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-3" colSpan={3}>
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    className="p-2 hover:bg-blue-50 rounded-lg text-brandBlue transition-colors"
+                                                                    title="Chỉnh sửa"
+                                                                >
+                                                                    <Edit size={16} />
+                                                                </button>
+                                                                <button
+                                                                    className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                                                                    title="Xóa"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </React.Fragment>
                                         ))
                                     )}
                                 </tbody>

@@ -23,6 +23,7 @@ export class LeaveBalancesController {
   }
 
   @Get('employee/:employeeId')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Get employee leave balance' })
   @ApiParam({ name: 'employeeId', description: 'Employee UUID' })
   @ApiQuery({ name: 'year', required: false, type: Number })

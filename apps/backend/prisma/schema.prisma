@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // =====================================================
@@ -47,7 +48,9 @@ model User {
   approvedTerminations  TerminationRequest[] @relation("ApprovedTerminations")
   createdAppendices     ContractAppendix[]   @relation("CreatedAppendices")
   companyKnowledges     CompanyKnowledge[]   @relation("UserKnowledge")
+  notifications         Notification[]       @relation("UserNotifications")
 
+  @@index([role])
   @@map("users")
 }
 
@@ -222,9 +225,12 @@ model Employee {
   documents EmployeeDocument[]
 
   // NEW: Employee activities
-  activities    EmployeeActivity[] @relation("EmployeeActivities")
-  workSchedules WorkSchedule[]     @relation("EmployeeWorkSchedules")
+  activities      EmployeeActivity[] @relation("EmployeeActivities")
+  workSchedules   WorkSchedule[]     @relation("EmployeeWorkSchedules")
+  faceDescriptors FaceDescriptor[]   @relation("EmployeeFaceDescriptors")
 
+  @@index([status])
+  @@index([departmentId])
   @@map("employees")
 }
 
@@ -288,6 +294,8 @@ model Contract {
   terminationRequests TerminationRequest[]
   appendices          ContractAppendix[]
 
+  @@index([employeeId])
+  @@index([status, endDate])
   @@map("contracts")
 }
 
@@ -332,6 +340,8 @@ model LeaveRequest {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   approver User?    @relation("ApprovedByUser", fields: [approverId], references: [id], onDelete: SetNull)
 
+  @@index([employeeId])
+  @@index([status])
   @@map("leave_requests")
 }
 
@@ -401,6 +411,7 @@ model PayrollItem {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([payrollId, employeeId], name: "unique_payroll_employee")
+  @@index([employeeId])
   @@map("payroll_items")
 }
 
@@ -418,6 +429,7 @@ model Reward {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   creator  User     @relation("CreatedByUser", fields: [createdBy], references: [id], onDelete: SetNull)
 
+  @@index([employeeId])
   @@map("rewards")
 }
 
@@ -435,6 +447,7 @@ model Discipline {
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   creator  User     @relation("CreatedByUser", fields: [createdBy], references: [id], onDelete: SetNull)
 
+  @@index([employeeId])
   @@map("disciplines")
 }
 
@@ -449,6 +462,7 @@ model EmployeeHistory {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId])
   @@map("employee_history")
 }
 
@@ -463,6 +477,7 @@ model ChatMessage {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([conversationId])
   @@map("chat_messages")
 }
 
@@ -533,6 +548,8 @@ model AttendanceCorrection {
   employee   Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   attendance Attendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
 
+  @@index([employeeId])
+  @@index([status])
   @@map("attendance_corrections")
 }
 
@@ -553,6 +570,8 @@ model OvertimeRequest {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId])
+  @@index([status])
   @@map("overtime_requests")
 }
 
@@ -571,6 +590,7 @@ model LeaveAccrualHistory {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId, year, month])
   @@map("leave_accrual_history")
 }
 
@@ -587,6 +607,7 @@ model SalaryComponent {
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([employeeId, isActive])
   @@map("salary_components")
 }
 
@@ -826,4 +847,44 @@ model CompanyKnowledge {
   @@index([isActive])
   @@index([createdAt])
   @@map("company_knowledge")
+}
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String    @db.VarChar(255)
+  message   String    @db.Text
+  type      String    @default("INFO") @db.VarChar(50)
+  link      String?   @db.VarChar(500)
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at") @db.Timestamp(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// =====================================================
+// FACE RECOGNITION FOR ATTENDANCE
+// =====================================================
+
+model FaceDescriptor {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId String   @map("employee_id") @db.Uuid
+  descriptor Float[] // 128-dimensional face embedding vector
+  imageUrl   String?  @map("image_url") @db.Text
+  quality    Float // Detection confidence (0-1)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  employee Employee @relation("EmployeeFaceDescriptors", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([quality])
+  @@map("face_descriptors")
 }

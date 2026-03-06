@@ -3,6 +3,7 @@
 import { Employee } from '@/types/employee';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
+import Avatar from '@/components/common/Avatar';
 
 interface EmployeeTableViewProps {
   employees: Employee[];
@@ -114,17 +115,12 @@ export default function EmployeeTableView({
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                  {employee.avatarUrl ? (
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${employee.avatarUrl}`}
-                      alt={employee.fullName}
-                      className="w-8 h-8 rounded-full object-cover border border-slate-200"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brandBlue to-blue-600 flex items-center justify-center text-white font-bold text-xs">
-                      {employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
-                  )}
+                  <Avatar 
+                    src={employee.avatarUrl}
+                    name={employee.fullName}
+                    size="sm"
+                    alt={employee.fullName}
+                  />
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{employee.fullName}</p>
                     <p className="text-xs text-slate-500">{employee.email}</p>

@@ -163,9 +163,13 @@ export class LLMService {
 4. Luôn lịch sự, thân thiện và chuyên nghiệp
 
 **QUY TẮC QUAN TRỌNG:**
+- LUÔN ƯU TIÊN sử dụng dữ liệu từ "DỮ LIỆU TỪ HỆ THỐNG" nếu có
+- Nếu có dữ liệu employeeStats, hãy trả lời CHÍNH XÁC số lượng nhân viên
+- Nếu có dữ liệu companySalary, hãy trả lời CHÍNH XÁC tổng lương
+- Nếu có dữ liệu expiringContracts, hãy liệt kê các hợp đồng sắp hết hạn
 - Chỉ trả lời về thông tin CÔNG TY và NHÂN SỰ
 - KHÔNG trả lời về chính trị, tôn giáo, hoặc chủ đề nhạy cảm
-- Nếu không biết, hãy thừa nhận và đề xuất liên hệ HR
+- Nếu không có dữ liệu trong hệ thống, hãy thừa nhận và đề xuất liên hệ HR
 - Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu
 - Sử dụng emoji phù hợp để thân thiện hơn
 - Format câu trả lời với markdown (**, •, \n\n)
@@ -180,9 +184,10 @@ export class LLMService {
 - Thuế TNCN: Lũy tiến 5-35%
 
 **CÁCH TRẢ LỜI:**
-- Nếu hỏi về phép năm → Cung cấp số dư phép cụ thể
-- Nếu hỏi về lương → Giải thích các thành phần lương
-- Nếu hỏi về chấm công → Tổng kết số ngày, giờ làm việc
+- Nếu hỏi về phép năm → Cung cấp số dư phép cụ thể từ dữ liệu
+- Nếu hỏi về lương → Giải thích các thành phần lương từ dữ liệu
+- Nếu hỏi về chấm công → Tổng kết số ngày, giờ làm việc từ dữ liệu
+- Nếu hỏi về số lượng nhân viên → Trả lời CHÍNH XÁC từ employeeStats
 - Nếu hỏi về chính sách → Giải thích rõ ràng, dễ hiểu
 
 Hãy trả lời câu hỏi của nhân viên một cách chính xác và hữu ích!`;
@@ -192,6 +197,33 @@ Hãy trả lời câu hỏi của nhân viên một cách chính xác và hữu 
         if (!data) return '';
 
         let prompt = '\n\n**DỮ LIỆU TỪ HỆ THỐNG:**\n';
+
+        // Employee statistics (for HR/ADMIN)
+        if (data.employeeStats) {
+            prompt += `\n👥 **THỐNG KÊ NHÂN VIÊN:**\n`;
+            prompt += `- Tổng số nhân viên: **${data.employeeStats.total}** người\n`;
+            prompt += `- Đang làm việc (ACTIVE): **${data.employeeStats.active}** người\n`;
+            prompt += `- Đã nghỉ việc (INACTIVE): **${data.employeeStats.inactive}** người\n`;
+            prompt += `\n⚠️ QUAN TRỌNG: Hãy sử dụng số liệu này để trả lời câu hỏi về số lượng nhân viên!\n`;
+        }
+
+        // Company salary (for HR/ADMIN)
+        if (data.companySalary) {
+            prompt += `\n💰 **TỔNG LƯƠNG CÔNG TY tháng ${data.companySalary.month}/${data.companySalary.year}:**\n`;
+            prompt += `- Tổng chi phí: **${data.companySalary.totalAmount.toLocaleString('vi-VN')} VNĐ**\n`;
+            prompt += `- Số nhân viên: **${data.companySalary.employeeCount}** người\n`;
+            prompt += `- Trạng thái: ${data.companySalary.status}\n`;
+        }
+
+        // Expiring contracts (for HR/ADMIN)
+        if (data.expiringContracts && data.expiringContracts.length > 0) {
+            prompt += `\n⚠️ **HỢP ĐỒNG SẮP HẾT HẠN (30 ngày tới):**\n`;
+            prompt += `Tổng số: **${data.expiringContracts.length}** hợp đồng\n\n`;
+            data.expiringContracts.forEach((c: any, i: number) => {
+                prompt += `${i + 1}. ${c.employeeName} (${c.employeeCode}) - ${c.contractType}\n`;
+                prompt += `   Hết hạn: ${c.endDate}\n`;
+            });
+        }
 
         if (data.leaveBalance) {
             prompt += `\n📅 Phép năm ${data.leaveBalance.year}:\n`;

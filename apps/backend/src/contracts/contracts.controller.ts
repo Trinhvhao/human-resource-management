@@ -45,6 +45,14 @@ export class ContractsController {
     return this.contractsService.getExpiringContracts(daysNum);
   }
 
+  @Get('statistics')
+  @Roles('ADMIN', 'HR_MANAGER')
+  @ApiOperation({ summary: 'Get contract statistics', description: 'Get counts of total/active/expired/expiring contracts' })
+  @ApiResponse({ status: 200, description: 'Statistics retrieved' })
+  getStatistics() {
+    return this.contractsService.getStatistics();
+  }
+
   @Get('employee/:employeeId')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
   @ApiOperation({ summary: 'Get contracts by employee', description: 'Get all contracts for an employee' })

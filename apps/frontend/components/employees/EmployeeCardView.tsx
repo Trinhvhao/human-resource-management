@@ -4,6 +4,7 @@ import { Employee } from '@/types/employee';
 import { Mail, Phone, Calendar, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
+import Avatar from '@/components/common/Avatar';
 
 interface EmployeeCardViewProps {
   employees: Employee[];
@@ -45,17 +46,14 @@ export default function EmployeeCardView({ employees, onView }: EmployeeCardView
           <div className="relative h-28 bg-gradient-to-br from-brandBlue via-blue-600 to-indigo-600">
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="absolute -bottom-12 left-4">
-              {employee.avatarUrl ? (
-                <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${employee.avatarUrl}`}
+              <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-2xl overflow-hidden">
+                <Avatar 
+                  src={employee.avatarUrl}
+                  name={employee.fullName}
                   alt={employee.fullName}
-                  className="w-24 h-24 rounded-2xl border-4 border-white object-cover shadow-2xl"
+                  className="w-full! h-full! rounded-none! border-0"
                 />
-              ) : (
-                <div className="w-24 h-24 rounded-2xl border-4 border-white bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-2xl shadow-2xl">
-                  {employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-              )}
+              </div>
             </div>
             <div className="absolute top-3 right-3">
               <span className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 ${getStatusColor(employee.status)}`}>

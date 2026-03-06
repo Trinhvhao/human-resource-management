@@ -33,6 +33,23 @@ class AttendanceService {
     return axiosInstance.get('/attendances/today');
   }
 
+  // My attendances (uses JWT — no employeeId needed)
+  async getMyAttendances(month?: number, year?: number): Promise<ApiResponse<{
+    data: Attendance[];
+    summary: {
+      totalDays: number;
+      presentDays: number;
+      lateDays: number;
+      earlyLeaveDays: number;
+      totalWorkHours: number;
+    };
+    meta: { month: number; year: number };
+  }>> {
+    return axiosInstance.get('/attendances/my', {
+      params: { month, year }
+    });
+  }
+
   // Employee attendances
   async getEmployeeAttendances(employeeId: string, month?: number, year?: number): Promise<ApiResponse<{
     data: Attendance[];

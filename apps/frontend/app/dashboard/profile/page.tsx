@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import employeeService from '@/services/employeeService';
 import { Employee } from '@/types/employee';
 import { formatDate } from '@/utils/formatters';
+import Avatar from '@/components/common/Avatar';
 
 export default function ProfilePage() {
     const { user } = useAuthStore();
@@ -18,6 +19,8 @@ export default function ProfilePage() {
         phone: '',
         address: '',
     });
+
+    const isEmployee = user?.role === 'EMPLOYEE';
 
     useEffect(() => {
         if (user?.employeeId) {
@@ -30,11 +33,13 @@ export default function ProfilePage() {
 
         try {
             setLoading(true);
-            const response = await employeeService.getById(user.employeeId);
-            setEmployee(response.data);
+            // Use /profile endpoint which allows EMPLOYEE role; getById only allows ADMIN/HR_MANAGER/MANAGER
+            const response = await employeeService.getProfile(user.employeeId);
+            const data = response.data?.data || response.data;
+            setEmployee(data);
             setFormData({
-                phone: response.data.phone || '',
-                address: response.data.address || '',
+                phone: data?.phone || '',
+                address: data?.address || '',
             });
         } catch (error) {
             console.error('Failed to fetch profile:', error);
@@ -87,13 +92,16 @@ export default function ProfilePage() {
                         <p className="text-slate-500 mt-1">Quản lý thông tin cá nhân của bạn</p>
                     </div>
                     {!editing ? (
+                        // EMPLOYEE role cannot update via /employees/:id endpoint
+                        !isEmployee && (
                         <button
                             onClick={() => setEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
                         >
                             <Edit size={18} />
                             Chỉnh sửa
                         </button>
+                        )
                     ) : (
                         <div className="flex gap-2">
                             <button
@@ -105,7 +113,7 @@ export default function ProfilePage() {
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all"
+                                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-green-500 to-green-600 text-white rounded-lg hover:shadow-lg transition-all"
                             >
                                 <Save size={18} />
                                 Lưu
@@ -121,19 +129,16 @@ export default function ProfilePage() {
                     className="bg-white rounded-2xl border border-slate-200"
                 >
                     {/* Header with Avatar */}
-                    <div className="bg-gradient-to-r from-brandBlue to-[#0047b3] p-8 rounded-t-2xl">
+                    <div className="bg-linear-to-r from-brandBlue to-[#0047b3] p-8 rounded-t-2xl">
                         <div className="flex items-center gap-6">
-                            {employee.avatarUrl ? (
-                                <img
+                            <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-white">
+                                <Avatar
                                     src={employee.avatarUrl}
+                                    name={employee.fullName}
                                     alt={employee.fullName}
-                                    className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg"
+                                    className="w-full! h-full! rounded-none! border-0"
                                 />
-                            ) : (
-                                <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg">
-                                    {employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                </div>
-                            )}
+                            </div>
                             <div>
                                 <h2 className="text-2xl font-bold text-white">{employee.fullName}</h2>
                                 <p className="text-brandLightBlue text-lg mt-1">{employee.position}</p>
@@ -157,7 +162,7 @@ export default function ProfilePage() {
                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Email */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
                                 <Mail className="text-blue-600" size={24} />
                             </div>
                             <div className="flex-1">
@@ -168,7 +173,7 @@ export default function ProfilePage() {
 
                         {/* Phone */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
                                 <Phone className="text-green-600" size={24} />
                             </div>
                             <div className="flex-1">
@@ -189,7 +194,7 @@ export default function ProfilePage() {
 
                         {/* Date of Birth */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
                                 <Calendar className="text-purple-600" size={24} />
                             </div>
                             <div className="flex-1">
@@ -200,7 +205,7 @@ export default function ProfilePage() {
 
                         {/* Department */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-brandBlue/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-brandBlue/10 rounded-xl flex items-center justify-center shrink-0">
                                 <Building className="text-brandBlue" size={24} />
                             </div>
                             <div className="flex-1">
@@ -211,7 +216,7 @@ export default function ProfilePage() {
 
                         {/* Position */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center shrink-0">
                                 <Briefcase className="text-secondary" size={24} />
                             </div>
                             <div className="flex-1">
@@ -222,7 +227,7 @@ export default function ProfilePage() {
 
                         {/* Start Date */}
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center shrink-0">
                                 <Calendar className="text-yellow-600" size={24} />
                             </div>
                             <div className="flex-1">
@@ -233,7 +238,7 @@ export default function ProfilePage() {
 
                         {/* Address */}
                         <div className="flex items-start gap-4 md:col-span-2">
-                            <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center shrink-0">
                                 <MapPin className="text-pink-600" size={24} />
                             </div>
                             <div className="flex-1">

@@ -27,6 +27,10 @@ class ContractService {
     return axiosInstance.get('/contracts/expiring', { params: { days } });
   }
 
+  async getStatistics(): Promise<ApiResponse<{ total: number; active: number; expired: number; expiringSoon: number }>> {
+    return axiosInstance.get('/contracts/statistics');
+  }
+
   async create(data: CreateContractData): Promise<ApiResponse<Contract>> {
     return axiosInstance.post('/contracts', data);
   }

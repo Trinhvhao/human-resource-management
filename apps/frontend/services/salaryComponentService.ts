@@ -46,7 +46,7 @@ export interface UpdateSalaryComponentData {
 }
 
 class SalaryComponentService {
-  async getAll(params?: { employeeId?: string; componentType?: string; isActive?: boolean }): Promise<ApiResponse<SalaryComponent[]>> {
+  async getAll(params?: { employeeId?: string; componentType?: string; isActive?: boolean; page?: number; limit?: number }): Promise<ApiResponse<SalaryComponent[]>> {
     return axiosInstance.get('/salary-components', { params });
   }
 

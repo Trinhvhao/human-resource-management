@@ -40,6 +40,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'VIEW_REPORTS', 'EXPORT_DATA',
     'CREATE_USER',
     'VIEW_DASHBOARD', 'VIEW_ADMIN_DASHBOARD',
+    'VIEW_SYSTEM_SETTINGS', 'EDIT_SYSTEM_SETTINGS',
     'VIEW_OWN_PROFILE', 'EDIT_OWN_PROFILE',
   ],
 
@@ -142,8 +143,8 @@ export const PERMISSIONS = {
   VIEW_ADMIN_DASHBOARD: ['ADMIN', 'HR_MANAGER'],
 
   // Settings
-  VIEW_SYSTEM_SETTINGS: ['ADMIN'],
-  EDIT_SYSTEM_SETTINGS: ['ADMIN'],
+  VIEW_SYSTEM_SETTINGS: ['ADMIN', 'HR_MANAGER'],
+  EDIT_SYSTEM_SETTINGS: ['ADMIN', 'HR_MANAGER'],
   VIEW_OWN_PROFILE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
   EDIT_OWN_PROFILE: ['ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE'],
 } as const;
@@ -270,9 +271,7 @@ export const getDefaultRouteForRole = (userRole: UserRole): string => {
     case 'ADMIN':
     case 'HR_MANAGER':
     case 'MANAGER':
-      return '/dashboard';
     case 'EMPLOYEE':
-      return '/dashboard/my-calendar';
     default:
       return '/dashboard';
   }

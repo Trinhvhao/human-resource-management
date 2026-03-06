@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search, Bell, Settings, LogOut, User, ChevronDown, LayoutGrid, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import Avatar from '@/components/common/Avatar';
 
 const roleLabels: Record<string, string> = {
   ADMIN: 'Quản trị viên',
@@ -22,8 +24,13 @@ const pageInfo: Record<string, { title: string; subtitle: string; icon?: any }> 
   '/dashboard/departments': { title: 'Quản lý Phòng ban', subtitle: 'Quản lý cơ cấu tổ chức' },
   '/dashboard/attendance': { title: 'Quản lý Chấm công', subtitle: 'Quản lý chấm công nhân viên' },
   '/dashboard/leaves': { title: 'Nghỉ phép', subtitle: 'Quản lý đơn nghỉ phép' },
+  '/dashboard/my-leaves': { title: 'Nghỉ phép của tôi', subtitle: 'Xem và tạo đơn nghỉ phép' },
   '/dashboard/overtime': { title: 'Quản lý Tăng ca', subtitle: 'Quản lý đơn tăng ca' },
+  '/dashboard/my-overtime': { title: 'Làm thêm giờ', subtitle: 'Xem và đăng ký tăng ca' },
   '/dashboard/payroll': { title: 'Quản lý Lương', subtitle: 'Quản lý bảng lương' },
+  '/dashboard/my-attendance': { title: 'Chấm công của tôi', subtitle: 'Chấm công và xem lịch sử' },
+  '/dashboard/face-recognition': { title: 'Nhận diện khuôn mặt', subtitle: 'Đăng ký và quản lý khuôn mặt' },
+  '/dashboard/my-calendar': { title: 'Lịch của tôi', subtitle: 'Xem lịch làm việc và sự kiện' },
   '/dashboard/rewards': { title: 'Khen thưởng', subtitle: 'Quản lý khen thưởng' },
   '/dashboard/disciplines': { title: 'Kỷ luật', subtitle: 'Quản lý kỷ luật' },
   '/dashboard/settings': { title: 'Cài đặt', subtitle: 'Cấu hình hệ thống' },
@@ -88,7 +95,7 @@ export default function TopHeader() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Tìm kiếm nhân viên, phòng ban..."
+            placeholder={user?.role === 'EMPLOYEE' ? 'Tìm kiếm...' : 'Tìm kiếm nhân viên, phòng ban...'}
             className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20 focus:border-brandBlue text-sm"
           />
         </div>
@@ -108,10 +115,7 @@ export default function TopHeader() {
         )}
 
         {/* Notifications */}
-        <button className="relative p-2 hover:bg-slate-50 rounded-lg transition-colors">
-          <Bell size={20} className="text-slate-600" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span>
-        </button>
+        <NotificationBell />
 
         {/* Settings */}
         <button
@@ -134,17 +138,12 @@ export default function TopHeader() {
               <p className="text-sm font-medium text-primary">{displayName}</p>
               <p className="text-xs text-slate-500">{roleLabels[user?.role || 'EMPLOYEE']}</p>
             </div>
-            {user?.employee?.avatarUrl ? (
-              <img
-                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${user.employee.avatarUrl}`}
-                alt={displayName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-brandBlue text-white flex items-center justify-center font-bold text-sm border-2 border-brandBlue/20">
-                {initials}
-              </div>
-            )}
+            <Avatar
+              src={user?.employee?.avatarUrl}
+              name={displayName}
+              size="md"
+              alt={displayName}
+            />
             <ChevronDown size={16} className={`text-slate-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
 
@@ -155,7 +154,7 @@ export default function TopHeader() {
                 <p className="text-sm font-medium text-primary">{displayName}</p>
                 <p className="text-xs text-slate-500 mb-2">{user?.email}</p>
                 {/* Role Badge */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                   <span className="text-xs font-semibold text-blue-700">
                     {roleLabels[user?.role || 'EMPLOYEE']}

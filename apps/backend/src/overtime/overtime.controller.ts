@@ -49,13 +49,17 @@ export class OvertimeController {
   @ApiQuery({ name: 'employeeId', required: false })
   @ApiQuery({ name: 'month', required: false, type: Number })
   @ApiQuery({ name: 'year', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   findAll(
     @Query('status') status?: string,
     @Query('employeeId') employeeId?: string,
     @Query('month', new ParseIntPipe({ optional: true })) month?: number,
     @Query('year', new ParseIntPipe({ optional: true })) year?: number,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
   ) {
-    return this.overtimeService.findAll(status, employeeId, month, year);
+    return this.overtimeService.findAll(status, employeeId, month, year, page, limit);
   }
 
   @Get('pending')

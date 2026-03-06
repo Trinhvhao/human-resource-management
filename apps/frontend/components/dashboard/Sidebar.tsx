@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronUp,
   FileSignature,
-  Award
+  Award,
+  ScanFace
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
@@ -92,6 +93,7 @@ const adminMenuItems: MenuItem[] = [
       { label: 'Yêu cầu sửa', href: '/dashboard/attendance/corrections' },
       { label: 'Báo cáo', href: '/dashboard/attendance/reports' },
       { label: 'Quản lý', href: '/dashboard/attendance/management' },
+      { label: 'Nhận diện khuôn mặt', href: '/dashboard/attendance/face-management' },
     ]
   },
   {
@@ -150,13 +152,14 @@ const adminMenuItems: MenuItem[] = [
     icon: Settings,
     label: 'Cài đặt',
     href: '/dashboard/settings',
-    roles: ['ADMIN', 'MANAGER']
+    roles: ['ADMIN', 'HR_MANAGER', 'MANAGER']
   },
 ];
 
 const employeeMenuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Trang chủ', href: '/dashboard', roles: ['EMPLOYEE'] },
   { icon: ClipboardCheck, label: 'Chấm công', href: '/dashboard/my-attendance', roles: ['EMPLOYEE'] },
+  { icon: ScanFace, label: 'Nhận diện khuôn mặt', href: '/dashboard/face-recognition', roles: ['EMPLOYEE'] },
   { icon: CalendarDays, label: 'Lịch của tôi', href: '/dashboard/my-calendar', roles: ['EMPLOYEE'] },
   { icon: Calendar, label: 'Nghỉ phép', href: '/dashboard/my-leaves', roles: ['EMPLOYEE'] },
   { icon: FileText, label: 'Làm thêm giờ', href: '/dashboard/my-overtime', roles: ['EMPLOYEE'] },
@@ -245,7 +248,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-linear-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-primary">
@@ -253,7 +256,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </span>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-gradient-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center mx-auto shadow-lg">
+          <div className="w-8 h-8 bg-linear-to-r from-secondary via-orange-600 to-orange-700 rounded-lg flex items-center justify-center mx-auto shadow-lg">
             <Clock className="w-5 h-5 text-white" />
           </div>
         )}
@@ -292,13 +295,13 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     className={`
                       w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all
                       ${isActive
-                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
+                        ? 'bg-linear-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
                         : 'text-slate-600 hover:bg-slate-50'
                       }
                       ${!isOpen && 'justify-center'}
                     `}
                   >
-                    <Icon size={20} className="flex-shrink-0" />
+                    <Icon size={20} className="shrink-0" />
                     {isOpen && (
                       <>
                         <span className="font-semibold text-sm flex-1 text-left">{item.label}</span>
@@ -312,13 +315,13 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     className={`
                       flex items-center gap-3 px-3 py-3 rounded-lg transition-all
                       ${isActive
-                        ? 'bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
+                        ? 'bg-linear-to-r from-brandBlue via-blue-600 to-blue-700 text-white shadow-lg'
                         : 'text-slate-600 hover:bg-slate-50'
                       }
                       ${!isOpen && 'justify-center'}
                     `}
                   >
-                    <Icon size={20} className="flex-shrink-0" />
+                    <Icon size={20} className="shrink-0" />
                     {isOpen && (
                       <span className="font-semibold text-sm">{item.label}</span>
                     )}
@@ -369,13 +372,14 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {isOpen && user && (
         <div className="p-4 border-t border-slate-200 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 text-white flex items-center justify-center font-bold shadow-lg">
+            <div className="w-10 h-10 rounded-full bg-linear-to-r from-brandBlue via-blue-600 to-blue-700 text-white flex items-center justify-center font-bold shadow-lg">
               {user.email?.substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-primary truncate">{user.email}</p>
               <p className="text-xs text-slate-500 truncate font-medium">
                 {user.role === 'ADMIN' ? 'Quản trị viên' :
+                  user.role === 'HR_MANAGER' ? 'Nhân sự' :
                   user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
               </p>
             </div>

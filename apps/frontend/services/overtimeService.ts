@@ -7,6 +7,8 @@ interface QueryOvertimeParams {
   employeeId?: string;
   month?: number;
   year?: number;
+  page?: number;
+  limit?: number;
 }
 
 class OvertimeService {

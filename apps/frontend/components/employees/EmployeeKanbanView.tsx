@@ -4,6 +4,7 @@ import { Employee } from '@/types/employee';
 import { Mail, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
+import Avatar from '@/components/common/Avatar';
 
 interface EmployeeKanbanViewProps {
   employees: Employee[];
@@ -39,7 +40,7 @@ export default function EmployeeKanbanView({ employees, onView }: EmployeeKanban
             </div>
 
             {/* Column Body */}
-            <div className={`flex-1 ${column.bgColor} rounded-b-2xl p-4 space-y-3 min-h-[400px] border-2 ${column.color}`}>
+            <div className={`flex-1 ${column.bgColor} rounded-b-2xl p-4 space-y-3 min-h-100 border-2 ${column.color}`}>
               {columnEmployees.map((employee, index) => (
                 <motion.div
                   key={employee.id}
@@ -52,17 +53,14 @@ export default function EmployeeKanbanView({ employees, onView }: EmployeeKanban
                 >
                   {/* Employee Info */}
                   <div className="flex items-start gap-3 mb-3">
-                    {employee.avatarUrl ? (
-                      <img
-                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'}${employee.avatarUrl}`}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-slate-200 shadow-md shrink-0">
+                      <Avatar 
+                        src={employee.avatarUrl}
+                        name={employee.fullName}
                         alt={employee.fullName}
-                        className="w-12 h-12 rounded-xl object-cover border-2 border-slate-200 shadow-md"
+                        className="w-full! h-full! rounded-none! border-0"
                       />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                        {employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
-                    )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-slate-900 text-sm truncate group-hover:text-brandBlue transition-colors">{employee.fullName}</h4>
                       <p className="text-xs text-brandBlue font-semibold">{employee.employeeCode}</p>

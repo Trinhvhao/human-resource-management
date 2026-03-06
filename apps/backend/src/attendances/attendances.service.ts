@@ -31,12 +31,13 @@ export class AttendancesService {
     });
 
     if (existing?.checkIn) {
-      throw new BadRequestException('Already checked in today');
+      throw new BadRequestException('Bạn đã chấm công vào hôm nay rồi');
     }
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const isLate = currentMinutes > this.WORK_START + this.LATE_THRESHOLD;
+    // Late if: after grace period  OR  before 6 AM (midnight/early area — test data or night shift edge case)
+    const isLate = currentMinutes > this.WORK_START + this.LATE_THRESHOLD || currentMinutes < 6 * 60;
 
     const attendance = existing
       ? await this.prisma.attendance.update({
@@ -55,7 +56,7 @@ export class AttendancesService {
 
     return {
       success: true,
-      message: isLate ? 'Checked in (Late)' : 'Checked in successfully',
+      message: isLate ? 'Chấm công vào thành công (Đi muộn)' : 'Chấm công vào thành công',
       data: {
         ...attendance,
         isLate,
@@ -76,20 +77,21 @@ export class AttendancesService {
     });
 
     if (!attendance) {
-      throw new BadRequestException('No check-in record found for today');
+      throw new BadRequestException('Bạn chưa chấm công vào hôm nay');
     }
 
     if (!attendance.checkIn) {
-      throw new BadRequestException('Must check in before checking out');
+      throw new BadRequestException('Bạn chưa chấm công vào, không thể chấm công ra');
     }
 
     if (attendance.checkOut) {
-      throw new BadRequestException('Already checked out today');
+      throw new BadRequestException('Bạn đã chấm công ra hôm nay rồi');
     }
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const isEarlyLeave = currentMinutes < this.WORK_END;
+    // Only flag early leave for times within normal business hours (6 AM – WORK_END)
+    const isEarlyLeave = currentMinutes >= 6 * 60 && currentMinutes < this.WORK_END;
 
     // Calculate work hours
     const checkInTime = new Date(attendance.checkIn);
@@ -111,7 +113,7 @@ export class AttendancesService {
 
     return {
       success: true,
-      message: isEarlyLeave ? 'Checked out (Early)' : 'Checked out successfully',
+      message: isEarlyLeave ? 'Chấm công ra thành công (Về sớm)' : 'Chấm công ra thành công',
       data: {
         ...updated,
         checkOutTime: now.toLocaleTimeString('vi-VN'),

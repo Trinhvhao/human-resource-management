@@ -122,15 +122,19 @@ export class CalendarService {
             },
         });
 
-        // Count leave days
-        const leaveDays = await this.prisma.leaveRequest.count({
+        // Sum leave days (total days, not count of requests)
+        const leaveAgg = await this.prisma.leaveRequest.aggregate({
             where: {
                 employeeId,
                 status: 'APPROVED',
                 startDate: { lte: endDate },
                 endDate: { gte: startDate },
             },
+            _sum: {
+                totalDays: true,
+            },
         });
+        const leaveDays = Number(leaveAgg._sum.totalDays || 0);
 
         // Sum overtime hours
         const overtimeResult = await this.prisma.overtimeRequest.aggregate({

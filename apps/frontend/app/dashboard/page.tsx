@@ -4,9 +4,11 @@ import { useState, Suspense, lazy } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewCards from '@/components/dashboard/OverviewCards';
 import QuickActions from '@/components/dashboard/QuickActions';
+import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
+import { useAuthStore } from '@/store/authStore';
 import { RefreshCw } from 'lucide-react';
 
-// Lazy load heavy components
+// Lazy load heavy components (admin/HR only)
 const AttendanceChart = lazy(() => import('@/components/dashboard/AttendanceChart'));
 const DepartmentDistribution = lazy(() => import('@/components/dashboard/DepartmentDistribution'));
 const RecentActivities = lazy(() => import('@/components/dashboard/RecentActivities'));
@@ -30,11 +32,22 @@ const ChartSkeleton = () => (
 
 export default function DashboardPage() {
   const [refreshKey, setRefreshKey] = useState(0);
+  const { user } = useAuthStore();
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Employee role gets a personalized dashboard
+  if (user?.role === 'EMPLOYEE') {
+    return (
+      <DashboardLayout>
+        <EmployeeDashboard />
+      </DashboardLayout>
+    );
+  }
+
+  // Admin / HR_MANAGER / MANAGER get the full management dashboard
   return (
     <DashboardLayout>
       <div className="space-y-8">

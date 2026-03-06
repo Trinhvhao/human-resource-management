@@ -54,6 +54,19 @@ export class AttendancesController {
     return this.attendancesService.getTodayAttendance(user.employeeId);
   }
 
+  @Get('my')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
+  @ApiOperation({ summary: 'Get my attendances', description: 'Get attendance records for the currently logged-in employee' })
+  @ApiQuery({ name: 'month', required: false, type: Number, example: 3 })
+  @ApiQuery({ name: 'year', required: false, type: Number, example: 2026 })
+  getMyAttendances(
+    @CurrentUser() user: any,
+    @Query('month') month?: number,
+    @Query('year') year?: number,
+  ) {
+    return this.attendancesService.getEmployeeAttendances(user.employeeId, month, year);
+  }
+
   @Get('today/all')
   @Roles('ADMIN', 'HR_MANAGER')
   @ApiOperation({ summary: 'Get all today attendances', description: 'Get all employees attendance for today (Admin only)' })
@@ -62,7 +75,7 @@ export class AttendancesController {
   }
 
   @Get('employee/:employeeId')
-  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER')
+  @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Get employee attendances', description: 'Get attendance records for an employee' })
   @ApiParam({ name: 'employeeId', description: 'Employee UUID' })
   @ApiQuery({ name: 'month', required: false, type: Number, example: 1 })

@@ -35,7 +35,7 @@ export default function LeavesPage() {
 
       const [balanceRes, requestsRes] = await Promise.all([
         leaveService.getBalance(user.employeeId),
-        isAdminOrHR ? leaveService.getAll() : leaveService.getMyRequests(),
+        isAdminOrHR ? leaveService.getAll({ page: 1, limit: 50 }) : leaveService.getMyRequests(),
       ]);
 
       setBalance(balanceRes.data);
@@ -265,9 +265,9 @@ export default function LeavesPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
               { label: 'Tổng đơn', value: requests.length.toString(), color: 'blue' },
-              { label: 'Chờ duyệt', value: requests.filter(r => r.status === 'PENDING').length.toString(), color: 'yellow' },
-              { label: 'Đã duyệt', value: requests.filter(r => r.status === 'APPROVED').length.toString(), color: 'green' },
-              { label: 'Từ chối', value: requests.filter(r => r.status === 'REJECTED').length.toString(), color: 'red' },
+              { label: 'Chờ duyệt', value: String(requests.filter(r => r.status === 'PENDING').length), color: 'yellow' },
+              { label: 'Đã duyệt', value: String(requests.filter(r => r.status === 'APPROVED').length), color: 'green' },
+              { label: 'Từ chối', value: String(requests.filter(r => r.status === 'REJECTED').length), color: 'red' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}

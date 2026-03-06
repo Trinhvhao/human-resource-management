@@ -26,6 +26,7 @@
     "db:check": "ts-node db-comprehensive-check.ts"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.95",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -38,9 +39,13 @@
     "@prisma/client": "5.22.0",
     "@supabase/storage-js": "^2.91.0",
     "@supabase/supabase-js": "^2.95.2",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
+    "@vladmandic/face-api": "^1.7.15",
     "@xenova/transformers": "^2.17.2",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
+    "canvas": "^3.2.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "exceljs": "^4.4.0",

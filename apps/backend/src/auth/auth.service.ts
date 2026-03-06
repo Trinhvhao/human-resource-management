@@ -109,25 +109,25 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Email không tồn tại trong hệ thống');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is inactive');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
 
     // Verify password
     const isPasswordValid = await this.comparePassword(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Mật khẩu không chính xác');
     }
 
     const token = this.generateToken(user);
 
     return {
       success: true,
-      message: 'Login successful',
+      message: 'Đăng nhập thành công',
       data: {
         user: this.sanitizeUser(user),
         accessToken: token,

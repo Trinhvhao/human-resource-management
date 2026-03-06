@@ -398,7 +398,11 @@ export class DashboardService {
         where: {
           createdAt: { gte: sevenDaysAgo },
         },
-        include: {
+        select: {
+          id: true,
+          status: true,
+          totalDays: true,
+          createdAt: true,
           employee: {
             select: { fullName: true },
           },
@@ -412,7 +416,10 @@ export class DashboardService {
         where: {
           createdAt: { gte: sevenDaysAgo },
         },
-        include: {
+        select: {
+          id: true,
+          checkOut: true,
+          createdAt: true,
           employee: {
             select: { fullName: true },
           },

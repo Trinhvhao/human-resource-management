@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Settings, Bell, Shield, Palette, Globe, Key, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -28,7 +27,6 @@ export default function SettingsPage() {
   ];
 
   return (
-    <ProtectedRoute requiredPermission="VIEW_SYSTEM_SETTINGS">
       <DashboardLayout>
         <div className="space-y-6">
           {/* Header */}
@@ -48,7 +46,7 @@ export default function SettingsPage() {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === tab.id
-                        ? 'bg-gradient-to-r from-brandBlue to-[#0047b3] text-white shadow-lg'
+                        ? 'bg-linear-to-r from-brandBlue to-[#0047b3] text-white shadow-lg'
                         : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -218,7 +216,7 @@ export default function SettingsPage() {
                           placeholder="Xác nhận mật khẩu mới"
                           className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-brandBlue"
                         />
-                        <button className="px-6 py-2 bg-gradient-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all">
+                        <button className="px-6 py-2 bg-linear-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all">
                           Cập nhật mật khẩu
                         </button>
                       </div>
@@ -314,7 +312,7 @@ export default function SettingsPage() {
 
                 {/* Save Button */}
                 <div className="mt-8 pt-6 border-t border-slate-200">
-                  <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-secondary to-brandRed text-white rounded-xl hover:shadow-lg transition-all font-semibold">
+                  <button className="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-secondary to-brandRed text-white rounded-xl hover:shadow-lg transition-all font-semibold">
                     <Save size={20} />
                     Lưu thay đổi
                   </button>
@@ -324,6 +322,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </DashboardLayout>
-    </ProtectedRoute>
   );
 }

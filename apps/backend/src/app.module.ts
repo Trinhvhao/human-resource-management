@@ -26,6 +26,8 @@ import { SalaryComponentsModule } from './salary-components/salary-components.mo
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { TeamsModule } from './teams/teams.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FaceRecognitionModule } from './face-recognition/face-recognition.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { CalendarModule } from './calendar/calendar.module';
     ChatbotModule,
     TeamsModule,
     CalendarModule,
+    NotificationsModule,
+    FaceRecognitionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

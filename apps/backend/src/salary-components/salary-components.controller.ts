@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SalaryComponentsService } from './salary-components.service';
@@ -45,16 +46,22 @@ export class SalaryComponentsController {
   @ApiQuery({ name: 'employeeId', required: false, type: String })
   @ApiQuery({ name: 'componentType', required: false, type: String })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
   findAll(
     @Query('employeeId') employeeId?: string,
     @Query('componentType') componentType?: string,
     @Query('isActive') isActive?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
   ) {
     return this.salaryComponentsService.findAll(
       employeeId,
       componentType,
       isActive !== undefined ? isActive === 'true' : undefined,
+      page,
+      limit,
     );
   }
 

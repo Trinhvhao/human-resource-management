@@ -69,7 +69,7 @@ export default function OvertimePage() {
       const isAdminOrHR = user?.role === 'ADMIN' || user?.role === 'HR_MANAGER';
 
       const response = await (isAdminOrHR
-        ? overtimeService.getAll()
+        ? overtimeService.getAll({ page: 1, limit: 50 })
         : overtimeService.getMyRequests()
       );
 

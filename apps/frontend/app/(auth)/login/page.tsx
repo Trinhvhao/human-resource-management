@@ -48,19 +48,19 @@ export default function LoginPage() {
   const fillDemoAccount = (type: 'admin' | 'hr' | 'employee') => {
     if (type === 'admin') {
       setEmail('admin@company.com');
-      setPassword('Password123!');
+      setPassword('Admin@123');
     } else if (type === 'hr') {
       setEmail('hr.manager@company.com');
       setPassword('Password123!');
     } else {
       // Get first employee user
-      setEmail('emp001@company.com');
+      setEmail('employee1@company.com');
       setPassword('Password123!');
     }
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-brandBlue via-[#001a4d] to-[#002870] flex items-center justify-center p-4">
+    <div className="min-h-screen relative overflow-hidden bg-linear-to-br from-brandBlue via-[#001a4d] to-[#002870] flex items-center justify-center p-4">
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brandLightBlue/10 rounded-full blur-[120px] animate-float" style={{ animationDuration: '8s' }}></div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
         >
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-secondary to-brandRed rounded-2xl flex items-center justify-center shadow-2xl shadow-secondary/30">
+            <div className="w-16 h-16 bg-linear-to-br from-secondary to-brandRed rounded-2xl flex items-center justify-center shadow-2xl shadow-secondary/30">
               <Shield className="text-white w-8 h-8" />
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <h2 className="text-4xl font-bold text-white leading-tight">
               Chào mừng bạn <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary via-brandRed to-brandLightBlue">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-secondary via-brandRed to-brandLightBlue">
                 đến với HRMS
               </span>
             </h2>
@@ -147,7 +147,7 @@ export default function LoginPage() {
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-10 border border-white/20">
             {/* Mobile Logo */}
             <div className="md:hidden flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-secondary to-brandRed rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-linear-to-br from-secondary to-brandRed rounded-xl flex items-center justify-center">
                 <Shield className="text-white w-6 h-6" />
               </div>
               <div>
@@ -241,7 +241,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-secondary to-brandRed text-white font-semibold py-4 rounded-xl hover:shadow-lg hover:shadow-secondary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+                className="w-full bg-linear-to-r from-secondary to-brandRed text-white font-semibold py-4 rounded-xl hover:shadow-lg hover:shadow-secondary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
               >
                 {loading ? (
                   <>
@@ -301,12 +301,9 @@ export default function LoginPage() {
             <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
               <p className="text-xs font-semibold text-blue-900 mb-2">📋 Thông tin tài khoản demo:</p>
               <div className="space-y-1 text-xs text-blue-700">
-                <p>• <strong>Admin:</strong> admin@company.com</p>
-                <p>• <strong>HR Manager:</strong> hr.manager@company.com</p>
-                <p>• <strong>Employee:</strong> emp001@company.com</p>
-                <p className="mt-2 pt-2 border-t border-blue-200">
-                  🔑 <strong>Password:</strong> Password123!
-                </p>
+                <p>• <strong>Admin:</strong> admin@company.com / Admin@123</p>
+                <p>• <strong>HR Manager:</strong> hr.manager@company.com / Password123!</p>
+                <p>• <strong>Employee:</strong> employee1@company.com / Password123!</p>
               </div>
             </div>
 

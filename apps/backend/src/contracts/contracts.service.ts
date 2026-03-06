@@ -224,6 +224,28 @@ export class ContractsService {
     return { success: true, data: contracts };
   }
 
+  async getStatistics() {
+    const now = new Date();
+    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const [total, active, expired, expiringSoon] = await Promise.all([
+      this.prisma.contract.count(),
+      this.prisma.contract.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.contract.count({ where: { status: 'EXPIRED' } }),
+      this.prisma.contract.count({
+        where: {
+          status: 'ACTIVE',
+          endDate: { gte: now, lte: thirtyDaysLater },
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: { total, active, expired, expiringSoon },
+    };
+  }
+
   async update(id: string, dto: UpdateContractDto) {
     const contract = await this.prisma.contract.findUnique({
       where: { id },

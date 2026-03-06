@@ -964,23 +964,135 @@ export class ChatbotService {
 
   // HR/ADMIN handler methods (simplified for fallback)
   private async handleCompanySalaryTotal(context: ChatContext, params: any): Promise<string> {
-    return 'Chức năng này đang được xử lý bởi AI. Vui lòng thử lại.';
+    const now = new Date();
+    const month = params.month || now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    const payroll = await this.prisma.payroll.findFirst({
+      where: { month, year },
+      include: {
+        _count: { select: { items: true } },
+      },
+    });
+
+    if (!payroll) {
+      return `Chưa có thông tin lương tháng ${month}/${year}.`;
+    }
+
+    return `💰 **Tổng lương công ty tháng ${month}/${year}:**\n\n` +
+      `• Tổng chi phí: **${Number(payroll.totalAmount).toLocaleString('vi-VN')} VNĐ**\n` +
+      `• Số nhân viên: **${payroll._count.items}** người\n` +
+      `• Trung bình: **${(Number(payroll.totalAmount) / payroll._count.items).toLocaleString('vi-VN')} VNĐ/người**\n` +
+      `• Trạng thái: ${payroll.status === 'LOCKED' ? '✅ Đã chốt' : '⏳ Đang xử lý'}`;
   }
 
   private async handleEmployeeCount(context: ChatContext): Promise<string> {
-    return 'Chức năng này đang được xử lý bởi AI. Vui lòng thử lại.';
+    const total = await this.prisma.employee.count();
+    const active = await this.prisma.employee.count({ where: { status: 'ACTIVE' } });
+    const inactive = await this.prisma.employee.count({ where: { status: 'INACTIVE' } });
+
+    return `👥 **Thống kê nhân viên:**\n\n` +
+      `• Tổng số nhân viên: **${total}** người\n` +
+      `• Đang làm việc: **${active}** người\n` +
+      `• Đã nghỉ việc: **${inactive}** người\n\n` +
+      `📊 Tỷ lệ nhân viên đang làm việc: **${((active / total) * 100).toFixed(1)}%**`;
   }
 
   private async handleContractExpiring(context: ChatContext): Promise<string> {
-    return 'Chức năng này đang được xử lý bởi AI. Vui lòng thử lại.';
+    const now = new Date();
+    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const contracts = await this.prisma.contract.findMany({
+      where: {
+        status: 'ACTIVE',
+        endDate: { gte: now, lte: thirtyDaysLater },
+      },
+      include: {
+        employee: {
+          select: { fullName: true, employeeCode: true },
+        },
+      },
+      take: 10,
+    });
+
+    if (contracts.length === 0) {
+      return '✅ **Không có hợp đồng nào sắp hết hạn trong 30 ngày tới.**';
+    }
+
+    let response = `⚠️ **Hợp đồng sắp hết hạn (30 ngày tới):**\n\n`;
+    response += `Tổng số: **${contracts.length}** hợp đồng\n\n`;
+
+    contracts.forEach((c, index) => {
+      const daysLeft = Math.ceil((c.endDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      response += `${index + 1}. **${c.employee.fullName}** (${c.employee.employeeCode})\n`;
+      response += `   • Loại: ${c.contractType}\n`;
+      response += `   • Hết hạn: ${c.endDate?.toLocaleDateString('vi-VN')} (còn ${daysLeft} ngày)\n\n`;
+    });
+
+    return response;
   }
 
   private async handleDepartmentStats(context: ChatContext): Promise<string> {
-    return 'Chức năng này đang được xử lý bởi AI. Vui lòng thử lại.';
+    const departments = await this.prisma.department.findMany({
+      include: {
+        _count: {
+          select: { employees: true },
+        },
+      },
+      orderBy: {
+        employees: {
+          _count: 'desc',
+        },
+      },
+    });
+
+    let response = '🏢 **Thống kê phòng ban:**\n\n';
+    const totalEmployees = departments.reduce((sum, d) => sum + d._count.employees, 0);
+
+    departments.forEach((dept, index) => {
+      const percentage = totalEmployees > 0 ? ((dept._count.employees / totalEmployees) * 100).toFixed(1) : '0';
+      response += `${index + 1}. **${dept.name}** (${dept.code})\n`;
+      response += `   • Nhân viên: ${dept._count.employees} người (${percentage}%)\n`;
+      if (dept.managerId) {
+        response += `   • Trưởng phòng: Có\n`;
+      }
+      response += `\n`;
+    });
+
+    response += `\n📊 **Tổng cộng: ${totalEmployees} nhân viên trong ${departments.length} phòng ban**`;
+
+    return response;
   }
 
   private async handleAttendanceReport(context: ChatContext, params: any): Promise<string> {
-    return 'Chức năng này đang được xử lý bởi AI. Vui lòng thử lại.';
+    const now = new Date();
+    const month = params.month || now.getMonth() + 1;
+    const year = now.getFullYear();
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: {
+        date: { gte: startDate, lte: endDate },
+      },
+    });
+
+    const totalRecords = attendances.length;
+    const present = attendances.filter(a => a.status === 'PRESENT').length;
+    const absent = attendances.filter(a => a.status === 'ABSENT').length;
+    const late = attendances.filter(a => a.isLate).length;
+    const earlyLeave = attendances.filter(a => a.isEarlyLeave).length;
+
+    const uniqueEmployees = new Set(attendances.map(a => a.employeeId)).size;
+
+    return `📊 **Báo cáo chấm công toàn công ty - Tháng ${month}/${year}:**\n\n` +
+      `• Tổng số bản ghi: **${totalRecords}** records\n` +
+      `• Số nhân viên: **${uniqueEmployees}** người\n` +
+      `• Có mặt: **${present}** lần (${((present / totalRecords) * 100).toFixed(1)}%)\n` +
+      `• Vắng mặt: **${absent}** lần (${((absent / totalRecords) * 100).toFixed(1)}%)\n` +
+      `• Đi muộn: **${late}** lần\n` +
+      `• Về sớm: **${earlyLeave}** lần\n\n` +
+      `📈 **Tỷ lệ chuyên cần: ${((present / totalRecords) * 100).toFixed(1)}%**`;
   }
 
   private async handleSystemStatus(context: ChatContext): Promise<string> {
