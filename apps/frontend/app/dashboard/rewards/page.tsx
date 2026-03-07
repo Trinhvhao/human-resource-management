@@ -100,7 +100,18 @@ export default function RewardsPage() {
       fetchData();
     } catch (error: any) {
       console.error('Không thể tạo khen thưởng:', error);
-      alert(error.response?.data?.message || 'Tạo khen thưởng thất bại');
+      // Handle different error structures
+      let errorMessage = 'Tạo khen thưởng thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     }
   };
 
@@ -113,7 +124,18 @@ export default function RewardsPage() {
       fetchData();
     } catch (error: any) {
       console.error('Không thể xóa:', error);
-      alert(error.response?.data?.message || 'Xóa thất bại');
+      // Handle different error structures
+      let errorMessage = 'Xóa thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     }
   };
 
