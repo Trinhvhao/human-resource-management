@@ -33,7 +33,7 @@ export default function DisciplinesPage() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<DisciplineType | 'ALL'>('ALL');
-  
+
   const [formData, setFormData] = useState<CreateDisciplineData>({
     employeeId: '',
     reason: '',
@@ -59,10 +59,10 @@ export default function DisciplinesPage() {
         disciplineService.getAll(),
         employeeService.getAll({ status: 'ACTIVE' }),
       ]);
-      
+
       setDisciplines(disciplinesRes.data);
       setEmployees(employeesRes.data);
-      
+
       // Calculate stats
       const total = disciplinesRes.data.length;
       const totalFines = disciplinesRes.data.reduce((sum: number, d: Discipline) => sum + Number(d.amount), 0);
@@ -71,7 +71,7 @@ export default function DisciplinesPage() {
         const now = new Date();
         return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
       }).length;
-      
+
       setStats({ total, totalFines, thisMonth });
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -101,7 +101,18 @@ export default function DisciplinesPage() {
       fetchData();
     } catch (error: any) {
       console.error('Failed to create discipline:', error);
-      alert(error.response?.data?.message || 'Tạo kỷ luật thất bại');
+      // Handle different error structures
+      let errorMessage = 'Tạo kỷ luật thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     }
   };
 
@@ -114,13 +125,24 @@ export default function DisciplinesPage() {
       fetchData();
     } catch (error: any) {
       console.error('Failed to delete discipline:', error);
-      alert(error.response?.data?.message || 'Xóa thất bại');
+      // Handle different error structures
+      let errorMessage = 'Xóa thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     }
   };
 
   const filteredDisciplines = disciplines.filter((discipline) => {
     const matchSearch = discipline.employee?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       discipline.reason.toLowerCase().includes(searchTerm.toLowerCase());
+      discipline.reason.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = filterType === 'ALL' || discipline.disciplineType === filterType;
     return matchSearch && matchType;
   });

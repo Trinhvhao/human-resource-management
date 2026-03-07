@@ -42,7 +42,18 @@ export default function LeaveBalancesPage() {
       fetchBalances();
     } catch (error: any) {
       console.error('Failed to run accrual:', error);
-      alert(error.response?.data?.message || 'Chạy tích lũy thất bại');
+      // Handle different error structures
+      let errorMessage = 'Chạy tích lũy thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -66,7 +77,18 @@ export default function LeaveBalancesPage() {
       fetchBalances();
     } catch (error: any) {
       console.error('Failed to update balance:', error);
-      alert(error.response?.data?.message || 'Cập nhật thất bại');
+      // Handle different error structures
+      let errorMessage = 'Cập nhật thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
