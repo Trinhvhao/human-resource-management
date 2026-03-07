@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -167,7 +167,7 @@ const employeeMenuItems: MenuItem[] = [
   { icon: Settings, label: 'Cài đặt', href: '/dashboard/settings', roles: ['EMPLOYEE'] },
 ];
 
-const Sidebar = memo(function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -380,7 +380,7 @@ const Sidebar = memo(function Sidebar({ isOpen, onToggle }: SidebarProps) {
               <p className="text-xs text-slate-500 truncate font-medium">
                 {user.role === 'ADMIN' ? 'Quản trị viên' :
                   user.role === 'HR_MANAGER' ? 'Nhân sự' :
-                    user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
+                  user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
               </p>
             </div>
           </div>
@@ -388,6 +388,4 @@ const Sidebar = memo(function Sidebar({ isOpen, onToggle }: SidebarProps) {
       )}
     </motion.aside>
   );
-});
-
-export default Sidebar;
+}

@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { LeaveBalance } from '@/types/leave';
 
 const leaveSchema = z.object({
-  leaveType: z.enum(['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT']),
+  leaveType: z.enum(['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT', 'OTHER']),
   startDate: z.string().min(1, 'Ngày bắt đầu là bắt buộc'),
   endDate: z.string().min(1, 'Ngày kết thúc là bắt buộc'),
   reason: z.string().min(10, 'Lý do phải có ít nhất 10 ký tự'),
@@ -72,12 +72,20 @@ export default function NewLeavePage() {
   const onSubmit = async (data: LeaveFormData) => {
     try {
       setSubmitting(true);
-      await leaveService.create(data);
-      alert('Tạo đơn nghỉ phép thành công');
+      const response = await leaveService.create(data);
+
+      // Show success message
+      if (typeof window !== 'undefined') {
+        // Store success message in sessionStorage to show after redirect
+        sessionStorage.setItem('leaveRequestSuccess', 'Tạo đơn nghỉ phép thành công! Đơn của bạn đang chờ phê duyệt.');
+      }
+
+      // Redirect to leaves page
       router.push('/dashboard/leaves');
     } catch (error: any) {
       console.error('Failed to create leave request:', error);
-      alert(error.response?.data?.message || 'Tạo đơn thất bại');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Tạo đơn thất bại';
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

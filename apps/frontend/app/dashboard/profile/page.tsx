@@ -35,7 +35,7 @@ export default function ProfilePage() {
             setLoading(true);
             // Use /profile endpoint which allows EMPLOYEE role; getById only allows ADMIN/HR_MANAGER/MANAGER
             const response = await employeeService.getProfile(user.employeeId);
-            const data = response.data;
+            const data = response.data?.data || response.data;
             setEmployee(data);
             setFormData({
                 phone: data?.phone || '',
@@ -94,13 +94,13 @@ export default function ProfilePage() {
                     {!editing ? (
                         // EMPLOYEE role cannot update via /employees/:id endpoint
                         !isEmployee && (
-                            <button
-                                onClick={() => setEditing(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
-                            >
-                                <Edit size={18} />
-                                Chỉnh sửa
-                            </button>
+                        <button
+                            onClick={() => setEditing(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-brandBlue to-[#0047b3] text-white rounded-lg hover:shadow-lg transition-all"
+                        >
+                            <Edit size={18} />
+                            Chỉnh sửa
+                        </button>
                         )
                     ) : (
                         <div className="flex gap-2">
@@ -147,8 +147,8 @@ export default function ProfilePage() {
                                         {employee.employeeCode}
                                     </span>
                                     <span className={`px-3 py-1 rounded-full text-sm ${employee.status === 'ACTIVE' ? 'bg-green-500 text-white' :
-                                        employee.status === 'ON_LEAVE' ? 'bg-yellow-500 text-white' :
-                                            'bg-red-500 text-white'
+                                            employee.status === 'ON_LEAVE' ? 'bg-yellow-500 text-white' :
+                                                'bg-red-500 text-white'
                                         }`}>
                                         {employee.status === 'ACTIVE' ? 'Đang làm việc' :
                                             employee.status === 'ON_LEAVE' ? 'Đang nghỉ' : 'Đã nghỉ việc'}

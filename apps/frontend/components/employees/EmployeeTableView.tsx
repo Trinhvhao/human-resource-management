@@ -4,7 +4,6 @@ import { Employee } from '@/types/employee';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
 import Avatar from '@/components/common/Avatar';
-import { memo, useMemo, useCallback } from 'react';
 
 interface EmployeeTableViewProps {
   employees: Employee[];
@@ -12,12 +11,12 @@ interface EmployeeTableViewProps {
   loading?: boolean;
 }
 
-const EmployeeTableView = memo(function EmployeeTableView({
-  employees,
-  onView,
-  loading = false
+export default function EmployeeTableView({ 
+  employees, 
+  onView, 
+  loading = false 
 }: EmployeeTableViewProps) {
-  const getStatusBadge = useCallback((status: string) => {
+  const getStatusBadge = (status: string) => {
     const styles = {
       ACTIVE: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white border-green-300 shadow-lg shadow-green-500/30',
       ON_LEAVE: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-amber-300 shadow-lg shadow-amber-500/30',
@@ -33,7 +32,7 @@ const EmployeeTableView = memo(function EmployeeTableView({
         {labels[status as keyof typeof labels] || status}
       </span>
     );
-  }, []);
+  };
 
   if (loading) {
     return (
@@ -116,7 +115,7 @@ const EmployeeTableView = memo(function EmployeeTableView({
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <Avatar
+                  <Avatar 
                     src={employee.avatarUrl}
                     name={employee.fullName}
                     size="sm"
@@ -146,6 +145,4 @@ const EmployeeTableView = memo(function EmployeeTableView({
       </table>
     </div>
   );
-});
-
-export default EmployeeTableView;
+}

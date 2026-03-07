@@ -1,17 +1,19 @@
-# HỆ THỐNG QUẢN LÝ NHÂN SỰ - PHẦN 4 (CUỐI)
+# HỆ THỐNG QUẢN LÝ NHÂN SỰ - PHẦN 4
 
 ## PHẦN 4: MODULE HỖ TRỢ & TÍNH NĂNG NÂNG CAO
 
 ### 10. MODULE DASHBOARD & BÁO CÁO
 
 #### 10.1. Mô tả chức năng
-Module dashboard tổng hợp cung cấp cái nhìn tổng quan về toàn bộ hệ thống:
-- Thống kê tổng quan (employees, attendance, contracts, payroll)
-- Biểu đồ và charts
-- Cảnh báo quan trọng (expiring contracts, pending requests)
-- Hoạt động gần đây
+Module cung cấp dashboard tổng quan và các báo cáo thống kê:
+- Tổng quan hệ thống (overview)
+- Thống kê nhân viên theo phòng ban, trạng thái
+- Tổng hợp chấm công với biểu đồ xu hướng
+- Tổng hợp lương theo tháng
+- Cảnh báo hệ thống (alerts)
+- Hoạt động gần đây (recent activities)
+- Thống kê turnover (tỷ lệ nghỉ việc)
 - Snapshot hôm nay
-- Phân tích turnover rate
 
 #### 10.2. Backend Endpoints
 
@@ -19,60 +21,87 @@ Module dashboard tổng hợp cung cấp cái nhìn tổng quan về toàn bộ 
 
 | Method | Endpoint | Chức năng | Query Params | Response |
 |--------|----------|-----------|--------------|----------|
-| GET | `/dashboard/overview` | Tổng quan hệ thống | - | `{ totalEmployees, activeEmployees, attendanceRate, pendingLeaves, expiringContracts, totalPayroll }` |
+| GET | `/dashboard/overview` | Tổng quan hệ thống | - | `{ totalEmployees, activeEmployees, totalDepartments, todayAttendance, pendingLeaves, expiringContracts, monthlyPayroll }` |
 | GET | `/dashboard/employee-stats` | Thống kê nhân viên | - | `{ byDepartment[], byStatus[], byGender[] }` |
 | GET | `/dashboard/attendance-summary` | Tổng hợp chấm công | `month, year` | `{ summary, dailyTrend[] }` |
 | GET | `/dashboard/payroll-summary` | Tổng hợp lương | `year` | `{ monthlyData[], totalAmount, avgSalary }` |
 | GET | `/dashboard/alerts` | Cảnh báo hệ thống | - | `{ expiringContracts[], pendingLeaves[], frequentLateEmployees[] }` |
-| GET | `/dashboard/activities` | Hoạt động gần đây | `limit` | `{ activities[] }` |
-| GET | `/dashboard/turnover-stats` | Thống kê turnover | `months` | `{ rate, trend[], byDepartment[] }` |
+| GET | `/dashboard/activities` | Hoạt động gần đây | `limit` (default: 10) | `{ activities[] }` |
+| GET | `/dashboard/turnover-stats` | Thống kê turnover | `months` (default: 6) | `{ rate, trend[], byDepartment[] }` |
 | GET | `/dashboard/today-snapshot` | Snapshot hôm nay | - | `{ workingNow, lateToday, pendingApprovals, expiringContracts }` |
-| GET | `/dashboard/contract-alerts` | Cảnh báo hợp đồng | `days` | `{ alerts[] with severity }` |
-| GET | `/dashboard/contract-alerts/expiring` | Danh sách HĐ sắp hết hạn | `days` | `{ contracts[] }` |
+| GET | `/dashboard/contract-alerts` | Cảnh báo hợp đồng | `days` (default: 60) | `{ alerts[] with severity }` |
+| GET | `/dashboard/contract-alerts/expiring` | Danh sách HĐ sắp hết hạn | `days` (default: 60) | `{ contracts[] }` |
 
-#### 10.3. Dashboard Widgets
+#### 10.3. Dashboard Components
 
-**Overview Cards**:
-- Total Employees (với % change)
-- Active Employees
-- Attendance Rate (tháng này)
-- Pending Leave Requests
-- Expiring Contracts (30 ngày)
-- Total Payroll (tháng này)
+**Overview Metrics**:
+```typescript
+{
+  totalEmployees: number,
+  activeEmployees: number,
+  totalDepartments: number,
+  todayAttendance: {
+    present: number,
+    absent: number,
+    late: number,
+    rate: number
+  },
+  pendingLeaves: number,
+  expiringContracts: number,
+  monthlyPayroll: {
+    amount: number,
+    status: string
+  }
+}
+```
 
-**Charts & Visualizations**:
-- Attendance Trend Chart (line chart)
-- Payroll Summary Chart (bar chart)
-- Department Distribution (pie chart)
-- Department Performance (radar chart)
-- Turnover Rate (line chart with trend)
-- Employee Growth (area chart)
+**Employee Statistics**:
+- By Department: Pie chart phân bố nhân viên theo phòng ban
+- By Status: Bar chart theo trạng thái (ACTIVE, INACTIVE, ON_LEAVE, TERMINATED)
+- By Gender: Donut chart theo giới tính
 
-**Alert Widgets**:
-- Contract Expiration Alerts (với severity: HIGH/MEDIUM/LOW/INFO)
-- Termination Alerts
-- Critical Alerts Hub
-- Pending Approvals Counter
+**Attendance Summary**:
+- Total work days, present days, absent days, late count
+- Daily trend: Line chart số người có mặt mỗi ngày trong tháng
+- Attendance rate: Percentage
 
-**Activity Widgets**:
-- Recent Activities Timeline
-- Today Snapshot (quick stats)
-- Live Attendance Feed
+**Payroll Summary**:
+- Monthly data: Bar chart tổng lương mỗi tháng trong năm
+- Total amount: Tổng chi lương năm
+- Average salary: Lương trung bình
+
+**Alerts System**:
+1. **Contract Alerts** (Severity levels):
+   - HIGH: Hết hạn trong 7 ngày
+   - MEDIUM: Hết hạn trong 7-30 ngày
+   - LOW: Hết hạn trong 30-60 ngày
+   - INFO: Hết hạn trong 60-90 ngày
+
+2. **Pending Approvals**:
+   - Leave requests chờ duyệt
+   - Overtime requests chờ duyệt
+   - Attendance corrections chờ duyệt
+   - Termination requests chờ duyệt
+
+3. **Attendance Alerts**:
+   - Frequent late employees (>3 lần/tháng)
+   - Frequent absent employees
+   - Incomplete attendance records
+
+**Turnover Statistics**:
+```typescript
+{
+  rate: number, // Tỷ lệ % nghỉ việc
+  trend: [
+    { month: string, joined: number, left: number, rate: number }
+  ],
+  byDepartment: [
+    { department: string, rate: number, count: number }
+  ]
+}
+```
 
 #### 10.4. Frontend Integration
-
-**Dashboard Service** (`services/dashboardService.ts`):
-```typescript
-- getOverview(): Promise<Overview>
-- getEmployeeStats(): Promise<EmployeeStats>
-- getAttendanceSummary(month, year): Promise<AttendanceSummary>
-- getPayrollSummary(year): Promise<PayrollSummary>
-- getAlerts(): Promise<Alerts>
-- getRecentActivities(limit): Promise<Activity[]>
-- getTurnoverStats(months): Promise<TurnoverStats>
-- getTodaySnapshot(): Promise<Snapshot>
-- getContractAlerts(days): Promise<ContractAlerts>
-```
 
 **Dashboard Pages**:
 - `/dashboard` - Trang dashboard chính với tất cả widgets
@@ -83,13 +112,13 @@ Module dashboard tổng hợp cung cấp cái nhìn tổng quan về toàn bộ 
 - `PayrollSummaryChart.tsx` - Biểu đồ lương
 - `DepartmentDistribution.tsx` - Phân bố phòng ban
 - `DepartmentPerformance.tsx` - Hiệu suất phòng ban
-- `TurnoverRate.tsx` - Tỷ lệ nghỉ việc
 - `ContractExpirationAlerts.tsx` - Cảnh báo HĐ hết hạn
 - `TerminationAlertsWidget.tsx` - Cảnh báo chấm dứt HĐ
-- `CriticalAlertsHub.tsx` - Hub cảnh báo quan trọng
+- `CriticalAlertsHub.tsx` - Hub tất cả cảnh báo
 - `RecentActivities.tsx` - Hoạt động gần đây
-- `AttendanceLiveFeed.tsx` - Feed chấm công real-time
+- `TurnoverRate.tsx` - Tỷ lệ nghỉ việc
 - `AttendanceTrendChart.tsx` - Xu hướng chấm công
+- `AttendanceLiveFeed.tsx` - Feed real-time check-in/out
 
 ---
 
@@ -97,9 +126,9 @@ Module dashboard tổng hợp cung cấp cái nhìn tổng quan về toàn bộ 
 
 #### 11.1. Mô tả chức năng
 Module quản lý lịch làm việc cá nhân và ca làm việc:
-- Lịch làm việc cá nhân của nhân viên
+- Xem lịch làm việc cá nhân
 - Quản lý ca làm việc (shifts)
-- Tạo lịch hàng loạt (bulk create)
+- Tạo lịch làm việc cho nhân viên
 - Kiểm tra xung đột lịch
 - Thống kê lịch làm việc
 - Tích hợp với attendance và leave requests
@@ -115,7 +144,7 @@ Module quản lý lịch làm việc cá nhân và ca làm việc:
   * MORNING: Ca sáng (8:00 - 12:00)
   * AFTERNOON: Ca chiều (13:00 - 17:00)
   * FULL_DAY: Ca ngày (8:00 - 17:00)
-  * NIGHT: Ca tối (18:00 - 22:00)
+  * NIGHT: Ca đêm (18:00 - 22:00)
   * CUSTOM: Ca tùy chỉnh
 - startTime: DateTime - Giờ bắt đầu
 - endTime: DateTime - Giờ kết thúc
@@ -142,126 +171,99 @@ Unique constraint: [date]
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
-| GET | `/calendar/my-calendar` | Lịch của tôi | Query: `startDate, endDate` | `{ schedules[], leaves[], holidays[] }` |
-| GET | `/calendar/stats` | Thống kê lịch | Query: `month, year` | `{ totalWorkDays, actualWorkDays, leaves, holidays }` |
+| GET | `/calendar/my-calendar` | Lịch làm việc của tôi | Query: `startDate, endDate` (required) | `{ schedules[], leaves[], holidays[] }` |
+| GET | `/calendar/stats` | Thống kê lịch tháng | Query: `month, year` (required) | `{ totalDays, workDays, leaveDays, actualWorkDays }` |
+
+**Schedule Management** (`/api/calendar/schedules`):
+
+| Method | Endpoint | Chức năng | Request Body | Response |
+|--------|----------|-----------|--------------|----------|
 | POST | `/calendar/schedules` | Tạo lịch làm việc (HR) | `{ employeeId, date, shiftType, startTime, endTime, notes }` | `{ schedule }` |
 | GET | `/calendar/schedules/:id` | Chi tiết lịch | - | `{ schedule }` |
 | PUT | `/calendar/schedules/:id` | Cập nhật lịch (HR) | `{ shiftType, startTime, endTime, notes }` | `{ schedule }` |
 | DELETE | `/calendar/schedules/:id` | Xóa lịch (HR) | - | `{ message }` |
-| POST | `/calendar/schedules/bulk` | Tạo lịch hàng loạt (HR) | `{ employeeIds[], startDate, endDate, shiftType, pattern }` | `{ created, skipped }` |
-| GET | `/calendar/schedules/conflicts/check` | Kiểm tra xung đột | Query: `employeeId, startDate, endDate` | `{ hasConflict, conflicts[] }` |
+| POST | `/calendar/schedules/bulk` | Tạo hàng loạt (HR) | `{ employeeIds[], startDate, endDate, shiftType, pattern }` | `{ created: number }` |
+| GET | `/calendar/schedules/conflicts/check` | Kiểm tra xung đột | Query: `employeeId, startDate, endDate` | `{ hasConflict: boolean, conflicts[] }` |
 
-**Holidays Controller** (`/api/holidays`):
+**Holidays Management** (`/api/holidays`):
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
 | GET | `/holidays` | Danh sách ngày lễ | Query: `year` | `{ holidays[] }` |
-| GET | `/holidays/:id` | Chi tiết ngày lễ | - | `{ holiday }` |
-| POST | `/holidays` | Tạo ngày lễ (HR) | `{ name, date, year, isRecurring }` | `{ holiday }` |
-| PUT | `/holidays/:id` | Cập nhật ngày lễ (HR) | `{ name, date, isRecurring }` | `{ holiday }` |
+| POST | `/holidays` | Tạo ngày lễ (HR) | `{ name, date, isRecurring }` | `{ holiday }` |
 | DELETE | `/holidays/:id` | Xóa ngày lễ (HR) | - | `{ message }` |
-| GET | `/holidays/year/:year` | Ngày lễ theo năm | - | `{ holidays[] }` |
 
 #### 11.4. Business Logic
 
 **Calendar Integration**:
-- Lịch cá nhân = WorkSchedules + LeaveRequests + Holidays
-- Khi query calendar, merge 3 nguồn dữ liệu
+- Lịch làm việc = Work Schedules + Leave Requests + Holidays
+- Hiển thị tất cả trong một calendar view
 - Color coding:
-  * Work day: Blue
-  * Leave: Orange
-  * Holiday: Red
-  * Weekend: Gray
+  - Work day: Blue
+  - Leave day: Orange
+  - Holiday: Red
+  - Weekend: Gray
 
 **Shift Types**:
-1. **MORNING** (8:00 - 12:00): Ca sáng, 4 giờ
-2. **AFTERNOON** (13:00 - 17:00): Ca chiều, 4 giờ
-3. **FULL_DAY** (8:00 - 17:00): Ca ngày, 8 giờ (default)
-4. **NIGHT** (18:00 - 22:00): Ca tối, 4 giờ
+1. **MORNING** (8:00 - 12:00): 4 giờ
+2. **AFTERNOON** (13:00 - 17:00): 4 giờ
+3. **FULL_DAY** (8:00 - 17:00): 8 giờ (trừ 1h nghỉ trưa)
+4. **NIGHT** (18:00 - 22:00): 4 giờ
 5. **CUSTOM**: Tùy chỉnh startTime và endTime
 
 **Bulk Schedule Creation**:
-```typescript
-// Tạo lịch cho nhiều nhân viên trong khoảng thời gian
-Input: {
-  employeeIds: ['uuid1', 'uuid2'],
-  startDate: '2026-03-01',
-  endDate: '2026-03-31',
-  shiftType: 'FULL_DAY',
-  pattern: 'WEEKDAYS' // WEEKDAYS, ALL_DAYS, CUSTOM
-}
-
-Logic:
-- Loop qua từng ngày trong range
-- Nếu pattern = WEEKDAYS, skip weekend
-- Nếu ngày là holiday, skip
-- Kiểm tra conflict với schedules hiện có
-- Tạo schedule cho mỗi employee
-```
+- Tạo lịch cho nhiều nhân viên cùng lúc
+- Patterns:
+  - WEEKDAYS: Thứ 2-6
+  - ALL_DAYS: Tất cả các ngày
+  - CUSTOM: Chọn ngày cụ thể
 
 **Conflict Detection**:
-- Kiểm tra overlap về thời gian
-- Kiểm tra overlap với leave requests
 - Kiểm tra overlap với schedules khác
-- Return danh sách conflicts để HR xử lý
+- Kiểm tra overlap với leave requests
+- Kiểm tra overlap với holidays
+- Trả về danh sách conflicts để HR xử lý
 
-**Work Days Calculation**:
+**Calendar Stats**:
 ```typescript
-// Tính số ngày làm việc trong tháng
-function getWorkDaysInMonth(month, year) {
-  const daysInMonth = getDaysInMonth(month, year);
-  const holidays = getHolidays(month, year);
-  
-  let workDays = 0;
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month - 1, day);
-    const dayOfWeek = date.getDay();
-    
-    // Skip weekend (0 = Sunday, 6 = Saturday)
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-    
-    // Skip holidays
-    if (holidays.includes(date)) continue;
-    
-    workDays++;
-  }
-  
-  return workDays;
+{
+  totalDays: number, // Tổng số ngày trong tháng
+  workDays: number, // Số ngày làm việc theo lịch
+  leaveDays: number, // Số ngày nghỉ phép
+  holidays: number, // Số ngày lễ
+  actualWorkDays: number, // Số ngày thực tế làm việc
+  weekends: number // Số ngày cuối tuần
 }
 ```
 
-**Vietnamese Holidays** (Recurring):
-- 01/01: Tết Dương lịch
-- 30/04: Ngày Giải phóng miền Nam
-- 01/05: Ngày Quốc tế Lao động
-- 02/09: Quốc khánh
-- Tết Nguyên đán: 5-7 ngày (lunar calendar, not recurring)
-- Giỗ Tổ Hùng Vương: 10/03 âm lịch
+**Integration with Attendance**:
+- Khi check-in, so sánh với work schedule
+- Nếu không có schedule → Tạo FULL_DAY schedule tự động
+- Nếu có schedule → Validate check-in time với shift
 
 #### 11.5. Frontend Integration
 
 **Calendar Service** (`services/calendarService.ts`):
 ```typescript
-- getMyCalendar(startDate, endDate): Promise<Calendar>
-- getCalendarStats(month, year): Promise<Stats>
+- getMyCalendar(startDate, endDate): Promise<CalendarData>
+- getCalendarStats(month, year): Promise<CalendarStats>
 - createSchedule(data): Promise<Schedule>
 - updateSchedule(id, data): Promise<Schedule>
 - deleteSchedule(id): Promise<void>
 - bulkCreateSchedules(data): Promise<BulkResult>
-- checkConflicts(employeeId, startDate, endDate): Promise<Conflicts>
-- getHolidays(year): Promise<Holiday[]>
+- checkConflicts(employeeId, startDate, endDate): Promise<ConflictCheck>
 ```
 
 **Calendar Pages**:
-- `/dashboard/schedules/overview` - Lịch cá nhân (calendar view)
-- `/dashboard/schedules/shifts` - Quản lý ca làm việc (HR)
-- `/dashboard/holidays` - Quản lý ngày lễ (HR)
+- `/dashboard/schedules/overview` - Tổng quan lịch làm việc
+- `/dashboard/schedules/shifts` - Quản lý ca làm việc
+- `/dashboard/schedules/holidays` - Quản lý ngày lễ
 
 **Calendar Components**:
-- `CalendarView.tsx` - Calendar component (FullCalendar.js)
+- `WorkCalendar.tsx` - Calendar view với events
 - `ShiftManager.tsx` - Quản lý ca làm việc
-- `BulkScheduleForm.tsx` - Form tạo lịch hàng loạt
-- `HolidayManager.tsx` - Quản lý ngày lễ
+- `BulkScheduleCreator.tsx` - Tạo lịch hàng loạt
+- `ConflictChecker.tsx` - Kiểm tra xung đột
 
 ---
 
@@ -273,7 +275,7 @@ Module quản lý thông báo real-time cho người dùng:
 - Đánh dấu đã đọc/chưa đọc
 - Xóa thông báo
 - Đếm số thông báo chưa đọc
-- Tự động tạo thông báo khi có sự kiện quan trọng
+- Tự động tạo thông báo khi có sự kiện
 
 #### 12.2. Database Models
 
@@ -283,7 +285,7 @@ Module quản lý thông báo real-time cho người dùng:
 - userId: UUID - Người nhận
 - title: String - Tiêu đề
 - message: String - Nội dung
-- type: String - Loại thông báo (default: "INFO")
+- type: String - Loại thông báo
   * INFO: Thông tin
   * SUCCESS: Thành công
   * WARNING: Cảnh báo
@@ -300,50 +302,51 @@ Module quản lý thông báo real-time cho người dùng:
 
 **Notifications Controller** (`/api/notifications`):
 
-| Method | Endpoint | Chức năng | Query Params | Response |
-|--------|----------|-----------|--------------|----------|
-| GET | `/notifications` | Danh sách thông báo | `unreadOnly` | `{ notifications[] }` |
-| GET | `/notifications/unread-count` | Số thông báo chưa đọc | - | `{ count }` |
+| Method | Endpoint | Chức năng | Query/Body | Response |
+|--------|----------|-----------|------------|----------|
+| GET | `/notifications` | Danh sách thông báo | Query: `unreadOnly` (boolean) | `{ notifications[] }` |
+| GET | `/notifications/unread-count` | Số thông báo chưa đọc | - | `{ count: number }` |
 | POST | `/notifications/:id/read` | Đánh dấu đã đọc | - | `{ notification }` |
-| POST | `/notifications/read-all` | Đánh dấu tất cả đã đọc | - | `{ count }` |
+| POST | `/notifications/read-all` | Đánh dấu tất cả đã đọc | - | `{ count: number }` |
 | DELETE | `/notifications/:id` | Xóa thông báo | - | `{ message }` |
-| DELETE | `/notifications` | Xóa tất cả thông báo | - | `{ count }` |
+| DELETE | `/notifications` | Xóa tất cả | - | `{ count: number }` |
 | POST | `/notifications` | Tạo thông báo (Admin) | `{ userId, title, message, type, link }` | `{ notification }` |
 
 #### 12.4. Notification Triggers
 
-**Tự động tạo thông báo khi**:
+**Automatic Notification Creation**:
 
-1. **Leave Request**:
-   - Khi tạo: Thông báo cho manager
-   - Khi approve: Thông báo cho employee
-   - Khi reject: Thông báo cho employee
+1. **Leave Request Events**:
+   - Created → Notify manager: "New leave request from {employee}"
+   - Approved → Notify employee: "Your leave request has been approved"
+   - Rejected → Notify employee: "Your leave request has been rejected"
 
-2. **Overtime Request**:
-   - Khi tạo: Thông báo cho manager
-   - Khi approve: Thông báo cho employee
-   - Khi reject: Thông báo cho employee
+2. **Overtime Request Events**:
+   - Created → Notify manager: "New overtime request from {employee}"
+   - Approved → Notify employee: "Your overtime request has been approved"
+   - Rejected → Notify employee: "Your overtime request has been rejected"
 
-3. **Attendance Correction**:
-   - Khi tạo: Thông báo cho manager
-   - Khi approve: Thông báo cho employee
-   - Khi reject: Thông báo cho employee
+3. **Attendance Correction Events**:
+   - Created → Notify manager: "New attendance correction from {employee}"
+   - Approved → Notify employee: "Your attendance correction has been approved"
+   - Rejected → Notify employee: "Your attendance correction has been rejected"
 
-4. **Contract**:
-   - Hợp đồng sắp hết hạn (30 ngày): Thông báo cho HR và employee
-   - Hợp đồng hết hạn: Thông báo cho HR và employee
+4. **Contract Events**:
+   - Expiring soon (30 days) → Notify HR: "Contract expiring for {employee}"
+   - Termination request created → Notify HR: "New termination request"
+   - Termination approved → Notify employee: "Your contract termination has been approved"
 
-5. **Payroll**:
-   - Lương đã được tính: Thông báo cho employee
-   - Lương đã được approve: Thông báo cho tất cả employees
+5. **Payroll Events**:
+   - Payroll created → Notify all employees: "Payroll for {month} is ready"
+   - Payroll approved → Notify HR: "Payroll has been approved"
 
-6. **Department Change**:
-   - Yêu cầu thay đổi: Thông báo cho reviewer
-   - Yêu cầu được duyệt: Thông báo cho requester
+6. **Department Change Events**:
+   - Change request created → Notify admin: "New department change request"
+   - Change approved → Notify requester: "Department change has been approved"
 
-7. **Termination Request**:
-   - Yêu cầu chấm dứt HĐ: Thông báo cho approver
-   - Yêu cầu được duyệt: Thông báo cho requester
+7. **Manager Transition Events**:
+   - Transition started → Notify old & new manager: "Manager transition initiated"
+   - Task completed → Notify both: "Handover task completed"
 
 #### 12.5. Notification Service Methods
 
@@ -352,7 +355,7 @@ class NotificationsService {
   // Create notification
   async create(dto: CreateNotificationDto): Promise<Notification>
   
-  // Find all for user
+  // Find user notifications
   async findAll(userId: string, unreadOnly: boolean): Promise<Notification[]>
   
   // Get unread count
@@ -370,11 +373,11 @@ class NotificationsService {
   // Delete all
   async deleteAll(userId: string): Promise<number>
   
-  // Helper: Create notification for leave approval
-  async notifyLeaveApproval(leaveRequestId: string): Promise<void>
+  // Helper: Notify user
+  async notifyUser(userId: string, title: string, message: string, type: string, link?: string): Promise<void>
   
-  // Helper: Create notification for contract expiry
-  async notifyContractExpiry(contractId: string): Promise<void>
+  // Helper: Notify multiple users
+  async notifyUsers(userIds: string[], title: string, message: string, type: string, link?: string): Promise<void>
 }
 ```
 
@@ -391,41 +394,29 @@ class NotificationsService {
 ```
 
 **Notification Components**:
-- `NotificationBell.tsx` - Icon chuông với badge count
-- `NotificationDropdown.tsx` - Dropdown hiển thị notifications
-- `NotificationItem.tsx` - Item notification
-- `NotificationCenter.tsx` - Trang notification center
+- `NotificationBell.tsx` - Icon với badge số thông báo chưa đọc
+- `NotificationDropdown.tsx` - Dropdown hiển thị thông báo
+- `NotificationList.tsx` - Danh sách thông báo
+- `NotificationItem.tsx` - Item thông báo với action buttons
 
 **Real-time Updates** (Optional):
 - WebSocket hoặc Server-Sent Events (SSE)
 - Polling mỗi 30 giây
-- Push notifications (PWA)
+- React Query với refetch interval
 
 ---
 
 ### 13. MODULE CHATBOT AI (RAG - Retrieval Augmented Generation)
 
 #### 13.1. Mô tả chức năng
-Module AI Chatbot hỏi đáp nội bộ công ty - Trợ lý ảo thông minh:
-- Hỏi đáp bằng tiếng Việt tự nhiên
-- Phân tích intent tự động
-- Context-aware (biết thông tin người hỏi)
-- RAG với company knowledge base
-- Lịch sử chat
-- Gợi ý câu hỏi
+Module chatbot AI nội bộ sử dụng RAG để trả lời câu hỏi về:
+- Thông tin cá nhân (phép, lương, chấm công)
+- Chính sách công ty
+- Quy định nội bộ
+- Hướng dẫn quy trình
+- Câu hỏi thường gặp (FAQ)
 
 #### 13.2. Database Models
-
-**ChatHistory Model** (`chat_history` table):
-```prisma
-- id: UUID (primary key)
-- employeeId: UUID - Nhân viên
-- userMessage: String - Câu hỏi
-- botResponse: String - Câu trả lời
-- createdAt: DateTime
-
-Indexes: [employeeId], [createdAt]
-```
 
 **CompanyKnowledge Model** (`company_knowledge` table):
 ```prisma
@@ -433,14 +424,26 @@ Indexes: [employeeId], [createdAt]
 - title: String - Tiêu đề
 - content: String - Nội dung
 - category: String - Danh mục
-- tags: String[] - Tags
+  * POLICY: Chính sách
+  * PROCEDURE: Quy trình
+  * FAQ: Câu hỏi thường gặp
+  * REGULATION: Quy định
+  * GUIDE: Hướng dẫn
+- tags: String[] - Tags để search
 - embedding: vector(384) - Vector embedding (pgvector)
 - metadata: JSON (nullable) - Metadata bổ sung
 - isActive: Boolean - Đang hoạt động (default: true)
 - createdBy: UUID - Người tạo
 - createdAt, updatedAt: DateTime
+```
 
-Indexes: [category], [isActive], [createdAt]
+**ChatHistory Model** (`chat_history` table):
+```prisma
+- id: UUID
+- employeeId: UUID - Nhân viên
+- userMessage: String - Tin nhắn người dùng
+- botResponse: String - Phản hồi bot
+- createdAt: DateTime
 ```
 
 #### 13.3. Backend Endpoints
@@ -449,166 +452,159 @@ Indexes: [category], [isActive], [createdAt]
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
-| POST | `/chatbot/chat` | Chat với AI | `{ message, history[] }` | `{ message, intent, additionalData }` |
-| GET | `/chatbot/history` | Lịch sử chat | Query: `limit` | `{ history[] }` |
+| POST | `/chatbot/chat` | Chat với AI | `{ message, history[] }` | `{ message, sources[], context }` |
+| GET | `/chatbot/history` | Lịch sử chat | Query: `limit` (default: 10) | `{ history[] }` |
 | GET | `/chatbot/suggestions` | Gợi ý câu hỏi | - | `{ suggestions[] by category }` |
 
-**Knowledge Controller** (`/api/chatbot/knowledge`):
+**Knowledge Management** (`/api/chatbot/knowledge`):
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
 | GET | `/chatbot/knowledge` | Danh sách knowledge | Query: `category, search, page, limit` | `{ knowledge[], total }` |
 | GET | `/chatbot/knowledge/:id` | Chi tiết knowledge | - | `{ knowledge }` |
 | POST | `/chatbot/knowledge` | Tạo knowledge (Admin) | `{ title, content, category, tags }` | `{ knowledge }` |
-| PATCH | `/chatbot/knowledge/:id` | Cập nhật knowledge | `{ title, content, category, tags, isActive }` | `{ knowledge }` |
+| PATCH | `/chatbot/knowledge/:id` | Cập nhật knowledge | `{ title, content, tags, isActive }` | `{ knowledge }` |
 | DELETE | `/chatbot/knowledge/:id` | Xóa knowledge | - | `{ message }` |
-| POST | `/chatbot/knowledge/search` | Tìm kiếm semantic | `{ query, limit }` | `{ results[] with similarity }` |
+| POST | `/chatbot/knowledge/reindex` | Reindex embeddings | - | `{ count: number }` |
 
-#### 13.4. Intent Detection
+#### 13.4. RAG Architecture
 
-**Supported Intents**:
+**Components**:
 
-| Intent | Keywords | Example | Response Type |
-|--------|----------|---------|---------------|
-| LEAVE_BALANCE | phép, nghỉ phép, số ngày phép | "Tôi còn bao nhiêu phép?" | Query leave balance |
-| ATTENDANCE_SUMMARY | chấm công, đi làm, công | "Chấm công tháng này?" | Query attendance |
-| SALARY_INFO | lương, salary, thu nhập | "Lương tháng 12?" | Query payroll |
-| OVERTIME_INFO | tăng ca, overtime, làm thêm | "Tôi tăng ca bao nhiêu giờ?" | Query overtime |
-| COMPANY_POLICY | quy định, chính sách, policy | "Quy định giờ làm việc?" | RAG from knowledge base |
-| EMPLOYEE_INFO | nhân viên, thông tin | "Thông tin của tôi?" | Query employee profile |
-| LEAVE_REQUEST_STATUS | đơn nghỉ, đơn phép | "Trạng thái đơn phép?" | Query leave requests |
-| GREETING | xin chào, hello, hi | "Xin chào!" | Greeting response |
-| HELP | help, trợ giúp, giúp | "Help" | Show suggestions |
+1. **Embedding Service** (`embedding.service.ts`):
+   - Sử dụng model: `all-MiniLM-L6-v2` (384 dimensions)
+   - Convert text → vector embedding
+   - Store trong PostgreSQL với pgvector extension
 
-#### 13.5. RAG Implementation
+2. **LLM Service** (`llm.service.ts`):
+   - Sử dụng: OpenAI GPT-4 hoặc local LLM
+   - Generate response từ context
+   - Streaming support (optional)
 
-**Architecture**:
-```
-User Question
-    ↓
-Intent Detection (Rule-based)
-    ↓
-[If COMPANY_POLICY]
-    ↓
-Generate Embedding (sentence-transformers)
-    ↓
-Vector Search in CompanyKnowledge (pgvector)
-    ↓
-Retrieve Top-K relevant documents
-    ↓
-[Optional] LLM Generation (OpenAI/Gemini)
-    ↓
-Format Response
-    ↓
-Return to User
-```
+3. **Knowledge Service** (`knowledge.service.ts`):
+   - CRUD operations cho knowledge base
+   - Vector similarity search
+   - Reindex embeddings
 
-**Embedding Service**:
+4. **Chatbot Service** (`chatbot.service.ts`):
+   - Orchestrate RAG pipeline
+   - Query personal data (leave balance, salary, attendance)
+   - Combine knowledge base + personal data
+   - Generate contextual response
+
+**RAG Pipeline**:
+
 ```typescript
-class EmbeddingService {
-  // Generate embedding for text
-  async generateEmbedding(text: string): Promise<number[]>
+async chat(message: string, context: UserContext, history: ChatMessage[]) {
+  // 1. Generate embedding cho user message
+  const queryEmbedding = await this.embeddingService.generateEmbedding(message);
   
-  // Search similar documents
-  async searchSimilar(query: string, limit: number): Promise<Document[]>
+  // 2. Vector similarity search trong knowledge base
+  const relevantKnowledge = await this.knowledgeService.searchSimilar(
+    queryEmbedding,
+    limit: 5,
+    threshold: 0.7
+  );
+  
+  // 3. Query personal data nếu cần
+  const personalData = await this.queryPersonalData(message, context);
+  
+  // 4. Build context cho LLM
+  const llmContext = {
+    knowledge: relevantKnowledge,
+    personalData: personalData,
+    history: history.slice(-5), // Last 5 messages
+    userRole: context.role
+  };
+  
+  // 5. Generate response
+  const response = await this.llmService.generateResponse(
+    message,
+    llmContext,
+    systemPrompt
+  );
+  
+  // 6. Save chat history
+  await this.saveChatHistory(context.employeeId, message, response);
+  
+  return {
+    message: response,
+    sources: relevantKnowledge.map(k => k.title),
+    context: llmContext
+  };
 }
 ```
 
-**LLM Service** (Optional):
-```typescript
-class LLMService {
-  // Generate response using LLM
-  async generateResponse(
-    query: string,
-    context: string[],
-    history: Message[]
-  ): Promise<string>
+**Personal Data Queries**:
+
+Chatbot có thể query real-time data:
+- Leave balance: "Tôi còn bao nhiêu ngày phép?"
+- Attendance: "Chấm công tháng này của tôi thế nào?"
+- Salary: "Lương tháng trước của tôi bao nhiêu?"
+- Overtime: "Tôi đã tăng ca bao nhiêu giờ?"
+- Leave requests: "Trạng thái đơn nghỉ phép của tôi?"
+
+**System Prompt**:
+```
+Bạn là trợ lý AI nội bộ của công ty. Nhiệm vụ của bạn là:
+1. Trả lời câu hỏi về chính sách, quy định công ty
+2. Cung cấp thông tin cá nhân của nhân viên (phép, lương, chấm công)
+3. Hướng dẫn quy trình nội bộ
+4. Trả lời bằng tiếng Việt, ngắn gọn, chính xác
+5. Nếu không biết, hãy thừa nhận và đề xuất liên hệ HR
+
+Context:
+{knowledge_base}
+{personal_data}
+{chat_history}
+```
+
+#### 13.5. Knowledge Base Management
+
+**Categories**:
+- POLICY: Chính sách nghỉ phép, lương, bảo hiểm
+- PROCEDURE: Quy trình đăng ký OT, nghỉ phép, chấm công
+- FAQ: Câu hỏi thường gặp
+- REGULATION: Quy định giờ làm, dress code, bảo mật
+- GUIDE: Hướng dẫn sử dụng hệ thống
+
+**Example Knowledge Entries**:
+```json
+{
+  "title": "Chính sách nghỉ phép năm",
+  "content": "Nhân viên được hưởng 12 ngày phép năm. Phép tích lũy 1 ngày/tháng. Có thể chuyển tối đa 5 ngày sang năm sau...",
+  "category": "POLICY",
+  "tags": ["phép năm", "nghỉ phép", "leave"]
 }
 ```
 
-**Knowledge Service**:
-```typescript
-class KnowledgeService {
-  // Create knowledge with embedding
-  async create(dto: CreateKnowledgeDto): Promise<Knowledge>
-  
-  // Search knowledge by semantic similarity
-  async semanticSearch(query: string, limit: number): Promise<Knowledge[]>
-  
-  // Update knowledge and re-generate embedding
-  async update(id: string, dto: UpdateKnowledgeDto): Promise<Knowledge>
-}
-```
+**Reindexing**:
+- Trigger khi thêm/sửa knowledge
+- Batch reindex tất cả knowledge
+- Update embeddings trong database
 
-#### 13.6. Sample Questions
-
-**Phép năm**:
-- "Tôi còn bao nhiêu ngày phép?"
-- "Số dư phép năm của tôi?"
-- "Phép bệnh còn bao nhiêu?"
-
-**Chấm công**:
-- "Chấm công tháng này của tôi thế nào?"
-- "Tôi đi muộn bao nhiêu lần tháng này?"
-- "Tổng giờ làm việc tháng 12?"
-
-**Lương**:
-- "Lương tháng này của tôi bao nhiêu?"
-- "Lương tháng 12 của tôi?"
-- "Thông tin lương chi tiết?"
-
-**Tăng ca**:
-- "Tôi đã tăng ca bao nhiêu giờ?"
-- "Còn được tăng ca bao nhiêu giờ?"
-- "Quy định về tăng ca?"
-
-**Chính sách** (RAG):
-- "Quy định về giờ làm việc?"
-- "Chính sách nghỉ phép?"
-- "Chính sách tăng ca?"
-- "Chính sách lương?"
-
-#### 13.7. Frontend Integration
+#### 13.6. Frontend Integration
 
 **Chatbot Service** (`services/chatbotService.ts`):
 ```typescript
 - chat(message, history): Promise<ChatResponse>
-- getChatHistory(limit): Promise<ChatHistory[]>
+- getChatHistory(limit): Promise<ChatMessage[]>
 - getSuggestions(): Promise<Suggestions[]>
 ```
 
 **Chatbot Components**:
-- `ChatInterface.tsx` - Giao diện chat chính
-- `ChatBubble.tsx` - Bubble tin nhắn
-- `ChatInput.tsx` - Input box với suggestions
-- `QuickReplies.tsx` - Quick reply buttons
-- `TypingIndicator.tsx` - Typing indicator
+- `ChatWidget.tsx` - Widget chat floating
+- `ChatWindow.tsx` - Cửa sổ chat
+- `ChatMessage.tsx` - Message bubble
+- `ChatInput.tsx` - Input với suggestions
+- `SuggestionChips.tsx` - Chips gợi ý câu hỏi
 
-**UI Features**:
-- Bubble chat style (user bên phải, bot bên trái)
-- Markdown support cho formatting
-- Quick reply buttons
-- Auto-scroll to bottom
-- Search history
-- Clear history
-- Dark mode support
-
-#### 13.8. Technology Stack
-
-**Embedding Model**:
-- sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
-- 384 dimensions
-- Supports Vietnamese
-
-**Vector Database**:
-- PostgreSQL with pgvector extension
-- Cosine similarity search
-- Index: ivfflat or hnsw
-
-**LLM** (Optional):
-- OpenAI GPT-4 / GPT-3.5-turbo
-- Google Gemini Pro
-- Local LLM (Llama, Mistral)
+**Suggested Questions**:
+- Phép năm: "Tôi còn bao nhiêu ngày phép?"
+- Chấm công: "Chấm công tháng này của tôi thế nào?"
+- Lương: "Lương tháng này của tôi bao nhiêu?"
+- Tăng ca: "Quy định về tăng ca?"
+- Chính sách: "Chính sách nghỉ phép?"
 
 ---
 
@@ -618,8 +614,8 @@ class KnowledgeService {
 Module nhận diện khuôn mặt cho chấm công:
 - Đăng ký khuôn mặt nhân viên
 - Check-in/Check-out bằng khuôn mặt
-- Lưu trữ face descriptors (128-dimensional vectors)
-- So sánh và matching khuôn mặt
+- Lưu trữ face descriptors (128-dim vectors)
+- So sánh và xác thực khuôn mặt
 - Tích hợp với attendance module
 
 #### 14.2. Database Models
@@ -628,12 +624,10 @@ Module nhận diện khuôn mặt cho chấm công:
 ```prisma
 - id: UUID (primary key)
 - employeeId: UUID - Nhân viên
-- descriptor: Float[] - 128-dimensional face embedding vector
+- descriptor: Float[] - Vector 128 chiều (face embedding)
 - imageUrl: String (nullable) - URL ảnh gốc
-- quality: Float - Detection confidence (0-1)
+- quality: Float - Độ tin cậy (0-1)
 - createdAt, updatedAt: DateTime
-
-Indexes: [employeeId], [quality]
 ```
 
 #### 14.3. Backend Endpoints
@@ -643,144 +637,206 @@ Indexes: [employeeId], [quality]
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
 | POST | `/face-recognition/register` | Đăng ký khuôn mặt | FormData: `employeeId, image` | `{ descriptor, quality }` |
-| POST | `/face-recognition/check-in` | Check-in bằng khuôn mặt | FormData: `image` | `{ employee, attendance }` |
-| POST | `/face-recognition/check-out` | Check-out bằng khuôn mặt | FormData: `image` | `{ employee, attendance }` |
-| GET | `/face-recognition/descriptors/:employeeId` | Lấy descriptors của nhân viên | - | `{ descriptors[] }` |
+| POST | `/face-recognition/check-in` | Check-in bằng face | FormData: `image` | `{ employee, attendance }` |
+| POST | `/face-recognition/check-out` | Check-out bằng face | FormData: `image` | `{ employee, attendance }` |
+| GET | `/face-recognition/descriptors/:employeeId` | Lấy descriptors của NV | - | `{ descriptors[] }` |
 | DELETE | `/face-recognition/descriptors/:id` | Xóa descriptor | - | `{ message }` |
 
-#### 14.4. Face Recognition Flow
+#### 14.4. Face Recognition Technology
 
-**Registration Flow**:
-```
-1. Upload ảnh khuôn mặt
-2. Detect face trong ảnh (face-api.js)
-3. Extract 128-dimensional descriptor
-4. Kiểm tra quality (confidence > 0.7)
-5. Lưu descriptor vào database
-6. Lưu ảnh lên Supabase Storage (optional)
-```
+**Library**: `face-api.js` (TensorFlow.js)
 
-**Check-in/Check-out Flow**:
-```
-1. Upload ảnh khuôn mặt
-2. Detect face và extract descriptor
-3. So sánh với tất cả descriptors trong DB
-4. Tính Euclidean distance
-5. Nếu distance < threshold (0.6):
-   - Match found → Identify employee
-   - Create attendance record
-6. Nếu không match:
-   - Return error "Face not recognized"
-```
+**Models Used**:
+1. **SSD MobileNet V1**: Face detection
+2. **FaceLandmark68Net**: Landmark detection (68 points)
+3. **FaceRecognitionNet**: Face embedding (128-dim descriptor)
 
-#### 14.5. Technology Stack
-
-**Face Detection & Recognition**:
-- face-api.js (TensorFlow.js)
-- Models:
-  * ssd_mobilenetv1 (face detection)
-  * faceLandmark68Net (landmark detection)
-  * faceRecognitionNet (descriptor extraction)
-
-**Distance Calculation**:
+**Face Registration Process**:
 ```typescript
-// Euclidean distance
-function euclideanDistance(desc1: Float32Array, desc2: Float32Array): number {
+async registerFace(employeeId: string, imageBuffer: Buffer) {
+  // 1. Load image
+  const img = await canvas.loadImage(imageBuffer);
+  
+  // 2. Detect face
+  const detection = await faceapi
+    .detectSingleFace(img)
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  
+  if (!detection) {
+    throw new Error('No face detected');
+  }
+  
+  // 3. Extract descriptor (128-dim vector)
+  const descriptor = Array.from(detection.descriptor);
+  
+  // 4. Calculate quality score
+  const quality = detection.detection.score;
+  
+  if (quality < 0.7) {
+    throw new Error('Face quality too low');
+  }
+  
+  // 5. Save to database
+  const faceDescriptor = await this.prisma.faceDescriptor.create({
+    data: {
+      employeeId,
+      descriptor,
+      quality,
+      imageUrl: uploadedImageUrl
+    }
+  });
+  
+  return faceDescriptor;
+}
+```
+
+**Face Recognition Process**:
+```typescript
+async recognizeFace(imageBuffer: Buffer) {
+  // 1. Detect face in input image
+  const detection = await faceapi
+    .detectSingleFace(imageBuffer)
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  
+  if (!detection) {
+    throw new Error('No face detected');
+  }
+  
+  const inputDescriptor = detection.descriptor;
+  
+  // 2. Get all registered descriptors
+  const allDescriptors = await this.prisma.faceDescriptor.findMany({
+    include: { employee: true }
+  });
+  
+  // 3. Find best match using Euclidean distance
+  let bestMatch = null;
+  let minDistance = Infinity;
+  const THRESHOLD = 0.6; // Distance threshold
+  
+  for (const desc of allDescriptors) {
+    const distance = this.euclideanDistance(
+      inputDescriptor,
+      desc.descriptor
+    );
+    
+    if (distance < minDistance && distance < THRESHOLD) {
+      minDistance = distance;
+      bestMatch = desc;
+    }
+  }
+  
+  if (!bestMatch) {
+    throw new Error('Face not recognized');
+  }
+  
+  return {
+    employee: bestMatch.employee,
+    confidence: 1 - minDistance,
+    distance: minDistance
+  };
+}
+```
+
+**Euclidean Distance**:
+```typescript
+euclideanDistance(vec1: number[], vec2: number[]): number {
   let sum = 0;
-  for (let i = 0; i < desc1.length; i++) {
-    sum += Math.pow(desc1[i] - desc2[i], 2);
+  for (let i = 0; i < vec1.length; i++) {
+    sum += Math.pow(vec1[i] - vec2[i], 2);
   }
   return Math.sqrt(sum);
 }
-
-// Matching threshold
-const MATCH_THRESHOLD = 0.6; // Lower = stricter
 ```
 
-**Face Recognition Service**:
-```typescript
-class FaceRecognitionService {
-  // Load face-api models
-  async onModuleInit(): Promise<void>
-  
-  // Extract face descriptor from image
-  async extractDescriptor(imageBuffer: Buffer): Promise<Float32Array>
-  
-  // Register face for employee
-  async registerFace(employeeId: string, imageBuffer: Buffer): Promise<FaceDescriptor>
-  
-  // Find matching employee by face
-  async findMatchingEmployee(imageBuffer: Buffer): Promise<Employee | null>
-  
-  // Check-in with face
-  async faceCheckIn(imageBuffer: Buffer): Promise<Attendance>
-  
-  // Check-out with face
-  async faceCheckOut(imageBuffer: Buffer): Promise<Attendance>
-}
-```
+#### 14.5. Face Check-in/Check-out Flow
 
-#### 14.6. Frontend Integration
+**Check-in**:
+1. User uploads face image
+2. System detects and extracts face descriptor
+3. Compare với tất cả descriptors trong DB
+4. Nếu match (distance < threshold):
+   - Identify employee
+   - Create attendance record với checkIn time
+   - Return success
+5. Nếu không match:
+   - Return error "Face not recognized"
+
+**Check-out**:
+- Tương tự check-in
+- Update attendance record với checkOut time
+
+#### 14.6. Quality Requirements
+
+**Image Requirements**:
+- Format: JPEG, PNG
+- Min size: 640x480
+- Max size: 1920x1080
+- Face size: Ít nhất 100x100 pixels
+- Lighting: Đủ sáng, không quá tối/sáng
+- Angle: Nhìn thẳng, không nghiêng quá 30 độ
+
+**Registration Requirements**:
+- Detection score >= 0.7
+- Face landmarks detected
+- Clear, frontal face
+- Có thể đăng ký nhiều ảnh (3-5 ảnh) để tăng accuracy
+
+**Recognition Threshold**:
+- Distance < 0.6: Match (confident)
+- Distance 0.6-0.7: Uncertain (may need retry)
+- Distance > 0.7: No match
+
+#### 14.7. Security & Privacy
+
+**Data Protection**:
+- Face descriptors (vectors) không thể reverse về ảnh gốc
+- Ảnh gốc có thể xóa sau khi extract descriptor
+- Descriptors được encrypt trong database
+- Chỉ admin/HR có quyền xem descriptors
+
+**GDPR Compliance**:
+- Nhân viên phải đồng ý trước khi đăng ký face
+- Có thể yêu cầu xóa face data bất kỳ lúc nào
+- Face data chỉ dùng cho chấm công, không dùng cho mục đích khác
+
+#### 14.8. Frontend Integration
 
 **Face Recognition Service** (`services/faceRecognitionService.ts`):
 ```typescript
 - registerFace(employeeId, imageFile): Promise<FaceDescriptor>
-- faceCheckIn(imageFile): Promise<Attendance>
-- faceCheckOut(imageFile): Promise<Attendance>
+- faceCheckIn(imageFile): Promise<CheckInResult>
+- faceCheckOut(imageFile): Promise<CheckOutResult>
 - getEmployeeDescriptors(employeeId): Promise<FaceDescriptor[]>
 - deleteDescriptor(id): Promise<void>
 ```
 
 **Face Recognition Components**:
-- `FaceRegistration.tsx` - Đăng ký khuôn mặt
-- `FaceCheckIn.tsx` - Check-in bằng khuôn mặt
+- `FaceRegistration.tsx` - Component đăng ký face
+- `FaceCheckIn.tsx` - Component check-in bằng face
 - `WebcamCapture.tsx` - Capture ảnh từ webcam
 - `FacePreview.tsx` - Preview ảnh trước khi submit
 
 **Webcam Integration**:
-```typescript
-// Using react-webcam
-import Webcam from 'react-webcam';
-
-const WebcamCapture = () => {
-  const webcamRef = useRef<Webcam>(null);
-  
-  const capture = () => {
-    const imageSrc = webcamRef.current?.getScreenshot();
-    // Convert to File and upload
-  };
-  
-  return <Webcam ref={webcamRef} />;
-};
-```
-
-#### 14.7. Security & Privacy
-
-**Best Practices**:
-- Lưu trữ descriptors (vectors) thay vì ảnh gốc
-- Encrypt descriptors trong database
-- HTTPS cho tất cả API calls
-- Rate limiting để prevent brute force
-- Audit log cho face recognition events
-- GDPR compliance: Cho phép xóa face data
-
-**Quality Control**:
-- Chỉ accept ảnh có confidence > 0.7
-- Reject ảnh mờ, tối, hoặc không rõ mặt
-- Yêu cầu ít nhất 1 face descriptor per employee
-- Có thể đăng ký nhiều descriptors (different angles)
+- Sử dụng `react-webcam` library
+- Capture ảnh từ camera
+- Preview trước khi submit
+- Retry nếu quality thấp
 
 ---
 
 ### 15. MODULE TEAMS (NHÓM LÀM VIỆC)
 
 #### 15.1. Mô tả chức năng
-Module quản lý nhóm làm việc (teams) trong phòng ban:
+Module quản lý nhóm làm việc (teams):
 - Tạo và quản lý teams
-- Thêm/xóa thành viên
-- Phân công vai trò trong team
-- Theo dõi allocation percentage
-- Hỗ trợ cross-functional teams
+- Phân loại teams (permanent, project, cross-functional)
+- Quản lý thành viên team
+- Phân bổ % công việc cho thành viên
+- Team lead và roles
+- Theo dõi hoạt động team
 
 #### 15.2. Database Models
 
@@ -792,9 +848,9 @@ Module quản lý nhóm làm việc (teams) trong phòng ban:
 - description: String (nullable) - Mô tả
 - departmentId: UUID - Phòng ban
 - teamLeadId: UUID (nullable) - Team lead
-- type: String - Loại team (default: "PERMANENT")
+- type: String - Loại team
   * PERMANENT: Team cố định
-  * PROJECT: Team dự án (tạm thời)
+  * PROJECT: Team dự án (có thời hạn)
   * CROSS_FUNCTIONAL: Team liên phòng ban
 - isActive: Boolean - Đang hoạt động (default: true)
 - createdAt, updatedAt: DateTime
@@ -802,15 +858,15 @@ Module quản lý nhóm làm việc (teams) trong phòng ban:
 
 **TeamMember Model** (`team_members` table):
 ```prisma
-- id: UUID (primary key)
+- id: UUID
 - teamId: UUID - Team
 - employeeId: UUID - Nhân viên
-- role: String - Vai trò (default: "MEMBER")
+- role: String - Vai trò trong team
   * LEAD: Team lead
   * MEMBER: Thành viên
   * CONTRIBUTOR: Cộng tác viên
-- allocationPercentage: Int - % phân bổ (0-100, default: 100)
-- startDate: Date - Ngày bắt đầu (default: now)
+- allocationPercentage: Int - % phân bổ công việc (0-100)
+- startDate: Date - Ngày bắt đầu
 - endDate: Date (nullable) - Ngày kết thúc
 - isActive: Boolean - Đang hoạt động (default: true)
 - createdAt, updatedAt: DateTime
@@ -824,67 +880,76 @@ Unique constraint: [teamId, employeeId, startDate]
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
-| GET | `/teams` | Danh sách teams | Query: `departmentId` | `{ teams[] }` |
+| GET | `/teams` | Danh sách teams | Query: `departmentId, type, isActive` | `{ teams[] }` |
 | GET | `/teams/:id` | Chi tiết team | - | `{ team, members[] }` |
 | POST | `/teams` | Tạo team | `{ name, code, description, departmentId, teamLeadId, type }` | `{ team }` |
 | PATCH | `/teams/:id` | Cập nhật team | `{ name, description, teamLeadId, isActive }` | `{ team }` |
 | DELETE | `/teams/:id` | Xóa team | - | `{ message }` |
-| POST | `/teams/:id/members` | Thêm thành viên | `{ employeeId, role, allocationPercentage, startDate, endDate }` | `{ member }` |
-| PATCH | `/teams/:id/members/:memberId` | Cập nhật thành viên | `{ role, allocationPercentage, endDate, isActive }` | `{ member }` |
+
+**Team Members** (`/api/teams/:id/members`):
+
+| Method | Endpoint | Chức năng | Request Body | Response |
+|--------|----------|-----------|--------------|----------|
+| GET | `/teams/:id/members` | Danh sách thành viên | - | `{ members[] }` |
+| POST | `/teams/:id/members` | Thêm thành viên | `{ employeeId, role, allocationPercentage, startDate }` | `{ member }` |
+| PATCH | `/teams/:id/members/:memberId` | Cập nhật thành viên | `{ role, allocationPercentage, endDate }` | `{ member }` |
 | DELETE | `/teams/:id/members/:memberId` | Xóa thành viên | - | `{ message }` |
-| GET | `/teams/:id/statistics` | Thống kê team | - | `{ totalMembers, activeMembers, avgAllocation }` |
 
 #### 15.4. Business Logic
 
 **Team Types**:
 
 1. **PERMANENT**: Team cố định
-   - Thuộc 1 department
-   - Thành viên full-time (100% allocation)
+   - Thuộc 1 phòng ban
    - Không có endDate
+   - Thành viên ổn định
 
 2. **PROJECT**: Team dự án
-   - Tạm thời cho 1 dự án
-   - Có startDate và endDate
-   - Thành viên có thể part-time (< 100% allocation)
-   - Tự động deactivate khi hết dự án
+   - Có thời hạn (startDate - endDate)
+   - Có thể cross-department
+   - Giải tán sau khi dự án kết thúc
 
 3. **CROSS_FUNCTIONAL**: Team liên phòng ban
-   - Thành viên từ nhiều departments
-   - Thường là project-based
-   - Allocation percentage quan trọng
+   - Thành viên từ nhiều phòng ban
+   - Có thể permanent hoặc temporary
+   - Phục vụ mục đích đặc biệt
 
 **Allocation Percentage**:
-- Tổng allocation của 1 employee không được vượt quá 100%
+- Mỗi thành viên có % phân bổ công việc
+- Tổng allocation của 1 nhân viên trên tất cả teams <= 100%
 - Ví dụ:
-  * Team A: 60%
-  * Team B: 40%
-  * Total: 100% ✓
-- Validation khi add member vào team
+  - Team A: 60%
+  - Team B: 40%
+  - Total: 100%
 
 **Team Lead**:
 - Mỗi team có 1 team lead
 - Team lead phải là member của team
-- Có thể thay đổi team lead
+- Team lead có quyền:
+  - Thêm/xóa members
+  - Phân công công việc
+  - Approve timesheet (nếu có)
 
-**Member Lifecycle**:
-- Active member: isActive = true, endDate = null
-- Inactive member: isActive = false
-- Ended member: endDate < today
+**Validation Rules**:
+- Team code phải unique
+- Team lead phải thuộc department của team (với PERMANENT)
+- Allocation percentage: 0-100
+- Tổng allocation của employee <= 100%
+- Không thể xóa team có members active
 
 #### 15.5. Frontend Integration
 
 **Teams Service** (`services/teamsService.ts`):
 ```typescript
-- getTeams(departmentId): Promise<Team[]>
+- getTeams(params): Promise<TeamList>
 - getTeam(id): Promise<TeamDetail>
 - createTeam(data): Promise<Team>
 - updateTeam(id, data): Promise<Team>
 - deleteTeam(id): Promise<void>
-- addMember(teamId, data): Promise<TeamMember>
-- updateMember(teamId, memberId, data): Promise<TeamMember>
-- removeMember(teamId, memberId): Promise<void>
-- getTeamStatistics(id): Promise<Statistics>
+- getTeamMembers(teamId): Promise<TeamMember[]>
+- addTeamMember(teamId, data): Promise<TeamMember>
+- updateTeamMember(teamId, memberId, data): Promise<TeamMember>
+- removeTeamMember(teamId, memberId): Promise<void>
 ```
 
 **Teams Pages**:
@@ -897,7 +962,7 @@ Unique constraint: [teamId, employeeId, startDate]
 - `TeamForm.tsx` - Form tạo/sửa team
 - `TeamMemberList.tsx` - Danh sách thành viên
 - `AddMemberModal.tsx` - Modal thêm thành viên
-- `AllocationChart.tsx` - Biểu đồ phân bổ
+- `AllocationChart.tsx` - Biểu đồ phân bổ công việc
 
 ---
 
@@ -905,115 +970,203 @@ Unique constraint: [teamId, employeeId, startDate]
 
 #### 16.1. Mô tả chức năng
 Module hỗ trợ export dữ liệu và upload files:
-- Export Excel (attendance, payroll, employees, etc.)
-- Export PDF (payslips, reports)
-- Upload files (documents, avatars, contracts)
-- Supabase Storage integration
+- Export báo cáo ra Excel, PDF
+- Upload files (documents, images)
+- Quản lý storage với Supabase
+- Generate reports tự động
 
-#### 16.2. Backend Endpoints
+#### 16.2. Export Service
 
 **Export Controller** (`/api/export`):
 
 | Method | Endpoint | Chức năng | Query Params | Response |
 |--------|----------|-----------|--------------|----------|
-| GET | `/export/attendance` | Export chấm công Excel | `month, year` | Excel file |
-| GET | `/export/payroll` | Export bảng lương Excel | `month, year` | Excel file |
-| GET | `/export/employees` | Export danh sách NV Excel | `departmentId, status` | Excel file |
-| GET | `/export/leave-requests` | Export đơn nghỉ phép Excel | `month, year, status` | Excel file |
-| GET | `/export/contracts` | Export hợp đồng Excel | `status` | Excel file |
-| GET | `/export/payslip/:itemId` | Export phiếu lương PDF | - | PDF file |
+| GET | `/export/employees` | Export danh sách NV | `format` (excel/pdf) | File download |
+| GET | `/export/attendance` | Export báo cáo chấm công | `month, year, format` | File download |
+| GET | `/export/payroll` | Export bảng lương | `month, year, format` | File download |
+| GET | `/export/leave-requests` | Export đơn nghỉ phép | `startDate, endDate, format` | File download |
+| GET | `/export/contracts` | Export danh sách HĐ | `status, format` | File download |
+
+**Export Formats**:
+
+1. **Excel (.xlsx)**:
+   - Sử dụng library: `exceljs`
+   - Multiple sheets
+   - Formatting, colors, borders
+   - Formulas, charts
+
+2. **PDF (.pdf)**:
+   - Sử dụng library: `pdfkit` hoặc `puppeteer`
+   - Custom templates
+   - Headers, footers
+   - Page numbers
+
+**Example Export Service**:
+```typescript
+class ExportService {
+  async exportEmployeesToExcel(filters: any): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Employees');
+    
+    // Headers
+    worksheet.columns = [
+      { header: 'Mã NV', key: 'code', width: 15 },
+      { header: 'Họ tên', key: 'name', width: 30 },
+      { header: 'Phòng ban', key: 'department', width: 20 },
+      { header: 'Chức vụ', key: 'position', width: 20 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+    ];
+    
+    // Data
+    const employees = await this.getEmployees(filters);
+    employees.forEach(emp => {
+      worksheet.addRow({
+        code: emp.employeeCode,
+        name: emp.fullName,
+        department: emp.department.name,
+        position: emp.position,
+        status: emp.status
+      });
+    });
+    
+    // Styling
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    };
+    
+    return await workbook.xlsx.writeBuffer();
+  }
+}
+```
+
+#### 16.3. Storage Service (Supabase)
+
+**Storage Controller** (`/api/storage`):
+
+| Method | Endpoint | Chức năng | Request Body | Response |
+|--------|----------|-----------|--------------|----------|
+| POST | `/storage/upload` | Upload file | FormData: `file, bucket, path` | `{ url, path }` |
+| DELETE | `/storage/delete` | Xóa file | `{ bucket, path }` | `{ message }` |
+| GET | `/storage/url` | Get signed URL | Query: `bucket, path, expiresIn` | `{ url }` |
+
+**Supabase Buckets**:
+- `avatars`: Ảnh đại diện nhân viên
+- `documents`: Tài liệu nhân viên (CV, bằng cấp, CMND)
+- `contracts`: File hợp đồng scan
+- `payslips`: Phiếu lương PDF
+- `exports`: File export tạm thời
+
+**Storage Service**:
+```typescript
+class StorageService {
+  private supabase: SupabaseClient;
+  
+  async uploadFile(
+    file: Express.Multer.File,
+    bucket: string,
+    path: string
+  ): Promise<string> {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .upload(path, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true
+      });
+    
+    if (error) throw error;
+    
+    // Get public URL
+    const { data: { publicUrl } } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+    
+    return publicUrl;
+  }
+  
+  async deleteFile(bucket: string, path: string): Promise<void> {
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .remove([path]);
+    
+    if (error) throw error;
+  }
+  
+  async getSignedUrl(
+    bucket: string,
+    path: string,
+    expiresIn: number = 3600
+  ): Promise<string> {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresIn);
+    
+    if (error) throw error;
+    
+    return data.signedUrl;
+  }
+}
+```
+
+**File Upload Flow**:
+1. Frontend upload file qua FormData
+2. Backend validate file (type, size)
+3. Upload lên Supabase Storage
+4. Lưu URL vào database
+5. Return URL cho frontend
+
+**File Validation**:
+- Max size: 10MB (documents), 2MB (images)
+- Allowed types:
+  - Images: jpg, jpeg, png
+  - Documents: pdf, doc, docx, xls, xlsx
+- Virus scan (optional)
+
+#### 16.4. Upload Module
 
 **Upload Controller** (`/api/upload`):
 
 | Method | Endpoint | Chức năng | Request Body | Response |
 |--------|----------|-----------|--------------|----------|
 | POST | `/upload/avatar` | Upload avatar | FormData: `file` | `{ url }` |
-| POST | `/upload/document` | Upload document | FormData: `file, type` | `{ url, fileName, size }` |
-| POST | `/upload/contract` | Upload contract file | FormData: `file` | `{ url }` |
-| DELETE | `/upload/:path` | Xóa file | - | `{ message }` |
+| POST | `/upload/document` | Upload document | FormData: `file, type` | `{ url, filename }` |
+| POST | `/upload/contract` | Upload contract file | FormData: `file, contractId` | `{ url }` |
 
-**Storage Controller** (`/api/storage`):
-
-| Method | Endpoint | Chức năng | Request Body | Response |
-|--------|----------|-----------|--------------|----------|
-| POST | `/storage/upload` | Upload file to Supabase | FormData: `file, bucket, path` | `{ url, path }` |
-| DELETE | `/storage/delete` | Xóa file từ Supabase | `{ bucket, path }` | `{ message }` |
-| GET | `/storage/signed-url` | Lấy signed URL | Query: `bucket, path, expiresIn` | `{ signedUrl }` |
-
-#### 16.3. Export Service
-
-**Excel Export**:
+**Multer Configuration**:
 ```typescript
-class ExportService {
-  // Export attendance to Excel
-  async exportAttendance(month: number, year: number): Promise<Buffer>
-  
-  // Export payroll to Excel
-  async exportPayroll(month: number, year: number): Promise<Buffer>
-  
-  // Export employees to Excel
-  async exportEmployees(filters: any): Promise<Buffer>
-  
-  // Export leave requests to Excel
-  async exportLeaveRequests(filters: any): Promise<Buffer>
-}
+const multerConfig = {
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+};
 ```
-
-**PDF Export**:
-```typescript
-// Using puppeteer or pdfkit
-async generatePayslipPDF(payrollItemId: string): Promise<Buffer> {
-  const item = await getPayrollItem(payrollItemId);
-  const html = renderPayslipTemplate(item);
-  const pdf = await htmlToPdf(html);
-  return pdf;
-}
-```
-
-#### 16.4. Storage Service (Supabase)
-
-**Supabase Storage Integration**:
-```typescript
-class StorageService {
-  private supabase: SupabaseClient;
-  
-  // Upload file
-  async uploadFile(
-    bucket: string,
-    path: string,
-    file: Buffer,
-    contentType: string
-  ): Promise<string>
-  
-  // Delete file
-  async deleteFile(bucket: string, path: string): Promise<void>
-  
-  // Get public URL
-  getPublicUrl(bucket: string, path: string): string
-  
-  // Get signed URL (for private files)
-  async getSignedUrl(
-    bucket: string,
-    path: string,
-    expiresIn: number
-  ): Promise<string>
-}
-```
-
-**Buckets**:
-- `avatars`: Ảnh đại diện nhân viên
-- `documents`: Tài liệu nhân viên (CMND, bằng cấp, etc.)
-- `contracts`: File hợp đồng scan
-- `face-images`: Ảnh khuôn mặt (optional)
 
 #### 16.5. Frontend Integration
 
 **Export Service** (`services/exportService.ts`):
 ```typescript
-- exportAttendance(month, year): Promise<Blob>
-- exportPayroll(month, year): Promise<Blob>
-- exportEmployees(filters): Promise<Blob>
-- exportPayslip(itemId): Promise<Blob>
+- exportEmployees(format, filters): Promise<Blob>
+- exportAttendance(month, year, format): Promise<Blob>
+- exportPayroll(month, year, format): Promise<Blob>
+- exportLeaveRequests(startDate, endDate, format): Promise<Blob>
 - downloadFile(blob, filename): void
 ```
 
@@ -1021,68 +1174,87 @@ class StorageService {
 ```typescript
 - uploadAvatar(file): Promise<string>
 - uploadDocument(file, type): Promise<UploadResult>
-- uploadContract(file): Promise<string>
-- deleteFile(path): Promise<void>
+- uploadContract(file, contractId): Promise<string>
 ```
 
 **Export Components**:
-- `ExportButton.tsx` - Button export với dropdown
+- `ExportButton.tsx` - Button export với dropdown format
 - `ExportModal.tsx` - Modal chọn options export
 
 **Upload Components**:
-- `FileUpload.tsx` - Component upload file
-- `AvatarUpload.tsx` - Upload avatar với preview
-- `DocumentUpload.tsx` - Upload documents
+- `FileUpload.tsx` - Component upload file generic
+- `ImageUpload.tsx` - Component upload ảnh với preview
+- `DragDropUpload.tsx` - Drag & drop upload
 
 ---
 
-## KẾT LUẬN TỔNG THỂ
+## KẾT LUẬN PHẦN 4
 
-Hệ thống quản lý nhân sự toàn diện với 16 modules chính:
+Phần 4 bao gồm các module hỗ trợ và tính năng nâng cao:
 
-**Core Modules** (Phần 1):
-1. Auth & Users - Xác thực và phân quyền
-2. Departments - Quản lý phòng ban
-3. Employees - Quản lý nhân viên
+1. **Dashboard & Báo cáo**: Tổng quan hệ thống với charts và alerts
+2. **Calendar & Work Schedules**: Quản lý lịch làm việc và ca làm việc
+3. **Notifications**: Thông báo real-time cho người dùng
+4. **Chatbot AI (RAG)**: Trợ lý AI với knowledge base và personal data
+5. **Face Recognition**: Chấm công bằng nhận diện khuôn mặt
+6. **Teams**: Quản lý nhóm làm việc với allocation
+7. **Export & Upload**: Export báo cáo và quản lý files
 
-**Operations Modules** (Phần 2):
-4. Contracts - Quản lý hợp đồng
-5. Attendance - Chấm công
-6. Leave Requests - Nghỉ phép
+Các module này tăng cường trải nghiệm người dùng và tự động hóa quy trình:
+- Dashboard cung cấp overview toàn diện
+- Calendar giúp quản lý thời gian
+- Notifications giữ user luôn cập nhật
+- Chatbot AI trả lời câu hỏi 24/7
+- Face Recognition hiện đại hóa chấm công
+- Teams hỗ trợ làm việc nhóm
+- Export & Upload đơn giản hóa báo cáo
 
-**Financial Modules** (Phần 3):
-7. Payroll & Salary Components - Lương
-8. Overtime - Làm thêm giờ
-9. Rewards & Disciplines - Thưởng phạt
+---
 
-**Support Modules** (Phần 4):
-10. Dashboard - Báo cáo và thống kê
-11. Calendar & Work Schedules - Lịch làm việc
-12. Notifications - Thông báo
-13. Chatbot AI (RAG) - Trợ lý ảo
-14. Face Recognition - Nhận diện khuôn mặt
-15. Teams - Nhóm làm việc
-16. Export & Upload - Xuất dữ liệu và upload
+## TỔNG KẾT TOÀN BỘ HỆ THỐNG
+
+Hệ thống quản lý nhân sự bao gồm **16 modules chính**:
+
+**Core Modules (1-3)**:
+1. Auth & Users
+2. Departments
+3. Employees
+
+**Operations Modules (4-6)**:
+4. Contracts
+5. Attendance
+6. Leave Requests
+
+**Financial Modules (7-9)**:
+7. Payroll & Salary Components
+8. Overtime
+9. Rewards & Disciplines
+
+**Support Modules (10-16)**:
+10. Dashboard & Reports
+11. Calendar & Work Schedules
+12. Notifications
+13. Chatbot AI (RAG)
+14. Face Recognition
+15. Teams
+16. Export & Upload
 
 **Technology Stack**:
 - Backend: NestJS + Prisma + PostgreSQL + pgvector
 - Frontend: Next.js 14 + React + TypeScript + TailwindCSS
 - Storage: Supabase Storage
 - Email: Nodemailer + Handlebars
-- AI: sentence-transformers + face-api.js
-- Export: ExcelJS + Puppeteer/PDFKit
+- AI: OpenAI GPT-4 + all-MiniLM-L6-v2
+- Face Recognition: face-api.js (TensorFlow.js)
 
 **Key Features**:
-- JWT Authentication với role-based access control
-- Workflow phê duyệt cho các requests
-- Email notifications
-- Real-time updates (notifications)
-- AI Chatbot với RAG
-- Face recognition cho attendance
-- Export Excel/PDF
-- Responsive UI với dark mode
-- Performance optimization với indexes
+- Workflow phê duyệt cho tất cả requests
+- Email notifications tự động
+- Real-time updates
+- RAG chatbot với knowledge base
+- Face recognition cho chấm công
+- Export báo cáo Excel/PDF
+- Dashboard với charts và alerts
+- Mobile-responsive UI
 
----
-
-**Tài liệu này cung cấp cái nhìn toàn diện về hệ thống. Mỗi module có thể được phát triển và mở rộng độc lập.**
+Hệ thống được thiết kế để quản lý toàn diện vòng đời nhân viên từ tuyển dụng đến nghỉ việc, với tự động hóa cao và tuân thủ luật lao động Việt Nam.

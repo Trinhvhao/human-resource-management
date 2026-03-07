@@ -130,7 +130,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
   const status = statusLabels[leave.status];
 
   return (
-    <ProtectedRoute requiredPermission="VIEW_ALL_LEAVES">
+    <ProtectedRoute>
       <DashboardLayout>
         <div className="space-y-6">
           {/* Header */}

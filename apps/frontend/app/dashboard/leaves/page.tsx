@@ -19,13 +19,32 @@ export default function LeavesPage() {
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
+
+    // Check for success message from sessionStorage
+    if (typeof window !== 'undefined') {
+      const message = sessionStorage.getItem('leaveRequestSuccess');
+      if (message) {
+        setSuccessMessage(message);
+        sessionStorage.removeItem('leaveRequestSuccess');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 5000);
+      }
+    }
   }, []);
 
   const fetchData = async () => {
-    if (!user?.employeeId) return;
+    if (!user?.employeeId) {
+      console.log('No employeeId found, skipping fetch');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -34,14 +53,27 @@ export default function LeavesPage() {
       const isAdminOrHR = user.role === 'ADMIN' || user.role === 'HR_MANAGER';
 
       const [balanceRes, requestsRes] = await Promise.all([
-        leaveService.getBalance(user.employeeId),
-        isAdminOrHR ? leaveService.getAll({ page: 1, limit: 50 }) : leaveService.getMyRequests(),
+        leaveService.getBalance(user.employeeId).catch(err => {
+          console.error('Failed to fetch balance:', err);
+          return { data: null };
+        }),
+        isAdminOrHR
+          ? leaveService.getAll({ page: 1, limit: 50 }).catch(err => {
+            console.error('Failed to fetch all requests:', err);
+            return { data: [] };
+          })
+          : leaveService.getMyRequests().catch(err => {
+            console.error('Failed to fetch my requests:', err);
+            return { data: [] };
+          }),
       ]);
 
       setBalance(balanceRes.data);
-      setRequests(requestsRes.data);
+      setRequests(Array.isArray(requestsRes.data) ? requestsRes.data : []);
     } catch (error) {
       console.error('Failed to fetch leave data:', error);
+      setBalance(null);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -69,24 +101,56 @@ export default function LeavesPage() {
   };
 
   return (
-    <ProtectedRoute requiredPermission="VIEW_ALL_LEAVES">
+    <ProtectedRoute>
       <DashboardLayout>
         <div className="space-y-6">
+          {/* Success Message */}
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center gap-3"
+            >
+              <CheckCircle className="text-green-600" size={24} />
+              <div className="flex-1">
+                <p className="text-green-800 font-medium">{successMessage}</p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <XCircle size={20} />
+              </button>
+            </motion.div>
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-secondary">Nghỉ phép</h1>
               <p className="text-slate-500 mt-1">Quản lý đơn nghỉ phép và số dư phép năm</p>
             </div>
-            {can('CREATE_LEAVE') && (
-              <button
-                onClick={() => router.push('/dashboard/leaves/new')}
-                className="flex items-center gap-2 px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all"
-              >
-                <Plus size={20} />
-                Tạo đơn mới
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER' || user?.role === 'MANAGER') && (
+                <button
+                  onClick={() => router.push('/dashboard/leaves/pending')}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 border-2 border-yellow-200 rounded-lg hover:bg-yellow-100 transition-all"
+                >
+                  <Clock size={20} />
+                  Đơn chờ duyệt ({requests.filter(r => r.status === 'PENDING').length})
+                </button>
+              )}
+              {can('CREATE_LEAVE') && (
+                <button
+                  onClick={() => router.push('/dashboard/leaves/new')}
+                  className="flex items-center gap-2 px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all"
+                >
+                  <Plus size={20} />
+                  Tạo đơn mới
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Leave Balance Cards */}
@@ -195,6 +259,9 @@ export default function LeavesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Trạng thái
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Hành động
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -211,7 +278,7 @@ export default function LeavesPage() {
                     ))
                   ) : requests.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                         Chưa có đơn nghỉ phép nào
                       </td>
                     </tr>
@@ -222,7 +289,8 @@ export default function LeavesPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.05 }}
-                        className="hover:bg-slate-50 transition-colors"
+                        onClick={() => router.push(`/dashboard/leaves/${request.id}`)}
+                        className="hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
                           <td className="px-6 py-4">
@@ -253,6 +321,17 @@ export default function LeavesPage() {
                           <p className="text-sm text-slate-600 line-clamp-1">{request.reason}</p>
                         </td>
                         <td className="px-6 py-4">{getStatusBadge(request.status)}</td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/leaves/${request.id}`);
+                            }}
+                            className="text-brandBlue hover:text-blue-700 font-medium text-sm"
+                          >
+                            Xem chi tiết →
+                          </button>
+                        </td>
                       </motion.tr>
                     ))
                   )}

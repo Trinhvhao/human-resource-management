@@ -6,8 +6,10 @@ import { Plus, Award, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-rea
 import { formatCurrency } from '@/utils/formatters';
 import rewardService, { Reward } from '@/services/rewardService';
 import disciplineService, { Discipline } from '@/services/disciplineService';
+import { useAuthStore } from '@/store/authStore';
 
 export default function RewardsDisciplinesPage() {
+    const { user } = useAuthStore();
     const [rewards, setRewards] = useState<Reward[]>([]);
     const [disciplines, setDisciplines] = useState<Discipline[]>([]);
     const [loading, setLoading] = useState(true);
@@ -15,19 +17,40 @@ export default function RewardsDisciplinesPage() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [rewardsRes, disciplinesRes] = await Promise.all([
-                rewardService.getAll({ page: 1, limit: 50 }),
-                disciplineService.getAll({ page: 1, limit: 50 })
-            ]);
-            setRewards(rewardsRes.data);
-            setDisciplines(disciplinesRes.data);
-        } catch (error) {
-            console.error('Không thể tải dữ liệu:', error);
+            const isEmployee = user?.role === 'EMPLOYEE';
+            const employeeId = user?.employeeId || user?.employee?.id;
+
+            let rewardsData: Reward[] = [];
+            let disciplinesData: Discipline[] = [];
+
+            if (isEmployee && employeeId) {
+                // Employees can only see their own rewards/disciplines
+                const [rewardsRes, disciplinesRes] = await Promise.all([
+                    rewardService.getByEmployee(employeeId),
+                    disciplineService.getByEmployee(employeeId),
+                ]);
+                rewardsData = Array.isArray(rewardsRes.data) ? rewardsRes.data : [];
+                disciplinesData = Array.isArray(disciplinesRes.data) ? disciplinesRes.data : [];
+            } else {
+                // Admin / HR / Manager see all
+                const [rewardsRes, disciplinesRes] = await Promise.all([
+                    rewardService.getAll({ page: 1, limit: 200 }),
+                    disciplineService.getAll({ page: 1, limit: 200 }),
+                ]);
+                rewardsData = Array.isArray(rewardsRes.data) ? rewardsRes.data : [];
+                disciplinesData = Array.isArray(disciplinesRes.data) ? disciplinesRes.data : [];
+            }
+
+            setRewards(rewardsData);
+            setDisciplines(disciplinesData);
+        } catch (error: any) {
+            console.error('Không thể tải dữ liệu:', error?.message || error);
         } finally {
             setLoading(false);
         }

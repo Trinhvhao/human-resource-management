@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
 
-const LeaveRequestsChart = memo(function LeaveRequestsChart() {
+export default function LeaveRequestsChart() {
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,
@@ -23,7 +23,7 @@ const LeaveRequestsChart = memo(function LeaveRequestsChart() {
       const now = new Date();
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
-
+      
       // Fetch all leave requests for the current month (large limit to avoid pagination cutoff)
       const response = await axiosInstance.get('/leave-requests', {
         params: { limit: 1000, page: 1 },
@@ -41,7 +41,7 @@ const LeaveRequestsChart = memo(function LeaveRequestsChart() {
         const pending = currentMonthRequests.filter((req: any) => req.status === 'PENDING').length;
         const approved = currentMonthRequests.filter((req: any) => req.status === 'APPROVED').length;
         const rejected = currentMonthRequests.filter((req: any) => req.status === 'REJECTED').length;
-
+        
         setStats({
           pending,
           approved,
@@ -157,6 +157,4 @@ const LeaveRequestsChart = memo(function LeaveRequestsChart() {
       </div>
     </div>
   );
-});
-
-export default LeaveRequestsChart;
+}

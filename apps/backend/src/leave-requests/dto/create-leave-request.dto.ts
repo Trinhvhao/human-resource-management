@@ -7,8 +7,8 @@ export class CreateLeaveRequestDto {
   @IsUUID()
   employeeId?: string;
 
-  @ApiProperty({ example: 'ANNUAL', enum: ['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'OTHER'] })
-  @IsEnum(['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'OTHER'])
+  @ApiProperty({ example: 'ANNUAL', enum: ['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT', 'OTHER'] })
+  @IsEnum(['ANNUAL', 'SICK', 'UNPAID', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT', 'OTHER'])
   leaveType: string;
 
   @ApiProperty({ example: '2026-01-20', description: 'Start date' })

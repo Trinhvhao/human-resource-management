@@ -23,7 +23,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "db:check": "ts-node db-comprehensive-check.ts"
+    "db:check": "ts-node db-comprehensive-check.ts",
+    "seed:knowledge": "ts-node scripts/seed-project-knowledge.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^0.1.95",

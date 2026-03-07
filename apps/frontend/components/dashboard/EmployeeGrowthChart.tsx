@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, TrendingUp, UserPlus, UserMinus } from 'lucide-react';
 import axiosInstance from '@/lib/axios';
@@ -12,7 +12,7 @@ interface MonthlyGrowth {
   left: number;
 }
 
-const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
+export default function EmployeeGrowthChart() {
   const [data, setData] = useState<MonthlyGrowth[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -30,7 +30,7 @@ const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
     try {
       // Fetch all employees (large limit to get everyone for accurate growth calc)
       const response = await axiosInstance.get('/employees', { params: { limit: 1000, page: 1 } });
-
+      
       if (response.data) {
         const employees = Array.isArray(response.data) ? response.data : (response.data?.data || []);
         const currentTotal = employees.length;
@@ -90,8 +90,8 @@ const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
         }).length;
 
         const previousMonthTotal = growthData.length > 1 ? growthData[growthData.length - 2].total : currentTotal;
-        const monthlyGrowth = previousMonthTotal > 0
-          ? ((currentTotal - previousMonthTotal) / previousMonthTotal) * 100
+        const monthlyGrowth = previousMonthTotal > 0 
+          ? ((currentTotal - previousMonthTotal) / previousMonthTotal) * 100 
           : 0;
 
         setStats({
@@ -180,10 +180,10 @@ const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
               transition={{ duration: 1 }}
               d={`
                 ${data.map((item, index) => {
-                const x = (index / (data.length - 1)) * 400;
-                const y = 160 - ((item.total / maxValue) * 140);
-                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-              }).join(' ')}
+                  const x = (index / (data.length - 1)) * 400;
+                  const y = 160 - ((item.total / maxValue) * 140);
+                  return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+                }).join(' ')}
                 L 400 160 L 0 160 Z
               `}
               fill="#3b82f6"
@@ -252,6 +252,4 @@ const EmployeeGrowthChart = memo(function EmployeeGrowthChart() {
       </div>
     </div>
   );
-});
-
-export default EmployeeGrowthChart;
+}

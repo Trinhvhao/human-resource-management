@@ -34,7 +34,9 @@ export class DisciplinesService {
   }
 
   async findAll(query: { employeeId?: string; page?: number; limit?: number }) {
-    const { employeeId, page = 1, limit = 10 } = query;
+    const { employeeId } = query;
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 10, 500); // Max 500
     const skip = (page - 1) * limit;
     const where: any = {};
     if (employeeId) where.employeeId = employeeId;

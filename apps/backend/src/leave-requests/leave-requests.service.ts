@@ -67,13 +67,22 @@ export class LeaveRequestsService {
     // Calculate total days (excluding weekends and holidays)
     const totalDays = await this.calculateWorkDays(startDate, endDate);
 
-    // Check leave balance
-    const year = startDate.getFullYear();
-    const balanceResult = await this.leaveBalancesService.getBalance(employeeId, year);
-    const remainingDays = balanceResult.data.remainingAnnual || 0;
+    // Check leave balance only for ANNUAL and SICK leave types
+    if (dto.leaveType === 'ANNUAL' || dto.leaveType === 'SICK') {
+      const year = startDate.getFullYear();
+      const balanceResult = await this.leaveBalancesService.getBalance(employeeId, year);
 
-    if (remainingDays < totalDays) {
-      throw new BadRequestException(`Insufficient leave balance. Available: ${remainingDays} days`);
+      if (dto.leaveType === 'ANNUAL') {
+        const remainingDays = balanceResult.data.remainingAnnual || 0;
+        if (remainingDays < totalDays) {
+          throw new BadRequestException(`Insufficient annual leave balance. Available: ${remainingDays} days`);
+        }
+      } else if (dto.leaveType === 'SICK') {
+        const remainingDays = balanceResult.data.remainingSick || 0;
+        if (remainingDays < totalDays) {
+          throw new BadRequestException(`Insufficient sick leave balance. Available: ${remainingDays} days`);
+        }
+      }
     }
 
     const leaveRequest = await this.prisma.leaveRequest.create({

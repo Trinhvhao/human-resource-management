@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import dashboardService from '@/services/dashboardService';
 
@@ -9,7 +9,7 @@ interface DailyAttendance {
   count: number;
 }
 
-const AttendanceChart = memo(function AttendanceChart() {
+export default function AttendanceChart() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<any>(null);
@@ -21,7 +21,7 @@ const AttendanceChart = memo(function AttendanceChart() {
   const fetchAttendanceData = async () => {
     try {
       const response = await dashboardService.getAttendanceSummary();
-
+      
       // Axios interceptor returns response.data directly, so response = { success: true, data: {...} }
       if (response.data) {
         const { trend, summary: summaryData } = response.data;
@@ -138,6 +138,4 @@ const AttendanceChart = memo(function AttendanceChart() {
       )}
     </div>
   );
-});
-
-export default AttendanceChart;
+}

@@ -5,31 +5,30 @@ import { Mail, Phone, Calendar, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
 import Avatar from '@/components/common/Avatar';
-import { memo, useCallback } from 'react';
 
 interface EmployeeCardViewProps {
   employees: Employee[];
   onView: (id: string) => void;
 }
 
-const EmployeeCardView = memo(function EmployeeCardView({ employees, onView }: EmployeeCardViewProps) {
-  const getStatusColor = useCallback((status: string) => {
+export default function EmployeeCardView({ employees, onView }: EmployeeCardViewProps) {
+  const getStatusColor = (status: string) => {
     const colors = {
       ACTIVE: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white border-green-300 shadow-lg shadow-green-500/30',
       ON_LEAVE: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white border-amber-300 shadow-lg shadow-amber-500/30',
       TERMINATED: 'bg-gradient-to-r from-red-400 to-rose-500 text-white border-red-300 shadow-lg shadow-red-500/30',
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-700 border-gray-200';
-  }, []);
+  };
 
-  const getStatusLabel = useCallback((status: string) => {
+  const getStatusLabel = (status: string) => {
     const labels = {
       ACTIVE: 'Active',
       ON_LEAVE: 'On Leave',
       TERMINATED: 'Terminated',
     };
     return labels[status as keyof typeof labels] || status;
-  }, []);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -48,7 +47,7 @@ const EmployeeCardView = memo(function EmployeeCardView({ employees, onView }: E
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="absolute -bottom-12 left-4">
               <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-2xl overflow-hidden">
-                <Avatar
+                <Avatar 
                   src={employee.avatarUrl}
                   name={employee.fullName}
                   alt={employee.fullName}
@@ -77,7 +76,7 @@ const EmployeeCardView = memo(function EmployeeCardView({ employees, onView }: E
                 </div>
                 <span className="truncate">{employee.email}</span>
               </div>
-
+              
               {employee.phone && (
                 <div className="flex items-center gap-2 text-slate-600">
                   <div className="w-5 h-5 flex items-center justify-center">
@@ -111,6 +110,4 @@ const EmployeeCardView = memo(function EmployeeCardView({ employees, onView }: E
       ))}
     </div>
   );
-});
-
-export default EmployeeCardView;
+}

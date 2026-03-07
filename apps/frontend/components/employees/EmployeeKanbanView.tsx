@@ -5,33 +5,28 @@ import { Mail, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDate } from '@/utils/formatters';
 import Avatar from '@/components/common/Avatar';
-import { memo, useMemo } from 'react';
 
 interface EmployeeKanbanViewProps {
   employees: Employee[];
   onView: (id: string) => void;
 }
 
-const EmployeeKanbanView = memo(function EmployeeKanbanView({ employees, onView }: EmployeeKanbanViewProps) {
-  const columns = useMemo(() => [
+export default function EmployeeKanbanView({ employees, onView }: EmployeeKanbanViewProps) {
+  const columns = [
     { id: 'ACTIVE', label: 'Active', color: 'border-green-500', bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50', headerBg: 'bg-gradient-to-r from-green-500 to-emerald-500' },
     { id: 'ON_LEAVE', label: 'On Leave', color: 'border-amber-500', bgColor: 'bg-gradient-to-br from-amber-50 to-orange-50', headerBg: 'bg-gradient-to-r from-amber-500 to-orange-500' },
     { id: 'TERMINATED', label: 'Terminated', color: 'border-red-500', bgColor: 'bg-gradient-to-br from-red-50 to-rose-50', headerBg: 'bg-gradient-to-r from-red-500 to-rose-500' },
-  ], []);
+  ];
 
-  const employeesByStatus = useMemo(() => {
-    return {
-      ACTIVE: employees.filter((emp) => emp.status === 'ACTIVE'),
-      ON_LEAVE: employees.filter((emp) => emp.status === 'ON_LEAVE'),
-      TERMINATED: employees.filter((emp) => emp.status === 'TERMINATED'),
-    };
-  }, [employees]);
+  const getEmployeesByStatus = (status: string) => {
+    return employees.filter((emp) => emp.status === status);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {columns.map((column) => {
-        const columnEmployees = employeesByStatus[column.id as keyof typeof employeesByStatus];
-
+        const columnEmployees = getEmployeesByStatus(column.id);
+        
         return (
           <div key={column.id} className="flex flex-col">
             {/* Column Header */}
@@ -59,7 +54,7 @@ const EmployeeKanbanView = memo(function EmployeeKanbanView({ employees, onView 
                   {/* Employee Info */}
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-slate-200 shadow-md shrink-0">
-                      <Avatar
+                      <Avatar 
                         src={employee.avatarUrl}
                         name={employee.fullName}
                         alt={employee.fullName}
@@ -103,6 +98,4 @@ const EmployeeKanbanView = memo(function EmployeeKanbanView({ employees, onView 
       })}
     </div>
   );
-});
-
-export default EmployeeKanbanView;
+}
