@@ -84,7 +84,17 @@ export default function NewLeavePage() {
       router.push('/dashboard/leaves');
     } catch (error: any) {
       console.error('Failed to create leave request:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Tạo đơn thất bại';
+      // Handle different error structures
+      let errorMessage = 'Tạo đơn thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
       alert(errorMessage);
     } finally {
       setSubmitting(false);

@@ -37,12 +37,12 @@ export default function NewOvertimePage() {
 
   const calculateHours = () => {
     if (!startTime || !endTime || !date) return 0;
-    
+
     const start = new Date(`${date}T${startTime}`);
     const end = new Date(`${date}T${endTime}`);
-    
+
     if (end <= start) return 0;
-    
+
     const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     return Math.round(hours * 10) / 10;
   };
@@ -52,7 +52,7 @@ export default function NewOvertimePage() {
   const onSubmit = async (data: OvertimeFormData) => {
     try {
       setSubmitting(true);
-      
+
       const hours = calculateHours();
       if (hours <= 0) {
         alert('Giờ kết thúc phải sau giờ bắt đầu');
@@ -71,7 +71,18 @@ export default function NewOvertimePage() {
       router.push('/dashboard/overtime');
     } catch (error: any) {
       console.error('Failed to create overtime:', error);
-      alert(error.response?.data?.message || 'Đăng ký tăng ca thất bại');
+      // Handle different error structures
+      let errorMessage = 'Đăng ký tăng ca thất bại';
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
