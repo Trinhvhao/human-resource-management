@@ -142,6 +142,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                 toast.success('Cập nhật nhân viên thành công!');
             }
 
+            setConfirmLoading(false);
             closeModal();
             router.push('/dashboard/employees');
         } catch (error: any) {

@@ -115,7 +115,7 @@ export class FaceRecognitionService implements OnModuleInit {
     const { width, height } = img;
     const rgbData = new Uint8Array(width * height * 3);
     for (let i = 0; i < width * height; i++) {
-      rgbData[i * 3]     = imageData.data[i * 4];     // R
+      rgbData[i * 3] = imageData.data[i * 4];     // R
       rgbData[i * 3 + 1] = imageData.data[i * 4 + 1]; // G
       rgbData[i * 3 + 2] = imageData.data[i * 4 + 2]; // B
     }
@@ -277,7 +277,12 @@ export class FaceRecognitionService implements OnModuleInit {
     const match = await this.findBestMatch(descriptor, currentEmployeeId);
 
     if (!match) {
-      throw new BadRequestException('Không nhận diện được khuôn mặt. Vui lòng nhìn thẳng vào camera và thử lại.');
+      // Log for debugging
+      this.logger.warn(`Face check-in failed: No match found. Quality: ${quality.toFixed(2)}, Threshold: ${this.threshold}`);
+      throw new BadRequestException(
+        `Không tìm thấy khuôn mặt khớp (độ tin cậy < ${Math.round((1 - this.threshold) * 100)}%). ` +
+        `Vui lòng đảm bảo bạn đã đăng ký khuôn mặt và nhìn thẳng vào camera.`
+      );
     }
 
     // Call the attendances service to do the actual check-in
@@ -331,7 +336,14 @@ export class FaceRecognitionService implements OnModuleInit {
   /**
    * Find the best matching employee for a given face descriptor
    */
-  private async findBestMatch(descriptor: Float32Array, employeeId?: string) {
+  private async findBestMatch(
+    descriptor: Float32Array,
+    employeeId?: string,
+  ): Promise<{
+    employeeId: string;
+    employee: { id: string; fullName: string; employeeCode: string; avatarUrl: string | null };
+    distance: number;
+  } | null> {
     const allDescriptors = await this.prisma.faceDescriptor.findMany({
       where: employeeId ? { employeeId } : undefined,
       select: {
@@ -358,8 +370,15 @@ export class FaceRecognitionService implements OnModuleInit {
       distance: number;
     } | null = null;
 
+    let closestDistance = Infinity;
+
     for (const stored of allDescriptors) {
       const distance = this.euclideanDistance(descriptor, stored.descriptor);
+
+      // Track closest match for logging
+      if (distance < closestDistance) {
+        closestDistance = distance;
+      }
 
       if (distance < this.threshold) {
         if (!bestMatch || distance < bestMatch.distance) {
@@ -370,6 +389,14 @@ export class FaceRecognitionService implements OnModuleInit {
           };
         }
       }
+    }
+
+    // Log for debugging
+    if (!bestMatch && closestDistance !== Infinity) {
+      this.logger.warn(
+        `No match found. Closest distance: ${closestDistance.toFixed(3)} (threshold: ${this.threshold}, ` +
+        `confidence would be: ${Math.round((1 - closestDistance) * 100)}%)`
+      );
     }
 
     return bestMatch;
@@ -486,12 +513,12 @@ export class FaceRecognitionService implements OnModuleInit {
         quality,
         match: match
           ? {
-              employee: match.employee,
-              confidence: Math.round((1 - match.distance) * 100),
-              distance: match.distance,
-              threshold: this.threshold,
-              isMatch: match.distance < this.threshold,
-            }
+            employee: match.employee,
+            confidence: Math.round((1 - match.distance) * 100),
+            distance: match.distance,
+            threshold: this.threshold,
+            isMatch: match.distance < this.threshold,
+          }
           : null,
       },
     };
