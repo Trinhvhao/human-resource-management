@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from '@/lib/toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import employeeService from '@/services/employeeService';
 import departmentService from '@/services/departmentService';
 import { Department } from '@/types/department';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const employeeSchema = z.object({
     employeeCode: z.string().optional(), // Mã nhân viên tự động
@@ -39,6 +41,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(mode === 'edit');
+    const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
 
     const {
         register,
@@ -93,7 +96,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
             });
         } catch (error) {
             console.error('Failed to fetch employee:', error);
-            alert('Không thể tải thông tin nhân viên');
+            toast.error('Không thể tải thông tin nhân viên');
             router.back();
         } finally {
             setLoadingData(false);
@@ -101,8 +104,20 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
     };
 
     const onSubmit = async (data: EmployeeFormData) => {
+        const confirmed = await confirm({
+            title: mode === 'create' ? 'Xác nhận tạo nhân viên' : 'Xác nhận cập nhật',
+            message: mode === 'create'
+                ? `Bạn có chắc muốn tạo nhân viên "${data.fullName}"?`
+                : `Bạn có chắc muốn cập nhật thông tin nhân viên "${data.fullName}"?`,
+            confirmText: mode === 'create' ? 'Tạo mới' : 'Cập nhật',
+            type: 'info',
+        });
+
+        if (!confirmed) return;
+
         try {
             setLoading(true);
+            setConfirmLoading(true);
 
             const payload: any = {
                 fullName: data.fullName,
@@ -120,18 +135,20 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
 
             if (mode === 'create') {
                 await employeeService.create(payload);
-                alert('Thêm nhân viên thành công!');
+                toast.success('Thêm nhân viên thành công!');
             } else if (employeeId) {
                 payload.status = data.status;
                 await employeeService.update(employeeId, payload);
-                alert('Cập nhật nhân viên thành công!');
+                toast.success('Cập nhật nhân viên thành công!');
             }
 
+            closeModal();
             router.push('/dashboard/employees');
         } catch (error: any) {
             console.error('Failed to save employee:', error);
             const errorMessage = error.message || error.response?.data?.message || 'Có lỗi xảy ra';
-            alert(errorMessage);
+            toast.error(errorMessage);
+            setConfirmLoading(false);
         } finally {
             setLoading(false);
         }
@@ -154,6 +171,7 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
 
     return (
         <DashboardLayout>
+            <ConfirmDialog />
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
