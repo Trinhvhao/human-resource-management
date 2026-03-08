@@ -492,22 +492,28 @@ export class EmployeesService {
 
   private async generateEmployeeCode(): Promise<string> {
     const year = new Date().getFullYear().toString().slice(-2);
+    const prefix = `EMP${year}`;
 
-    // Find the latest employee code for this year
-    const latestEmployee = await this.prisma.employee.findFirst({
+    // Find the latest employee code for this year using aggregation
+    // Get all codes starting with prefix and find max in application
+    const employees = await this.prisma.employee.findMany({
       where: {
-        employeeCode: { startsWith: `EMP${year}` },
+        employeeCode: { startsWith: prefix },
       },
+      select: { employeeCode: true },
       orderBy: { employeeCode: 'desc' },
+      take: 1,
     });
 
     let nextNumber = 1;
-    if (latestEmployee) {
-      const currentNumber = parseInt(latestEmployee.employeeCode.slice(-3));
-      nextNumber = currentNumber + 1;
+    if (employees.length > 0 && employees[0].employeeCode) {
+      const currentNumber = parseInt(employees[0].employeeCode.slice(-3));
+      if (!isNaN(currentNumber)) {
+        nextNumber = currentNumber + 1;
+      }
     }
 
-    return `EMP${year}${nextNumber.toString().padStart(3, '0')}`;
+    return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
   }
 
   async getTopPerformers(limit: number = 5, period: 'week' | 'month' = 'month') {

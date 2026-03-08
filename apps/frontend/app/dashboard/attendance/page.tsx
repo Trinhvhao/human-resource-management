@@ -204,7 +204,7 @@ export default function AttendancePage() {
             present={presentCount}
             late={lateCount}
             absent={absentCount}
-            pendingCorrections={pendingCorrections}
+            pendingCorrections={0}
             loading={loading}
             onViewCorrections={() => router.push('/dashboard/attendance/corrections')}
           />
