@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, AlertTriangle, TrendingDown, DollarSign, Trash2, Search, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -33,6 +35,7 @@ export default function DisciplinesPage() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<DisciplineType | 'ALL'>('ALL');
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
 
   const [formData, setFormData] = useState<CreateDisciplineData>({
     employeeId: '',
@@ -75,7 +78,7 @@ export default function DisciplinesPage() {
       setStats({ total, totalFines, thisMonth });
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      alert('Không thể tải dữ liệu');
+      toast.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -83,13 +86,24 @@ export default function DisciplinesPage() {
 
   const handleCreate = async () => {
     if (!formData.employeeId || !formData.reason) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      toast.warning('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
+    const confirmed = await confirm({
+      title: 'Xác nhận tạo kỷ luật',
+      message: `Bạn có chắc muốn tạo kỷ luật "${disciplineTypeLabels[formData.disciplineType]}" cho nhân viên này?`,
+      confirmText: 'Tạo kỷ luật',
+      type: 'warning',
+    });
+
+    if (!confirmed) return;
+
     try {
+      setConfirmLoading(true);
       await disciplineService.create(formData);
-      alert('Tạo kỷ luật thành công');
+      closeModal();
+      toast.success('Tạo kỷ luật thành công');
       setShowModal(false);
       setFormData({
         employeeId: '',
@@ -101,7 +115,6 @@ export default function DisciplinesPage() {
       fetchData();
     } catch (error: any) {
       console.error('Failed to create discipline:', error);
-      // Handle different error structures
       let errorMessage = 'Tạo kỷ luật thất bại';
 
       if (error?.message) {
@@ -112,20 +125,29 @@ export default function DisciplinesPage() {
         errorMessage = error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
+      setConfirmLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa kỷ luật này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa kỷ luật này? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa',
+      type: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
+      setConfirmLoading(true);
       await disciplineService.delete(id);
-      alert('Xóa thành công');
+      closeModal();
+      toast.success('Xóa thành công');
       fetchData();
     } catch (error: any) {
       console.error('Failed to delete discipline:', error);
-      // Handle different error structures
       let errorMessage = 'Xóa thất bại';
 
       if (error?.message) {
@@ -136,7 +158,8 @@ export default function DisciplinesPage() {
         errorMessage = error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
+      setConfirmLoading(false);
     }
   };
 
@@ -150,6 +173,7 @@ export default function DisciplinesPage() {
   if (loading) {
     return (
       <DashboardLayout>
+        <ConfirmDialog />
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
           <div className="grid grid-cols-3 gap-6">
@@ -164,6 +188,7 @@ export default function DisciplinesPage() {
 
   return (
     <DashboardLayout>
+      <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

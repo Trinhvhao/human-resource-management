@@ -1,0 +1,22 @@
+### Test Attendance Corrections API
+### Replace {{token}} with actual JWT token from HR login
+
+### 1. Get all corrections (HR/ADMIN only)
+GET http://localhost:3333/attendance-corrections
+Authorization: Bearer {{token}}
+
+### 2. Get pending corrections (HR/ADMIN only)
+GET http://localhost:3333/attendance-corrections/pending
+Authorization: Bearer {{token}}
+
+### 3. Get my corrections (Employee)
+GET http://localhost:3333/attendance-corrections/my-requests
+Authorization: Bearer {{token}}
+
+### 4. Get corrections with status filter
+GET http://localhost:3333/attendance-corrections?status=PENDING
+Authorization: Bearer {{token}}
+
+### 5. Get corrections by employee
+GET http://localhost:3333/attendance-corrections?employeeId=EMPLOYEE_ID_HERE
+Authorization: Bearer {{token}}

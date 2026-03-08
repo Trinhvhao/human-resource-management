@@ -10,7 +10,7 @@ interface ConfirmModalProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
-    type?: 'danger' | 'warning' | 'info';
+    type?: 'danger' | 'warning' | 'info' | 'success';
     loading?: boolean;
 }
 
@@ -40,9 +40,13 @@ export default function ConfirmModal({
             icon: 'bg-blue-100 text-blue-600',
             button: 'bg-blue-600 hover:bg-blue-700',
         },
+        success: {
+            icon: 'bg-green-100 text-green-600',
+            button: 'bg-green-600 hover:bg-green-700',
+        },
     };
 
-    const style = typeStyles[type];
+    const style = typeStyles[type] || typeStyles.warning;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">

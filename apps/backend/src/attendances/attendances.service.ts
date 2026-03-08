@@ -4,12 +4,108 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AttendancesService {
-  // Work hours config
-  private readonly WORK_START = 8 * 60 + 30; // 8:30 AM in minutes
-  private readonly WORK_END = 17 * 60 + 30;  // 5:30 PM in minutes
+  // Work hours config (in minutes from midnight)
+  private readonly WORK_START = 8 * 60 + 30; // 8:30 AM
+  private readonly WORK_END = 17 * 60 + 30;  // 5:30 PM
   private readonly LATE_THRESHOLD = 15;       // 15 minutes grace period
+  private readonly MIN_WORK_DURATION = 0.5;   // Minimum 30 minutes to be valid
+  private readonly LUNCH_BREAK = 1;           // 1 hour lunch break
+  private readonly LUNCH_BREAK_THRESHOLD = 4; // Deduct lunch if worked > 4 hours
 
   constructor(private prisma: PrismaService) { }
+
+  /**
+   * Build a stable date key for @db.Date columns.
+   * Uses local calendar date but stores at UTC midnight to avoid timezone drift.
+   */
+  private toDateKey(date: Date = new Date()): Date {
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+  }
+
+  /**
+   * Check if time is within normal work hours (6 AM - 11 PM)
+   * Times outside this range are likely data errors or special cases
+   */
+  private isReasonableWorkTime(date: Date): boolean {
+    const hours = date.getHours();
+    return hours >= 6 && hours < 23;
+  }
+
+  /**
+   * Calculate if check-in is late
+   * Late if after 8:45 AM (8:30 + 15 min grace period)
+   * Only applies to times between 6 AM and 11 PM
+   */
+  private calculateIsLate(checkInTime: Date): boolean {
+    const hours = checkInTime.getHours();
+    const minutes = checkInTime.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+
+    // Only check for late if within reasonable work hours
+    if (!this.isReasonableWorkTime(checkInTime)) {
+      return false; // Don't mark as late for unusual times
+    }
+
+    // Late if after 8:45 AM
+    return totalMinutes > this.WORK_START + this.LATE_THRESHOLD;
+  }
+
+  /**
+   * Calculate if check-out is early
+   * Early if before 5:30 PM and within normal work hours
+   */
+  private calculateIsEarlyLeave(checkOutTime: Date, checkInTime: Date): boolean {
+    const hours = checkOutTime.getHours();
+    const minutes = checkOutTime.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+
+    // Only check for early leave if within reasonable work hours
+    if (!this.isReasonableWorkTime(checkOutTime)) {
+      return false;
+    }
+
+    // Calculate work duration
+    const durationHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
+
+    // If worked less than 4 hours, consider it early leave
+    if (durationHours < 4) {
+      return true;
+    }
+
+    // Early if before 5:30 PM
+    return totalMinutes < this.WORK_END;
+  }
+
+  /**
+   * Calculate work hours between check-in and check-out
+   * Handles overnight shifts and deducts lunch break
+   */
+  private calculateWorkHours(checkInTime: Date, checkOutTime: Date): number {
+    // Calculate raw duration in hours
+    let durationMs = checkOutTime.getTime() - checkInTime.getTime();
+
+    // If negative, it means check-out is on the next day
+    if (durationMs < 0) {
+      // Add 24 hours
+      durationMs += 24 * 60 * 60 * 1000;
+    }
+
+    let workHours = durationMs / (1000 * 60 * 60);
+
+    // Validate reasonable work hours (max 24 hours)
+    if (workHours > 24) {
+      console.warn(`Unreasonable work hours detected: ${workHours}h. Capping at 24h.`);
+      workHours = 24;
+    }
+
+    // Deduct lunch break if worked more than threshold
+    if (workHours > this.LUNCH_BREAK_THRESHOLD) {
+      workHours -= this.LUNCH_BREAK;
+    }
+
+    // Ensure non-negative
+    return Math.max(0, workHours);
+  }
 
   async checkIn(employeeId: string) {
     const employee = await this.prisma.employee.findUnique({
@@ -19,8 +115,8 @@ export class AttendancesService {
       throw new NotFoundException('Employee not found');
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = this.toDateKey(now);
 
     // Check if already checked in today
     const existing = await this.prisma.attendance.findFirst({
@@ -34,15 +130,17 @@ export class AttendancesService {
       throw new BadRequestException('Bạn đã chấm công vào hôm nay rồi');
     }
 
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    // Late if: after grace period  OR  before 6 AM (midnight/early area — test data or night shift edge case)
-    const isLate = currentMinutes > this.WORK_START + this.LATE_THRESHOLD || currentMinutes < 6 * 60;
+    const isLate = this.calculateIsLate(now);
 
     const attendance = existing
       ? await this.prisma.attendance.update({
         where: { id: existing.id },
-        data: { checkIn: now, isLate, status: 'PRESENT' },
+        data: {
+          checkIn: now,
+          isLate,
+          status: 'PRESENT',
+          notes: isLate ? 'Đi muộn' : null,
+        },
       })
       : await this.prisma.attendance.create({
         data: {
@@ -51,6 +149,7 @@ export class AttendancesService {
           checkIn: now,
           isLate,
           status: 'PRESENT',
+          notes: isLate ? 'Đi muộn' : null,
         },
       });
 
@@ -66,8 +165,7 @@ export class AttendancesService {
   }
 
   async checkOut(employeeId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.toDateKey();
 
     const attendance = await this.prisma.attendance.findFirst({
       where: {
@@ -123,8 +221,7 @@ export class AttendancesService {
   }
 
   async getTodayAttendance(employeeId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.toDateKey();
 
     const attendance = await this.prisma.attendance.findFirst({
       where: {
@@ -140,8 +237,7 @@ export class AttendancesService {
   }
 
   async getTodayAllAttendances() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.toDateKey();
 
     const attendances = await this.prisma.attendance.findMany({
       where: {
@@ -303,19 +399,22 @@ export class AttendancesService {
 
   async getAbsenteeismStats() {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = this.toDateKey(now);
 
     // Calculate date ranges
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - 6); // Last 7 days
+    const startOfWeekKey = this.toDateKey(startOfWeek);
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const startOfMonth = this.toDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
+    const endOfMonth = this.toDateKey(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     const startOfLastWeek = new Date(startOfWeek);
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+    const startOfLastWeekKey = this.toDateKey(startOfLastWeek);
     const endOfLastWeek = new Date(startOfWeek);
     endOfLastWeek.setDate(endOfLastWeek.getDate() - 1);
+    const endOfLastWeekKey = this.toDateKey(endOfLastWeek);
 
     // Get total active employees
     const totalEmployees = await this.prisma.employee.count({
@@ -345,19 +444,19 @@ export class AttendancesService {
     const [weekAbsent, weekLate, weekTotal] = await Promise.all([
       this.prisma.attendance.count({
         where: {
-          date: { gte: startOfWeek, lte: today },
+          date: { gte: startOfWeekKey, lte: today },
           status: 'ABSENT',
         },
       }),
       this.prisma.attendance.count({
         where: {
-          date: { gte: startOfWeek, lte: today },
+          date: { gte: startOfWeekKey, lte: today },
           isLate: true,
         },
       }),
       this.prisma.attendance.count({
         where: {
-          date: { gte: startOfWeek, lte: today },
+          date: { gte: startOfWeekKey, lte: today },
         },
       }),
     ]);
@@ -387,13 +486,13 @@ export class AttendancesService {
     const [lastWeekAbsent, lastWeekTotal] = await Promise.all([
       this.prisma.attendance.count({
         where: {
-          date: { gte: startOfLastWeek, lte: endOfLastWeek },
+          date: { gte: startOfLastWeekKey, lte: endOfLastWeekKey },
           status: 'ABSENT',
         },
       }),
       this.prisma.attendance.count({
         where: {
-          date: { gte: startOfLastWeek, lte: endOfLastWeek },
+          date: { gte: startOfLastWeekKey, lte: endOfLastWeekKey },
         },
       }),
     ]);
@@ -445,8 +544,7 @@ export class AttendancesService {
     timeZone: 'Asia/Ho_Chi_Minh',
   })
   async autoMarkAbsent() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.toDateKey();
 
     console.log(`[Cron] Starting auto-absent marking for ${today.toLocaleDateString('vi-VN')}`);
 

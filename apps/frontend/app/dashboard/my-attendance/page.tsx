@@ -18,10 +18,16 @@ export default function MyAttendancePage() {
   const [faceRegistered, setFaceRegistered] = useState<boolean | null>(null);
   const [faceCount, setFaceCount] = useState(0);
 
+  const loadAllData = async () => {
+    await Promise.all([
+      loadMyAttendances(),
+      loadTodayAttendance(),
+      checkFaceRegistration(),
+    ]);
+  };
+
   useEffect(() => {
-    loadMyAttendances();
-    loadTodayAttendance();
-    checkFaceRegistration();
+    loadAllData();
   }, []);
 
   const checkFaceRegistration = async () => {
@@ -40,6 +46,13 @@ export default function MyAttendancePage() {
     try {
       const res = await attendanceService.getTodayAttendance();
       const rec = (res as any)?.data ?? (res as any) ?? null;
+
+      // Treat placeholder payload as "no record" so we can safely fallback to monthly list.
+      if (!rec || rec.status === 'NOT_CHECKED_IN') {
+        setTodayRecord(null);
+        return;
+      }
+
       setTodayRecord(rec);
     } catch {
       setTodayRecord(null);
@@ -64,18 +77,18 @@ export default function MyAttendancePage() {
   };
 
   const handleFaceSuccess = () => {
-    loadTodayAttendance();
-    loadMyAttendances();
+    loadAllData();
   };
 
   const handleFaceClose = () => {
     setFaceCheckInMode(null);
-    loadTodayAttendance();
-    loadMyAttendances();
+    loadAllData();
   };
 
-  // Use dedicated today endpoint for reliable lock state; fall back to month list
-  const todayAttendance = todayRecord ?? attendances.find(
+  // Use dedicated today endpoint first, then fallback to list item for the same date.
+  const todayAttendance = (todayRecord?.checkIn || todayRecord?.checkOut)
+    ? todayRecord
+    : attendances.find(
     a => new Date(a.date).toDateString() === new Date().toDateString()
   );
 

@@ -7,6 +7,8 @@ import { ArrowLeft, Clock, User, FileText, CheckCircle, XCircle, Loader2, Calend
 import overtimeService from '@/services/overtimeService';
 import { Overtime } from '@/types/overtime';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   PENDING: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
@@ -19,9 +21,9 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const { id } = use(params);
   const { user } = useAuthStore();
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
   const [overtime, setOvertime] = useState<Overtime | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
 
@@ -38,61 +40,72 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
       setOvertime(data);
     } catch (error) {
       console.error('Failed to fetch overtime detail:', error);
-      alert('Không thể tải thông tin đơn tăng ca');
+      toast.error('Không thể tải thông tin đơn tăng ca');
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async () => {
-    if (!confirm('Bạn có chắc muốn duyệt đơn này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận duyệt đơn',
+      message: 'Bạn có chắc muốn duyệt đơn tăng ca này?',
+      confirmText: 'Duyệt đơn',
+      type: 'success'
+    });
+
+    if (!confirmed) return;
 
     try {
-      setActionLoading(true);
+      setConfirmLoading(true);
       await overtimeService.approve(id);
-      alert('Duyệt đơn thành công');
+      closeModal();
+      toast.success('Duyệt đơn thành công');
       fetchOvertimeDetail();
     } catch (error: any) {
       console.error('Failed to approve:', error);
-      alert(error.response?.data?.message || 'Duyệt đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      closeModal();
+      toast.error(error.response?.data?.message || 'Duyệt đơn thất bại');
     }
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối');
+      toast.warning('Vui lòng nhập lý do từ chối');
       return;
     }
 
     try {
-      setActionLoading(true);
       await overtimeService.reject(id, { rejectedReason: rejectReason });
-      alert('Từ chối đơn thành công');
+      toast.success('Từ chối đơn thành công');
       setShowRejectModal(false);
       fetchOvertimeDetail();
     } catch (error: any) {
       console.error('Failed to reject:', error);
-      alert(error.response?.data?.message || 'Từ chối đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      toast.error(error.response?.data?.message || 'Từ chối đơn thất bại');
     }
   };
 
   const handleCancel = async () => {
-    if (!confirm('Bạn có chắc muốn hủy đơn này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận hủy đơn',
+      message: 'Bạn có chắc muốn hủy đơn tăng ca này?',
+      confirmText: 'Hủy đơn',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
-      setActionLoading(true);
+      setConfirmLoading(true);
       await overtimeService.cancel(id);
-      alert('Hủy đơn thành công');
+      closeModal();
+      toast.success('Hủy đơn thành công');
       router.push('/dashboard/overtime');
     } catch (error: any) {
       console.error('Failed to cancel:', error);
-      alert(error.response?.data?.message || 'Hủy đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      closeModal();
+      toast.error(error.response?.data?.message || 'Hủy đơn thất bại');
     }
   };
 
@@ -126,6 +139,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <DashboardLayout>
+      <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -231,8 +245,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
               <>
                 <button
                   onClick={handleApprove}
-                  disabled={actionLoading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
                   <CheckCircle size={20} />
                   Duyệt đơn
@@ -240,8 +253,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
 
                 <button
                   onClick={() => setShowRejectModal(true)}
-                  disabled={actionLoading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
                   <XCircle size={20} />
                   Từ chối
@@ -252,8 +264,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
             {canCancel && (
               <button
                 onClick={handleCancel}
-                disabled={actionLoading}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
               >
                 <XCircle size={20} />
                 Hủy đơn
@@ -313,10 +324,10 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handleReject}
-                disabled={actionLoading || !rejectReason.trim()}
+                disabled={!rejectReason.trim()}
                 className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                {actionLoading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                Xác nhận từ chối
               </button>
               <button
                 onClick={() => {

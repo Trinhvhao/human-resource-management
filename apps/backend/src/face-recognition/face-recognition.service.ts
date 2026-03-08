@@ -41,7 +41,7 @@ export class FaceRecognitionService implements OnModuleInit {
       this.configService.get<string>('FACE_RECOGNITION_THRESHOLD', '0.6'),
     );
     this.maxDescriptorsPerEmployee = parseInt(
-      this.configService.get<string>('FACE_RECOGNITION_MAX_DESCRIPTORS', '3'),
+      this.configService.get<string>('FACE_RECOGNITION_MAX_DESCRIPTORS', '5'),
       10,
     );
     this.minQuality = parseFloat(
@@ -115,7 +115,7 @@ export class FaceRecognitionService implements OnModuleInit {
     const { width, height } = img;
     const rgbData = new Uint8Array(width * height * 3);
     for (let i = 0; i < width * height; i++) {
-      rgbData[i * 3] = imageData.data[i * 4];     // R
+      rgbData[i * 3]     = imageData.data[i * 4];     // R
       rgbData[i * 3 + 1] = imageData.data[i * 4 + 1]; // G
       rgbData[i * 3 + 2] = imageData.data[i * 4 + 2]; // B
     }
@@ -272,9 +272,9 @@ export class FaceRecognitionService implements OnModuleInit {
   /**
    * Face check-in: match face against all registered descriptors
    */
-  async faceCheckIn(image: string) {
+  async faceCheckIn(image: string, currentEmployeeId?: string) {
     const { descriptor, quality } = await this.extractDescriptor(image);
-    const match = await this.findBestMatch(descriptor);
+    const match = await this.findBestMatch(descriptor, currentEmployeeId);
 
     if (!match) {
       throw new BadRequestException('Không nhận diện được khuôn mặt. Vui lòng nhìn thẳng vào camera và thử lại.');
@@ -302,9 +302,9 @@ export class FaceRecognitionService implements OnModuleInit {
   /**
    * Face check-out: match face against all registered descriptors
    */
-  async faceCheckOut(image: string) {
+  async faceCheckOut(image: string, currentEmployeeId?: string) {
     const { descriptor, quality } = await this.extractDescriptor(image);
-    const match = await this.findBestMatch(descriptor);
+    const match = await this.findBestMatch(descriptor, currentEmployeeId);
 
     if (!match) {
       throw new BadRequestException('Không nhận diện được khuôn mặt. Vui lòng nhìn thẳng vào camera và thử lại.');
@@ -331,8 +331,9 @@ export class FaceRecognitionService implements OnModuleInit {
   /**
    * Find the best matching employee for a given face descriptor
    */
-  private async findBestMatch(descriptor: Float32Array) {
+  private async findBestMatch(descriptor: Float32Array, employeeId?: string) {
     const allDescriptors = await this.prisma.faceDescriptor.findMany({
+      where: employeeId ? { employeeId } : undefined,
       select: {
         descriptor: true,
         employeeId: true,
@@ -485,12 +486,12 @@ export class FaceRecognitionService implements OnModuleInit {
         quality,
         match: match
           ? {
-            employee: match.employee,
-            confidence: Math.round((1 - match.distance) * 100),
-            distance: match.distance,
-            threshold: this.threshold,
-            isMatch: match.distance < this.threshold,
-          }
+              employee: match.employee,
+              confidence: Math.round((1 - match.distance) * 100),
+              distance: match.distance,
+              threshold: this.threshold,
+              isMatch: match.distance < this.threshold,
+            }
           : null,
       },
     };

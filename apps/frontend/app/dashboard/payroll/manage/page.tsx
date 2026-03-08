@@ -7,9 +7,12 @@ import { Plus, Eye, Lock, Calendar, DollarSign, Users, TrendingUp } from 'lucide
 import payrollService from '@/services/payrollService';
 import { Payroll } from '@/types/payroll';
 import { formatCurrency } from '@/utils/formatters';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export default function ManagePayrollPage() {
   const router = useRouter();
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -34,35 +37,70 @@ export default function ManagePayrollPage() {
   };
 
   const handleCreatePayroll = async () => {
-    try {
-      setCreating(true);
-      await payrollService.create({
-        month: selectedMonth,
-        year: selectedYear,
-      });
-      alert(`Tạo bảng lương tháng ${selectedMonth}/${selectedYear} thành công`);
-      setShowCreateModal(false);
-      fetchPayrolls();
-    } catch (error: any) {
-      console.error('Failed to create payroll:', error);
-      alert(error.response?.data?.message || 'Tạo bảng lương thất bại');
-    } finally {
-      setCreating(false);
-    }
-  };
+    // Close the create modal first
+    setShowCreateModal(false);
 
-  const handleFinalize = async (id: string, month: number, year: number) => {
-    if (!confirm(`Bạn có chắc muốn chốt bảng lương tháng ${month}/${year}? Sau khi chốt sẽ không thể chỉnh sửa.`)) {
+    const confirmed = await confirm({
+      title: 'Xác nhận tạo bảng lương',
+      message: `Bạn có chắc muốn tạo bảng lương tháng ${selectedMonth}/${selectedYear}? Quá trình này có thể mất vài phút.`,
+      confirmText: 'Tạo bảng lương',
+      type: 'info'
+    });
+
+    if (!confirmed) {
+      // If cancelled, reopen the create modal
+      setShowCreateModal(true);
       return;
     }
 
     try {
+      setConfirmLoading(true);
+      toast.info('Đang tạo bảng lương cho tất cả nhân viên... Vui lòng đợi.');
+
+      const response = await payrollService.create({
+        month: selectedMonth,
+        year: selectedYear,
+      });
+
+      closeModal();
+      toast.success(`Tạo bảng lương tháng ${selectedMonth}/${selectedYear} thành công! Đã tính lương cho ${response.data?.employeeCount || 0} nhân viên.`);
+      fetchPayrolls();
+    } catch (error: any) {
+      console.error('Failed to create payroll:', error);
+      closeModal();
+
+      let errorMessage = 'Tạo bảng lương thất bại';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.statusCode === 408 || error?.message?.includes('timeout')) {
+        errorMessage = 'Yêu cầu hết thời gian chờ. Vui lòng thử lại hoặc liên hệ quản trị viên.';
+      }
+
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleFinalize = async (id: string, month: number, year: number) => {
+    const confirmed = await confirm({
+      title: 'Xác nhận chốt bảng lương',
+      message: `Bạn có chắc muốn chốt bảng lương tháng ${month}/${year}? Sau khi chốt sẽ không thể chỉnh sửa.`,
+      confirmText: 'Chốt bảng lương',
+      type: 'warning'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setConfirmLoading(true);
       await payrollService.finalize(id);
-      alert('Chốt bảng lương thành công');
+      closeModal();
+      toast.success('Chốt bảng lương thành công');
       fetchPayrolls();
     } catch (error: any) {
       console.error('Failed to finalize payroll:', error);
-      alert(error.response?.data?.message || 'Chốt bảng lương thất bại');
+      closeModal();
+      const errorMessage = error?.message || 'Chốt bảng lương thất bại';
+      toast.error(errorMessage);
     }
   };
 
@@ -116,6 +154,7 @@ export default function ManagePayrollPage() {
 
   return (
     <DashboardLayout>
+      <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -322,7 +361,7 @@ export default function ManagePayrollPage() {
                 disabled={creating}
                 className="flex-1 px-6 py-3 bg-brandBlue text-white rounded-lg font-semibold hover:bg-brandBlue/90 transition-colors disabled:opacity-50"
               >
-                {creating ? 'Đang tạo...' : 'Tạo bảng lương'}
+                Tạo bảng lương
               </button>
               <button
                 onClick={() => setShowCreateModal(false)}

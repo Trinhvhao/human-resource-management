@@ -17,7 +17,9 @@ class PayrollService {
   }
 
   async create(data: CreatePayrollData): Promise<ApiResponse<Payroll>> {
-    return axiosInstance.post('/payrolls', data);
+    return axiosInstance.post('/payrolls', data, {
+      timeout: 180000 // 3 minutes for payroll creation
+    });
   }
 
   async updateItem(payrollId: string, itemId: string, data: UpdatePayrollItemData): Promise<ApiResponse<any>> {

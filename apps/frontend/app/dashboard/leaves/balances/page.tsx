@@ -5,8 +5,11 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Calendar, Users, TrendingUp, Edit, Play, History, Loader2 } from 'lucide-react';
 import leaveService from '@/services/leaveService';
 import { LeaveBalance } from '@/types/leave';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export default function LeaveBalancesPage() {
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -14,7 +17,6 @@ export default function LeaveBalancesPage() {
   const [editBalance, setEditBalance] = useState<LeaveBalance | null>(null);
   const [editAnnual, setEditAnnual] = useState(0);
   const [editSick, setEditSick] = useState(0);
-  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchBalances();
@@ -33,29 +35,40 @@ export default function LeaveBalancesPage() {
   };
 
   const handleRunAccrual = async () => {
-    if (!confirm('Bạn có chắc muốn chạy tích lũy phép cho tất cả nhân viên?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận chạy tích lũy phép',
+      message: 'Bạn có chắc muốn chạy tích lũy phép cho tất cả nhân viên? Quá trình này có thể mất vài phút.',
+      confirmText: 'Chạy tích lũy',
+      type: 'info'
+    });
+
+    if (!confirmed) return;
 
     try {
-      setActionLoading(true);
-      await leaveService.runAccrual();
-      alert('Chạy tích lũy phép thành công');
+      setConfirmLoading(true);
+      toast.info('Đang xử lý tích lũy phép cho tất cả nhân viên... Vui lòng đợi.');
+
+      const response = await leaveService.runAccrual();
+      closeModal();
+
+      const successCount = response.data?.success || 0;
+      const failedCount = response.data?.failed || 0;
+      const skippedCount = response.data?.skipped || 0;
+
+      toast.success(`Hoàn tất tích lũy phép: ${successCount} thành công, ${skippedCount} đã tích lũy, ${failedCount} thất bại`);
       fetchBalances();
     } catch (error: any) {
       console.error('Failed to run accrual:', error);
-      // Handle different error structures
-      let errorMessage = 'Chạy tích lũy thất bại';
+      closeModal();
 
+      let errorMessage = 'Chạy tích lũy thất bại';
       if (error?.message) {
         errorMessage = error.message;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
+      } else if (error?.statusCode === 408 || error?.message?.includes('timeout')) {
+        errorMessage = 'Yêu cầu hết thời gian chờ. Vui lòng thử lại hoặc liên hệ quản trị viên.';
       }
 
-      alert(errorMessage);
-    } finally {
-      setActionLoading(false);
+      toast.error(errorMessage);
     }
   };
 
@@ -70,27 +83,14 @@ export default function LeaveBalancesPage() {
     if (!editBalance) return;
 
     try {
-      setActionLoading(true);
       await leaveService.updateBalance(editBalance.employeeId, selectedYear, editAnnual, editSick);
-      alert('Cập nhật số dư phép thành công');
+      toast.success('Cập nhật số dư phép thành công');
       setShowEditModal(false);
       fetchBalances();
     } catch (error: any) {
       console.error('Failed to update balance:', error);
-      // Handle different error structures
-      let errorMessage = 'Cập nhật thất bại';
-
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-
-      alert(errorMessage);
-    } finally {
-      setActionLoading(false);
+      const errorMessage = error?.message || 'Cập nhật thất bại';
+      toast.error(errorMessage);
     }
   };
 
@@ -100,6 +100,7 @@ export default function LeaveBalancesPage() {
 
   return (
     <DashboardLayout>
+      <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -121,8 +122,7 @@ export default function LeaveBalancesPage() {
 
             <button
               onClick={handleRunAccrual}
-              disabled={actionLoading}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-brandBlue to-brandLightBlue text-white rounded-lg font-semibold hover:shadow-lg transition-all"
             >
               <Play size={18} />
               Chạy tích lũy phép
@@ -289,10 +289,9 @@ export default function LeaveBalancesPage() {
             <div className="flex gap-4 mt-6">
               <button
                 onClick={handleSaveEdit}
-                disabled={actionLoading}
-                className="flex-1 px-6 py-3 bg-brandBlue text-white rounded-lg font-semibold hover:bg-brandBlue/90 transition-colors disabled:opacity-50"
+                className="flex-1 px-6 py-3 bg-brandBlue text-white rounded-lg font-semibold hover:bg-brandBlue/90 transition-colors"
               >
-                {actionLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                Lưu thay đổi
               </button>
               <button
                 onClick={() => setShowEditModal(false)}

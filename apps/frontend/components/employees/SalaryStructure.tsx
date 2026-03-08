@@ -5,6 +5,8 @@ import { Plus, Edit, Trash2, DollarSign, Save, X } from 'lucide-react';
 import salaryComponentService from '@/services/salaryComponentService';
 import { SalaryComponent, ComponentType } from '@/types/salaryComponent';
 import { formatCurrency } from '@/utils/formatters';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface SalaryStructureProps {
   employeeId: string;
@@ -36,6 +38,7 @@ const componentTypeColors: Record<ComponentType, string> = {
 };
 
 export default function SalaryStructure({ employeeId, canEdit = false }: SalaryStructureProps) {
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
   const [components, setComponents] = useState<SalaryComponent[]>([]);
   const [totalSalary, setTotalSalary] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -70,38 +73,48 @@ export default function SalaryStructure({ employeeId, canEdit = false }: SalaryS
         employeeId,
         ...formData,
       });
-      alert('Thêm thành phần lương thành công');
+      toast.success('Thêm thành phần lương thành công');
       setShowAddModal(false);
       setFormData({ componentType: 'LUNCH', amount: 0, note: '' });
       fetchSalaryStructure();
     } catch (error: any) {
       console.error('Failed to add component:', error);
-      alert(error.response?.data?.message || 'Thêm thất bại');
+      toast.error(error.response?.data?.message || 'Thêm thất bại');
     }
   };
 
   const handleUpdate = async (id: string) => {
     try {
       await salaryComponentService.update(id, formData);
-      alert('Cập nhật thành công');
+      toast.success('Cập nhật thành công');
       setEditingId(null);
       fetchSalaryStructure();
     } catch (error: any) {
       console.error('Failed to update component:', error);
-      alert(error.response?.data?.message || 'Cập nhật thất bại');
+      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa thành phần lương này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa thành phần lương này?',
+      confirmText: 'Xóa',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
+      setConfirmLoading(true);
       await salaryComponentService.delete(id);
-      alert('Xóa thành công');
+      closeModal();
+      toast.success('Xóa thành công');
       fetchSalaryStructure();
     } catch (error: any) {
       console.error('Failed to delete component:', error);
-      alert(error.response?.data?.message || 'Xóa thất bại');
+      closeModal();
+      toast.error(error.response?.data?.message || 'Xóa thất bại');
     }
   };
 
@@ -128,6 +141,7 @@ export default function SalaryStructure({ employeeId, canEdit = false }: SalaryS
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200">
+      <ConfirmDialog />
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-primary">Cấu trúc lương</h3>
         {canEdit && (

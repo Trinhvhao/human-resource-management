@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import WebcamCapture from './WebcamCapture';
 import faceRecognitionService from '@/services/faceRecognitionService';
+import { useAuthStore } from '@/store/authStore';
 
 interface FaceCheckInProps {
   mode: 'check-in' | 'check-out';
@@ -22,6 +23,7 @@ interface FaceCheckInProps {
 }
 
 export default function FaceCheckIn({ mode, onSuccess, onClose }: FaceCheckInProps) {
+  const { user } = useAuthStore();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
@@ -64,6 +66,13 @@ export default function FaceCheckIn({ mode, onSuccess, onClose }: FaceCheckInPro
         // Axios interceptor unwraps one level → { success, message, data }
         const outer = response as any;
         const data = outer?.data ?? outer;
+        const currentEmployeeId = user?.employeeId || user?.employee?.id;
+
+        // Safety guard: if API returns another employee, do not proceed.
+        if (currentEmployeeId && data?.employee?.id && data.employee.id !== currentEmployeeId) {
+          setError('Khuôn mặt không khớp với tài khoản đăng nhập. Vui lòng kiểm tra lại dữ liệu khuôn mặt.');
+          return;
+        }
 
         setResult({
           employee: data?.employee,
@@ -85,7 +94,7 @@ export default function FaceCheckIn({ mode, onSuccess, onClose }: FaceCheckInPro
         setProcessing(false);
       }
     },
-    [mode, onSuccess],
+    [mode, onSuccess, user],
   );
 
   const isCheckIn = mode === 'check-in';

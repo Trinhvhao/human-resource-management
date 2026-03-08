@@ -76,7 +76,9 @@ class LeaveService {
 
   // Leave Accrual
   async runAccrual(): Promise<ApiResponse<any>> {
-    return axiosInstance.post('/leave-balances/accrual/run');
+    return axiosInstance.post('/leave-balances/accrual/run', {}, {
+      timeout: 120000 // 2 minutes for long-running operation
+    });
   }
 
   async accrueForEmployee(employeeId: string, daysToAdd: number, notes: string): Promise<ApiResponse<any>> {

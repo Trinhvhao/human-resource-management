@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePermission } from '@/hooks/usePermission';
-import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import leaveService from '@/services/leaveService';
 import { useAuthStore } from '@/store/authStore';
@@ -20,14 +20,6 @@ export default function LeavesPage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Filter and pagination states
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [leaveTypeFilter, setLeaveTypeFilter] = useState<string>('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchData();
@@ -45,14 +37,10 @@ export default function LeavesPage() {
         }, 5000);
       }
     }
-  }, [currentPage, statusFilter, leaveTypeFilter]);
+  }, []);
 
   const fetchData = async () => {
-    if (!user?.employeeId) {
-      console.log('No employeeId found, skipping fetch');
-      setLoading(false);
-      return;
-    }
+    if (!user?.employeeId) return;
 
     try {
       setLoading(true);
@@ -60,66 +48,15 @@ export default function LeavesPage() {
       // Admin/HR Manager see all requests, employees see only their own
       const isAdminOrHR = user.role === 'ADMIN' || user.role === 'HR_MANAGER';
 
-      // Build query params
-      const queryParams: any = {
-        page: currentPage,
-        limit: itemsPerPage,
-      };
-
-      if (statusFilter !== 'ALL') {
-        queryParams.status = statusFilter;
-      }
-
-      if (leaveTypeFilter !== 'ALL') {
-        queryParams.leaveType = leaveTypeFilter;
-      }
-
       const [balanceRes, requestsRes] = await Promise.all([
-        leaveService.getBalance(user.employeeId).catch(err => {
-          console.error('Failed to fetch balance:', err);
-          return { data: null };
-        }),
-        isAdminOrHR
-          ? leaveService.getAll(queryParams).catch(err => {
-            console.error('Failed to fetch all requests:', err);
-            return { data: [], meta: { total: 0, page: 1, limit: itemsPerPage, totalPages: 1 } };
-          })
-          : leaveService.getMyRequests().catch(err => {
-            console.error('Failed to fetch my requests:', err);
-            return { data: [] };
-          }),
+        leaveService.getBalance(user.employeeId),
+        isAdminOrHR ? leaveService.getAll({ page: 1, limit: 50 }) : leaveService.getMyRequests(),
       ]);
 
       setBalance(balanceRes.data);
-
-      if (isAdminOrHR && requestsRes.meta) {
-        setRequests(Array.isArray(requestsRes.data) ? requestsRes.data : []);
-        setTotalRecords(requestsRes.meta.total || 0);
-        setTotalPages(requestsRes.meta.totalPages || 1);
-      } else {
-        // For employees, filter locally
-        let filteredRequests = Array.isArray(requestsRes.data) ? requestsRes.data : [];
-
-        if (statusFilter !== 'ALL') {
-          filteredRequests = filteredRequests.filter(r => r.status === statusFilter);
-        }
-
-        if (leaveTypeFilter !== 'ALL') {
-          filteredRequests = filteredRequests.filter(r => r.leaveType === leaveTypeFilter);
-        }
-
-        setTotalRecords(filteredRequests.length);
-        setTotalPages(Math.ceil(filteredRequests.length / itemsPerPage));
-
-        // Paginate locally
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        setRequests(filteredRequests.slice(startIndex, endIndex));
-      }
+      setRequests(requestsRes.data);
     } catch (error) {
       console.error('Failed to fetch leave data:', error);
-      setBalance(null);
-      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -130,38 +67,20 @@ export default function LeavesPage() {
       PENDING: 'bg-yellow-100 text-yellow-700 border-yellow-200',
       APPROVED: 'bg-green-100 text-green-700 border-green-200',
       REJECTED: 'bg-red-100 text-red-700 border-red-200',
-      CANCELLED: 'bg-gray-100 text-gray-700 border-gray-200',
     };
     const icons = {
       PENDING: Clock,
       APPROVED: CheckCircle,
       REJECTED: XCircle,
-      CANCELLED: AlertCircle,
     };
     const Icon = icons[status as keyof typeof icons] || AlertCircle;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border-2 whitespace-nowrap ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'}`}>
         <Icon size={14} />
-        {status === 'PENDING' ? 'Chờ duyệt' : status === 'APPROVED' ? 'Đã duyệt' : status === 'REJECTED' ? 'Từ chối' : 'Đã hủy'}
+        {status === 'PENDING' ? 'Chờ duyệt' : status === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}
       </span>
     );
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
-  const handleStatusFilterChange = (status: string) => {
-    setStatusFilter(status);
-    setCurrentPage(1); // Reset to first page
-  };
-
-  const handleLeaveTypeFilterChange = (type: string) => {
-    setLeaveTypeFilter(type);
-    setCurrentPage(1); // Reset to first page
   };
 
   return (
@@ -195,26 +114,15 @@ export default function LeavesPage() {
               <h1 className="text-3xl font-bold text-secondary">Nghỉ phép</h1>
               <p className="text-slate-500 mt-1">Quản lý đơn nghỉ phép và số dư phép năm</p>
             </div>
-            <div className="flex items-center gap-3">
-              {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER' || user?.role === 'MANAGER') && (
-                <button
-                  onClick={() => router.push('/dashboard/leaves/pending')}
-                  className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 border-2 border-yellow-200 rounded-lg hover:bg-yellow-100 transition-all"
-                >
-                  <Clock size={20} />
-                  Đơn chờ duyệt
-                </button>
-              )}
-              {can('CREATE_LEAVE') && (
-                <button
-                  onClick={() => router.push('/dashboard/leaves/new')}
-                  className="flex items-center gap-2 px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all"
-                >
-                  <Plus size={20} />
-                  Tạo đơn mới
-                </button>
-              )}
-            </div>
+            {can('CREATE_LEAVE') && user?.employeeId && !['ADMIN', 'HR_MANAGER'].includes(user?.role || '') && (
+              <button
+                onClick={() => router.push('/dashboard/leaves/new')}
+                className="flex items-center gap-2 px-4 py-2 bg-brandBlue text-white rounded-lg hover:bg-blue-700 hover:shadow-lg transition-all"
+              >
+                <Plus size={20} />
+                Tạo đơn mới
+              </button>
+            )}
           </div>
 
           {/* Leave Balance Cards */}
@@ -289,61 +197,11 @@ export default function LeavesPage() {
             </div>
           )}
 
-          {/* Filters */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Filter size={20} className="text-slate-500" />
-                <span className="font-semibold text-slate-700">Lọc:</span>
-              </div>
-
-              {/* Status Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Trạng thái:</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => handleStatusFilterChange(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20 focus:border-brandBlue text-sm"
-                >
-                  <option value="ALL">Tất cả</option>
-                  <option value="PENDING">Chờ duyệt</option>
-                  <option value="APPROVED">Đã duyệt</option>
-                  <option value="REJECTED">Từ chối</option>
-                  <option value="CANCELLED">Đã hủy</option>
-                </select>
-              </div>
-
-              {/* Leave Type Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Loại phép:</span>
-                <select
-                  value={leaveTypeFilter}
-                  onChange={(e) => handleLeaveTypeFilterChange(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20 focus:border-brandBlue text-sm"
-                >
-                  <option value="ALL">Tất cả</option>
-                  <option value="ANNUAL">Phép năm</option>
-                  <option value="SICK">Phép bệnh</option>
-                  <option value="UNPAID">Không lương</option>
-                  <option value="MATERNITY">Thai sản</option>
-                  <option value="PATERNITY">Chăm con</option>
-                  <option value="BEREAVEMENT">Tang lễ</option>
-                </select>
-              </div>
-
-              <div className="ml-auto text-sm text-slate-600">
-                Tổng: <span className="font-semibold text-brandBlue">{totalRecords}</span> đơn
-              </div>
-            </div>
-          </div>
-
           {/* Recent Requests */}
           <div className="bg-white rounded-2xl border border-slate-200">
             <div className="p-6 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-primary">Danh sách đơn nghỉ phép</h2>
-              <p className="text-sm text-slate-500 mt-1">
-                Trang {currentPage} / {totalPages} - Hiển thị {requests.length} / {totalRecords} đơn
-              </p>
+              <h2 className="text-xl font-bold text-primary">Đơn nghỉ phép gần đây</h2>
+              <p className="text-sm text-slate-500 mt-1">Danh sách 10 đơn mới nhất</p>
             </div>
 
             <div className="overflow-x-auto">
@@ -373,9 +231,6 @@ export default function LeavesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Trạng thái
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      Hành động
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -392,19 +247,18 @@ export default function LeavesPage() {
                     ))
                   ) : requests.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
-                        Không tìm thấy đơn nghỉ phép nào
+                      <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                        Chưa có đơn nghỉ phép nào
                       </td>
                     </tr>
                   ) : (
-                    requests.map((request, index) => (
+                    requests.slice(0, 10).map((request, index) => (
                       <motion.tr
                         key={request.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.05 }}
-                        onClick={() => router.push(`/dashboard/leaves/${request.id}`)}
-                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="hover:bg-slate-50 transition-colors"
                       >
                         {(user?.role === 'ADMIN' || user?.role === 'HR_MANAGER') && (
                           <td className="px-6 py-4">
@@ -423,10 +277,7 @@ export default function LeavesPage() {
                           <span className="text-sm font-medium text-primary">
                             {request.leaveType === 'ANNUAL' ? 'Phép năm' :
                               request.leaveType === 'SICK' ? 'Phép bệnh' :
-                                request.leaveType === 'UNPAID' ? 'Không lương' :
-                                  request.leaveType === 'MATERNITY' ? 'Thai sản' :
-                                    request.leaveType === 'PATERNITY' ? 'Chăm con' :
-                                      request.leaveType === 'BEREAVEMENT' ? 'Tang lễ' : request.leaveType}
+                                request.leaveType === 'UNPAID' ? 'Không lương' : request.leaveType}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-700">{formatDate(request.startDate)}</td>
@@ -438,83 +289,18 @@ export default function LeavesPage() {
                           <p className="text-sm text-slate-600 line-clamp-1">{request.reason}</p>
                         </td>
                         <td className="px-6 py-4">{getStatusBadge(request.status)}</td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/dashboard/leaves/${request.id}`);
-                            }}
-                            className="text-brandBlue hover:text-blue-700 font-medium text-sm"
-                          >
-                            Xem chi tiết →
-                          </button>
-                        </td>
                       </motion.tr>
                     ))
                   )}
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="p-6 border-t border-slate-200 flex items-center justify-between">
-                <div className="text-sm text-slate-600">
-                  Hiển thị {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalRecords)} của {totalRecords} đơn
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, i) => {
-                      const page = i + 1;
-                      // Show first, last, current, and adjacent pages
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => handlePageChange(page)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${page === currentPage
-                                ? 'bg-brandBlue text-white'
-                                : 'border border-slate-200 hover:bg-slate-50'
-                              }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      } else if (page === currentPage - 2 || page === currentPage + 2) {
-                        return <span key={page} className="px-2">...</span>;
-                      }
-                      return null;
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { label: 'Tổng đơn', value: totalRecords.toString(), color: 'blue' },
+              { label: 'Tổng đơn', value: requests.length.toString(), color: 'blue' },
               { label: 'Chờ duyệt', value: String(requests.filter(r => r.status === 'PENDING').length), color: 'yellow' },
               { label: 'Đã duyệt', value: String(requests.filter(r => r.status === 'APPROVED').length), color: 'green' },
               { label: 'Từ chối', value: String(requests.filter(r => r.status === 'REJECTED').length), color: 'red' },

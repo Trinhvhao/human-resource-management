@@ -40,14 +40,16 @@ export class PayrollsService {
       throw new ConflictException(`Payroll for ${dto.month}/${dto.year} already exists`);
     }
 
-    // Get all active employees
+    console.log(`🔄 Starting payroll creation for ${dto.month}/${dto.year}...`);
+
+    // Get all active employees with their related data in one query
     const employees = await this.prisma.employee.findMany({
       where: { status: 'ACTIVE' },
       include: {
         contracts: {
           where: { status: 'ACTIVE' },
           orderBy: { startDate: 'desc' },
-          take: 1, // Get most recent active contract
+          take: 1,
         },
         attendances: {
           where: {
@@ -77,6 +79,52 @@ export class PayrollsService {
       },
     });
 
+    console.log(`📋 Found ${employees.length} active employees`);
+
+    // Batch load all salary components
+    const salaryComponentsMap = new Map();
+    try {
+      const allSalaryComponents = await this.prisma.salaryComponent.findMany({
+        where: {
+          employeeId: { in: employees.map(e => e.id) },
+          isActive: true,
+        },
+      });
+
+      // Group by employeeId
+      for (const sc of allSalaryComponents) {
+        if (!salaryComponentsMap.has(sc.employeeId)) {
+          salaryComponentsMap.set(sc.employeeId, []);
+        }
+        salaryComponentsMap.get(sc.employeeId).push(sc);
+      }
+    } catch (error) {
+      console.warn('Failed to load salary components, using base salaries');
+    }
+
+    // Batch load all overtime hours
+    const overtimeMap = new Map();
+    try {
+      const allOvertimes = await this.prisma.overtimeRequest.findMany({
+        where: {
+          employeeId: { in: employees.map(e => e.id) },
+          status: 'APPROVED',
+          date: {
+            gte: new Date(dto.year, dto.month - 1, 1),
+            lte: new Date(dto.year, dto.month, 0),
+          },
+        },
+      });
+
+      // Sum by employeeId
+      for (const ot of allOvertimes) {
+        const current = overtimeMap.get(ot.employeeId) || 0;
+        overtimeMap.set(ot.employeeId, current + Number(ot.hours));
+      }
+    } catch (error) {
+      console.warn('Failed to load overtime data');
+    }
+
     // Create payroll
     const payroll = await this.prisma.payroll.create({
       data: {
@@ -90,12 +138,23 @@ export class PayrollsService {
     // Get work days for the month
     const workDays = await this.holidaysService.getWorkDaysInMonth(dto.month, dto.year);
 
-    // Calculate salary for each employee
+    // Calculate salary for each employee (now with pre-loaded data)
     let totalAmount = 0;
     const payrollItems: any[] = [];
 
     for (const emp of employees) {
-      const item = await this.calculateSalary(emp, dto.month, dto.year, workDays);
+      const salaryComponents = salaryComponentsMap.get(emp.id) || [];
+      const overtimeHours = overtimeMap.get(emp.id) || 0;
+
+      const item = this.calculateSalaryOptimized(
+        emp,
+        dto.month,
+        dto.year,
+        workDays,
+        salaryComponents,
+        overtimeHours
+      );
+
       payrollItems.push({
         ...item,
         payrollId: payroll.id,
@@ -104,7 +163,7 @@ export class PayrollsService {
       totalAmount += item.netSalary;
     }
 
-    // Create payroll items
+    // Create payroll items in batch
     await this.prisma.payrollItem.createMany({ data: payrollItems });
 
     // Update total amount
@@ -112,6 +171,8 @@ export class PayrollsService {
       where: { id: payroll.id },
       data: { totalAmount },
     });
+
+    console.log(`✅ Payroll created: ${payrollItems.length} employees, total: ${totalAmount}`);
 
     return {
       success: true,
@@ -229,6 +290,99 @@ export class PayrollsService {
       success: true,
       message: 'Payroll item updated',
       data: updated,
+    };
+  }
+
+  // Optimized version that uses pre-loaded data
+  private calculateSalaryOptimized(
+    employee: any,
+    month: number,
+    year: number,
+    workDays: number,
+    salaryComponents: any[],
+    overtimeHours: number
+  ) {
+    const activeContract = employee.contracts?.[0] || null;
+
+    // Calculate from pre-loaded salary components
+    let baseSalary = Number(employee.baseSalary);
+    let allowances = 0;
+
+    if (salaryComponents.length > 0) {
+      const totalSalary = salaryComponents.reduce((sum, sc) => sum + Number(sc.amount), 0);
+      baseSalary = totalSalary;
+      allowances = salaryComponents
+        .filter(sc => sc.componentType !== 'BASIC')
+        .reduce((sum, sc) => sum + Number(sc.amount), 0);
+    }
+
+    const actualWorkDays = employee.attendances?.length || 0;
+    let effectiveWorkDays = actualWorkDays;
+    let hasAttendanceWarning = false;
+
+    if (actualWorkDays === 0) {
+      const monthStart = new Date(year, month - 1, 1);
+      const monthEnd = new Date(year, month, 0);
+      const wasActive = employee.startDate <= monthEnd &&
+        (!employee.endDate || employee.endDate >= monthStart);
+
+      if (wasActive) {
+        effectiveWorkDays = workDays;
+        hasAttendanceWarning = true;
+      }
+    }
+
+    const rewardBonus = employee.rewards?.reduce((sum: number, r: any) => sum + Number(r.amount), 0) || 0;
+    const disciplineDeduction = employee.disciplines?.reduce((sum: number, d: any) => sum + Number(d.amount), 0) || 0;
+
+    const hourlyRate = baseSalary / (workDays * 8);
+    const overtimePay = Number(overtimeHours) * hourlyRate * this.OVERTIME_RATE;
+
+    const proRatedSalary = baseSalary * (effectiveWorkDays / workDays);
+    const grossSalary = proRatedSalary + rewardBonus - disciplineDeduction + overtimePay;
+
+    let insurance = 0;
+    let insuranceExempt = false;
+    let insuranceExemptReason = '';
+
+    if (activeContract && this.shouldPayInsurance(activeContract)) {
+      const insuranceBase = Math.min(baseSalary + allowances, this.INSURANCE_CAP);
+      insurance = insuranceBase * this.INSURANCE_RATE;
+    } else {
+      insuranceExempt = true;
+      if (!activeContract) {
+        insuranceExemptReason = 'Không có hợp đồng';
+      } else if (activeContract.contractType === 'PROBATION') {
+        insuranceExemptReason = 'Hợp đồng thử việc';
+      } else if (['SEASONAL', 'SPECIFIC_TASK'].includes(activeContract.contractType)) {
+        insuranceExemptReason = `Hợp đồng ${activeContract.contractType === 'SEASONAL' ? 'theo mùa vụ' : 'theo công việc'}`;
+      } else if (activeContract.contractType === 'FIXED_TERM') {
+        insuranceExemptReason = 'Hợp đồng ngắn hạn (< 3 tháng)';
+      } else if (activeContract.workType === 'PART_TIME' && activeContract.workHoursPerWeek < this.MIN_PART_TIME_HOURS_FOR_INSURANCE) {
+        insuranceExemptReason = `Part-time < ${this.MIN_PART_TIME_HOURS_FOR_INSURANCE}h/tuần (${activeContract.workHoursPerWeek}h)`;
+      }
+    }
+
+    const taxableIncome = Math.max(0, grossSalary - insurance - this.PERSONAL_DEDUCTION);
+    const tax = this.calculateTax(taxableIncome);
+    const netSalary = grossSalary - insurance - tax;
+
+    return {
+      baseSalary,
+      workDays,
+      actualWorkDays,
+      effectiveWorkDays,
+      hasAttendanceWarning,
+      allowances: Math.round(allowances),
+      bonus: rewardBonus,
+      deduction: disciplineDeduction,
+      overtimeHours,
+      overtimePay: Math.round(overtimePay),
+      insurance: Math.round(insurance),
+      insuranceExempt,
+      insuranceExemptReason,
+      tax: Math.round(tax),
+      netSalary: Math.round(netSalary),
     };
   }
 

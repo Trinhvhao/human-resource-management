@@ -8,6 +8,8 @@ import leaveService from '@/services/leaveService';
 import { LeaveRequest } from '@/types/leave';
 import { useAuthStore } from '@/store/authStore';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 const leaveTypeLabels: Record<string, string> = {
   ANNUAL: 'Phép năm',
@@ -29,9 +31,9 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const { id } = use(params);
   const { user } = useAuthStore();
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
   const [leave, setLeave] = useState<LeaveRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
 
@@ -46,61 +48,72 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
       setLeave(response.data);
     } catch (error) {
       console.error('Failed to fetch leave detail:', error);
-      alert('Không thể tải thông tin đơn nghỉ phép');
+      toast.error('Không thể tải thông tin đơn nghỉ phép');
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async () => {
-    if (!confirm('Bạn có chắc muốn duyệt đơn này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận duyệt đơn',
+      message: 'Bạn có chắc muốn duyệt đơn nghỉ phép này?',
+      confirmText: 'Duyệt đơn',
+      type: 'success'
+    });
+
+    if (!confirmed) return;
 
     try {
-      setActionLoading(true);
+      setConfirmLoading(true);
       await leaveService.approve(id);
-      alert('Duyệt đơn thành công');
+      closeModal();
+      toast.success('Duyệt đơn thành công');
       fetchLeaveDetail();
     } catch (error: any) {
       console.error('Failed to approve:', error);
-      alert(error.response?.data?.message || 'Duyệt đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      closeModal();
+      toast.error(error.response?.data?.message || 'Duyệt đơn thất bại');
     }
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối');
+      toast.warning('Vui lòng nhập lý do từ chối');
       return;
     }
 
     try {
-      setActionLoading(true);
       await leaveService.reject(id, rejectReason);
-      alert('Từ chối đơn thành công');
+      toast.success('Từ chối đơn thành công');
       setShowRejectModal(false);
       fetchLeaveDetail();
     } catch (error: any) {
       console.error('Failed to reject:', error);
-      alert(error.response?.data?.message || 'Từ chối đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      toast.error(error.response?.data?.message || 'Từ chối đơn thất bại');
     }
   };
 
   const handleCancel = async () => {
-    if (!confirm('Bạn có chắc muốn hủy đơn này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận hủy đơn',
+      message: 'Bạn có chắc muốn hủy đơn nghỉ phép này?',
+      confirmText: 'Hủy đơn',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
-      setActionLoading(true);
+      setConfirmLoading(true);
       await leaveService.cancel(id);
-      alert('Hủy đơn thành công');
+      closeModal();
+      toast.success('Hủy đơn thành công');
       router.push('/dashboard/leaves');
     } catch (error: any) {
       console.error('Failed to cancel:', error);
-      alert(error.response?.data?.message || 'Hủy đơn thất bại');
-    } finally {
-      setActionLoading(false);
+      closeModal();
+      toast.error(error.response?.data?.message || 'Hủy đơn thất bại');
     }
   };
 
@@ -132,6 +145,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <ProtectedRoute>
       <DashboardLayout>
+        <ConfirmDialog />
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -266,8 +280,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
                 <>
                   <button
                     onClick={handleApprove}
-                    disabled={actionLoading}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                   >
                     <CheckCircle size={20} />
                     Duyệt đơn
@@ -275,8 +288,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
 
                   <button
                     onClick={() => setShowRejectModal(true)}
-                    disabled={actionLoading}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                   >
                     <XCircle size={20} />
                     Từ chối
@@ -287,8 +299,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
               {canCancel && (
                 <button
                   onClick={handleCancel}
-                  disabled={actionLoading}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
                   <XCircle size={20} />
                   Hủy đơn
@@ -339,10 +350,10 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex gap-4 mt-6">
                 <button
                   onClick={handleReject}
-                  disabled={actionLoading || !rejectReason.trim()}
+                  disabled={!rejectReason.trim()}
                   className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
-                  {actionLoading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                  Xác nhận từ chối
                 </button>
                 <button
                   onClick={() => {

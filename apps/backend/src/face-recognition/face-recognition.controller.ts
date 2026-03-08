@@ -38,16 +38,16 @@ export class FaceRecognitionController {
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Face check-in', description: 'Check in using face recognition' })
   @ApiResponse({ status: 201, description: 'Check-in result' })
-  faceCheckIn(@Body() dto: FaceCheckInDto) {
-    return this.faceRecognitionService.faceCheckIn(dto.image);
+  faceCheckIn(@Body() dto: FaceCheckInDto, @CurrentUser() user: any) {
+    return this.faceRecognitionService.faceCheckIn(dto.image, user.employeeId);
   }
 
   @Post('check-out')
   @Roles('ADMIN', 'HR_MANAGER', 'MANAGER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Face check-out', description: 'Check out using face recognition' })
   @ApiResponse({ status: 201, description: 'Check-out result' })
-  faceCheckOut(@Body() dto: FaceCheckInDto) {
-    return this.faceRecognitionService.faceCheckOut(dto.image);
+  faceCheckOut(@Body() dto: FaceCheckInDto, @CurrentUser() user: any) {
+    return this.faceRecognitionService.faceCheckOut(dto.image, user.employeeId);
   }
 
   @Get('status')

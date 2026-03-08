@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from '@/lib/toast';
+import { useConfirm } from '@/hooks/useConfirm';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Award, TrendingUp, DollarSign, Trash2, Search, Filter, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -32,6 +34,7 @@ export default function RewardsPage() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const { confirm, ConfirmDialog, closeModal, setLoading: setConfirmLoading } = useConfirm();
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -74,7 +77,7 @@ export default function RewardsPage() {
       setStats({ total, totalAmount, thisMonth });
     } catch (error) {
       console.error('Không thể tải dữ liệu:', error);
-      alert('Không thể tải dữ liệu');
+      toast.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -82,13 +85,24 @@ export default function RewardsPage() {
 
   const handleCreate = async () => {
     if (!formData.employeeId || !formData.reason) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      toast.warning('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
+    const confirmed = await confirm({
+      title: 'Xác nhận tạo khen thưởng',
+      message: `Bạn có chắc muốn tạo khen thưởng "${rewardTypeLabels[formData.rewardType]}" cho nhân viên này?`,
+      confirmText: 'Tạo khen thưởng',
+      type: 'info',
+    });
+
+    if (!confirmed) return;
+
     try {
+      setConfirmLoading(true);
       await rewardService.create(formData);
-      alert('Tạo khen thưởng thành công');
+      closeModal();
+      toast.success('Tạo khen thưởng thành công');
       setShowModal(false);
       setFormData({
         employeeId: '',
@@ -100,7 +114,6 @@ export default function RewardsPage() {
       fetchData();
     } catch (error: any) {
       console.error('Không thể tạo khen thưởng:', error);
-      // Handle different error structures
       let errorMessage = 'Tạo khen thưởng thất bại';
 
       if (error?.message) {
@@ -111,20 +124,29 @@ export default function RewardsPage() {
         errorMessage = error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
+      setConfirmLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa khen thưởng này?')) return;
+    const confirmed = await confirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa khen thưởng này? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa',
+      type: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
+      setConfirmLoading(true);
       await rewardService.delete(id);
-      alert('Xóa thành công');
+      closeModal();
+      toast.success('Xóa thành công');
       fetchData();
     } catch (error: any) {
       console.error('Không thể xóa:', error);
-      // Handle different error structures
       let errorMessage = 'Xóa thất bại';
 
       if (error?.message) {
@@ -135,7 +157,8 @@ export default function RewardsPage() {
         errorMessage = error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
+      setConfirmLoading(false);
     }
   };
 
@@ -149,6 +172,7 @@ export default function RewardsPage() {
   if (loading) {
     return (
       <DashboardLayout>
+        <ConfirmDialog />
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
           <div className="grid grid-cols-3 gap-6">
@@ -163,6 +187,7 @@ export default function RewardsPage() {
 
   return (
     <DashboardLayout>
+      <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react';
 import overtimeService from '@/services/overtimeService';
+import { toast } from '@/lib/toast';
 
 const overtimeSchema = z.object({
   date: z.string().min(1, 'Ngày là bắt buộc'),
@@ -55,7 +56,7 @@ export default function NewOvertimePage() {
 
       const hours = calculateHours();
       if (hours <= 0) {
-        alert('Giờ kết thúc phải sau giờ bắt đầu');
+        toast.warning('Giờ kết thúc phải sau giờ bắt đầu');
         return;
       }
 
@@ -67,11 +68,10 @@ export default function NewOvertimePage() {
         reason: data.reason,
       });
 
-      alert('Đăng ký tăng ca thành công');
+      toast.success('Đăng ký tăng ca thành công');
       router.push('/dashboard/overtime');
     } catch (error: any) {
       console.error('Failed to create overtime:', error);
-      // Handle different error structures
       let errorMessage = 'Đăng ký tăng ca thất bại';
 
       if (error?.message) {
@@ -82,7 +82,7 @@ export default function NewOvertimePage() {
         errorMessage = error;
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
