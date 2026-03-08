@@ -9,6 +9,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react';
 import overtimeService from '@/services/overtimeService';
 import { toast } from '@/lib/toast';
+import { useAuthStore } from '@/store/authStore';
 
 const overtimeSchema = z.object({
   date: z.string().min(1, 'Ngày là bắt buộc'),
@@ -21,6 +22,7 @@ type OvertimeFormData = z.infer<typeof overtimeSchema>;
 
 export default function NewOvertimePage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -69,7 +71,7 @@ export default function NewOvertimePage() {
       });
 
       toast.success('Đăng ký tăng ca thành công');
-      router.push('/dashboard/overtime');
+      router.push(user?.role === 'EMPLOYEE' ? '/dashboard/my-overtime' : '/dashboard/overtime');
     } catch (error: any) {
       console.error('Failed to create overtime:', error);
       let errorMessage = 'Đăng ký tăng ca thất bại';

@@ -101,7 +101,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
       await overtimeService.cancel(id);
       closeModal();
       toast.success('Hủy đơn thành công');
-      router.push('/dashboard/overtime');
+      router.push(user?.role === 'EMPLOYEE' ? '/dashboard/my-overtime' : '/dashboard/overtime');
     } catch (error: any) {
       console.error('Failed to cancel:', error);
       closeModal();
