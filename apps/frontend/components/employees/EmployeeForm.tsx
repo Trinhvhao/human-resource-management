@@ -108,14 +108,14 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                 fullName: data.fullName,
                 email: data.email,
                 phone: data.phone || undefined,
-                dateOfBirth: new Date(data.dateOfBirth).toISOString(),
+                dateOfBirth: data.dateOfBirth, // Keep as YYYY-MM-DD format
                 gender: data.gender || undefined,
                 idCard: data.idCard,
                 address: data.address || undefined,
                 departmentId: data.departmentId,
                 position: data.position,
-                startDate: new Date(data.startDate).toISOString(),
-                baseSalary: parseFloat(data.baseSalary),
+                startDate: data.startDate, // Keep as YYYY-MM-DD format
+                baseSalary: parseFloat(data.baseSalary) || 0,
             };
 
             if (mode === 'create') {
@@ -130,7 +130,8 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
             router.push('/dashboard/employees');
         } catch (error: any) {
             console.error('Failed to save employee:', error);
-            alert(error.response?.data?.message || 'Có lỗi xảy ra');
+            const errorMessage = error.message || error.response?.data?.message || 'Có lỗi xảy ra';
+            alert(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -266,9 +267,9 @@ export default function EmployeeForm({ employeeId, mode }: EmployeeFormProps) {
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue/20"
                                 >
                                     <option value="">Chọn giới tính</option>
-                                    <option value="Nam">Nam</option>
-                                    <option value="Nữ">Nữ</option>
-                                    <option value="Khác">Khác</option>
+                                    <option value="MALE">Nam</option>
+                                    <option value="FEMALE">Nữ</option>
+                                    <option value="OTHER">Khác</option>
                                 </select>
                             </div>
 

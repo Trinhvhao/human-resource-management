@@ -401,7 +401,9 @@ export default function RewardsPage() {
                   <input
                     type="number"
                     value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) || 0 })}
+                    min="0"
+                    step="1000"
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20"
                     placeholder="Nhập số tiền (nếu có)"
                   />

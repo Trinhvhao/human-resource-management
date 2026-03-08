@@ -43,7 +43,7 @@ export default function AttendanceCorrectionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.date || !formData.reason) {
       alert('Vui lòng điền đầy đủ thông tin');
       return;
@@ -56,20 +56,31 @@ export default function AttendanceCorrectionsPage() {
 
     try {
       setSubmitting(true);
+
+      // Combine date with time to create ISO datetime strings
+      const requestedCheckIn = formData.requestedCheckIn
+        ? new Date(`${formData.date}T${formData.requestedCheckIn}:00`).toISOString()
+        : undefined;
+
+      const requestedCheckOut = formData.requestedCheckOut
+        ? new Date(`${formData.date}T${formData.requestedCheckOut}:00`).toISOString()
+        : undefined;
+
       await attendanceService.createCorrection({
         date: formData.date,
-        requestedCheckIn: formData.requestedCheckIn || undefined,
-        requestedCheckOut: formData.requestedCheckOut || undefined,
+        requestedCheckIn,
+        requestedCheckOut,
         reason: formData.reason
       });
-      
+
       alert('Tạo yêu cầu điều chỉnh thành công');
       setShowCreateModal(false);
       setFormData({ date: '', requestedCheckIn: '', requestedCheckOut: '', reason: '' });
       fetchCorrections();
     } catch (error: any) {
       console.error('Failed to create correction:', error);
-      alert(error.response?.data?.message || 'Tạo yêu cầu thất bại');
+      const errorMessage = error.message || error.response?.data?.message || 'Tạo yêu cầu thất bại';
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +95,8 @@ export default function AttendanceCorrectionsPage() {
       fetchCorrections();
     } catch (error: any) {
       console.error('Failed to cancel correction:', error);
-      alert(error.response?.data?.message || 'Hủy yêu cầu thất bại');
+      const errorMessage = error.message || error.response?.data?.message || 'Hủy yêu cầu thất bại';
+      alert(errorMessage);
     }
   };
 
@@ -221,7 +233,7 @@ export default function AttendanceCorrectionsPage() {
               className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <h2 className="text-2xl font-bold text-primary mb-6">Tạo yêu cầu điều chỉnh</h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Date */}
                 <div>

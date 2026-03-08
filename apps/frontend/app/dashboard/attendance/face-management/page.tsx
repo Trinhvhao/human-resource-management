@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import faceRecognitionService from '@/services/faceRecognitionService';
 import { FaceRegistration } from '@/components/face-recognition';
 import Avatar from '@/components/common/Avatar';
@@ -30,67 +31,69 @@ export default function FaceManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8 flex items-center gap-4">
-        <div className="rounded-xl bg-linear-to-br from-blue-500 to-purple-600 p-3">
-          <ScanFace className="h-8 w-8 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Quản lý nhận diện khuôn mặt
-          </h1>
-          <p className="text-gray-500">
-            Đăng ký và quản lý khuôn mặt nhân viên cho chấm công
-          </p>
-        </div>
-      </div>
-
-      {selectedEmployee ? (
-        /* Employee face registration detail */
-        <div>
-          <button
-            onClick={() => setSelectedEmployee(null)}
-            className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Quay lại danh sách
-          </button>
-
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center gap-4">
-              <Avatar
-                src={selectedEmployee.avatarUrl}
-                name={selectedEmployee.fullName}
-                size="lg"
-                alt={selectedEmployee.fullName}
-              />
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {selectedEmployee.fullName}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {selectedEmployee.employeeCode} •{' '}
-                  {selectedEmployee.department?.name || 'Chưa có phòng ban'}
-                </p>
-              </div>
-            </div>
-
-            <FaceRegistration
-              employeeId={selectedEmployee.id}
-              employeeName={selectedEmployee.fullName}
-            />
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 p-3">
+            <ScanFace className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Quản lý nhận diện khuôn mặt
+            </h1>
+            <p className="text-gray-500">
+              Đăng ký và quản lý khuôn mặt nhân viên cho chấm công
+            </p>
           </div>
         </div>
-      ) : (
-        /* Employee list */
-        <EmployeeList
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onSelectEmployee={setSelectedEmployee}
-        />
-      )}
-    </div>
+
+        {selectedEmployee ? (
+          /* Employee face registration detail */
+          <div>
+            <button
+              onClick={() => setSelectedEmployee(null)}
+              className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Quay lại danh sách
+            </button>
+
+            <div className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-4">
+                <Avatar
+                  src={selectedEmployee.avatarUrl}
+                  name={selectedEmployee.fullName}
+                  size="lg"
+                  alt={selectedEmployee.fullName}
+                />
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {selectedEmployee.fullName}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {selectedEmployee.employeeCode} •{' '}
+                    {selectedEmployee.department?.name || 'Chưa có phòng ban'}
+                  </p>
+                </div>
+              </div>
+
+              <FaceRegistration
+                employeeId={selectedEmployee.id}
+                employeeName={selectedEmployee.fullName}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Employee list */
+          <EmployeeList
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onSelectEmployee={setSelectedEmployee}
+          />
+        )}
+      </div>
+    </DashboardLayout>
   );
 }
 
@@ -263,11 +266,10 @@ function EmployeeList({
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            isRegistered
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${isRegistered
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
+                            }`}
                         >
                           {isRegistered ? 'Đã đăng ký' : 'Chưa đăng ký'}
                         </span>
@@ -276,7 +278,7 @@ function EmployeeList({
                         <span
                           className={`font-medium ${faceCount > 0 ? 'text-green-600' : 'text-gray-400'}`}
                         >
-                          {faceCount}/5
+                          {faceCount}/3
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">

@@ -41,7 +41,7 @@ export class FaceRecognitionService implements OnModuleInit {
       this.configService.get<string>('FACE_RECOGNITION_THRESHOLD', '0.6'),
     );
     this.maxDescriptorsPerEmployee = parseInt(
-      this.configService.get<string>('FACE_RECOGNITION_MAX_DESCRIPTORS', '5'),
+      this.configService.get<string>('FACE_RECOGNITION_MAX_DESCRIPTORS', '3'),
       10,
     );
     this.minQuality = parseFloat(
@@ -115,7 +115,7 @@ export class FaceRecognitionService implements OnModuleInit {
     const { width, height } = img;
     const rgbData = new Uint8Array(width * height * 3);
     for (let i = 0; i < width * height; i++) {
-      rgbData[i * 3]     = imageData.data[i * 4];     // R
+      rgbData[i * 3] = imageData.data[i * 4];     // R
       rgbData[i * 3 + 1] = imageData.data[i * 4 + 1]; // G
       rgbData[i * 3 + 2] = imageData.data[i * 4 + 2]; // B
     }
@@ -485,12 +485,12 @@ export class FaceRecognitionService implements OnModuleInit {
         quality,
         match: match
           ? {
-              employee: match.employee,
-              confidence: Math.round((1 - match.distance) * 100),
-              distance: match.distance,
-              threshold: this.threshold,
-              isMatch: match.distance < this.threshold,
-            }
+            employee: match.employee,
+            confidence: Math.round((1 - match.distance) * 100),
+            distance: match.distance,
+            threshold: this.threshold,
+            isMatch: match.distance < this.threshold,
+          }
           : null,
       },
     };

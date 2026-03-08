@@ -33,7 +33,9 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
     try {
       setLoading(true);
       const response = await overtimeService.getById(id);
-      setOvertime(response.data);
+      // Handle both wrapped and unwrapped responses
+      const data = response.data || response;
+      setOvertime(data);
     } catch (error) {
       console.error('Failed to fetch overtime detail:', error);
       alert('Không thể tải thông tin đơn tăng ca');
@@ -118,7 +120,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const status = statusLabels[overtime.status];
-  const overtimePay = overtime.employee?.baseSalary 
+  const overtimePay = overtime.employee?.baseSalary
     ? (Number(overtime.employee.baseSalary) / (22 * 8)) * overtime.hours * 1.5
     : 0;
 
@@ -281,9 +283,8 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
 
                 {overtime.approvedAt && (
                   <div className="flex gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      overtime.status === 'APPROVED' ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
+                    <div className={`w-2 h-2 rounded-full mt-2 ${overtime.status === 'APPROVED' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
                     <div>
                       <p className="text-sm font-semibold">{overtime.status === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}</p>
                       <p className="text-xs text-slate-500">{new Date(overtime.approvedAt).toLocaleString('vi-VN')}</p>

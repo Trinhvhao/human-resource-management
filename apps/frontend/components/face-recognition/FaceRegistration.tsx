@@ -37,7 +37,7 @@ export default function FaceRegistration({
 }: FaceRegistrationProps) {
   const [descriptors, setDescriptors] = useState<FaceDescriptorInfo[]>([]);
   const [totalRegistered, setTotalRegistered] = useState(0);
-  const [maxAllowed, setMaxAllowed] = useState(5);
+  const [maxAllowed, setMaxAllowed] = useState(3);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export default function FaceRegistration({
         Array.isArray(raw) ? descriptorsList.length : (raw?.totalRegistered ?? descriptorsList.length)
       );
       setMaxAllowed(
-        Array.isArray(raw) ? 5 : (raw?.maxAllowed || 5)
+        Array.isArray(raw) ? 3 : (raw?.maxAllowed || 3)
       );
     } catch (error) {
       console.error('Failed to load descriptors:', error);
@@ -225,9 +225,8 @@ export default function FaceRegistration({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`h-3 w-3 rounded-full ${
-                i < totalRegistered ? 'bg-green-500' : 'bg-gray-200'
-              }`}
+              className={`h-3 w-3 rounded-full ${i < totalRegistered ? 'bg-green-500' : 'bg-gray-200'
+                }`}
             />
           ))}
         </div>
@@ -236,11 +235,10 @@ export default function FaceRegistration({
       {/* Status message - only show in list mode; webcam mode has its own inline messages */}
       {message && mode === 'list' && (
         <div
-          className={`flex items-center gap-2 rounded-lg p-4 ${
-            message.type === 'success'
-              ? 'border border-green-200 bg-green-50 text-green-700'
-              : 'border border-red-200 bg-red-50 text-red-700'
-          }`}
+          className={`flex items-center gap-2 rounded-lg p-4 ${message.type === 'success'
+            ? 'border border-green-200 bg-green-50 text-green-700'
+            : 'border border-red-200 bg-red-50 text-red-700'
+            }`}
         >
           {message.type === 'success' ? (
             <CheckCircle className="h-5 w-5 shrink-0" />
@@ -376,9 +374,8 @@ export default function FaceRegistration({
 
             {/* Step guide banner */}
             {step && (
-              <div className={`mb-4 flex items-center gap-3 rounded-xl border-2 p-4 ${
-                colorMap[step.color]
-              }`}>
+              <div className={`mb-4 flex items-center gap-3 rounded-xl border-2 p-4 ${colorMap[step.color]
+                }`}>
                 <div className={`shrink-0 ${iconMap[step.color]}`}>{step.icon}</div>
                 <div>
                   <p className="font-semibold text-sm">{step.label}</p>
@@ -389,13 +386,12 @@ export default function FaceRegistration({
                   {REQUIRED_STEPS.map((_, i) => (
                     <div
                       key={i}
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        i < totalRegistered
-                          ? 'bg-green-500'
-                          : i === totalRegistered
+                      className={`h-2.5 w-2.5 rounded-full ${i < totalRegistered
+                        ? 'bg-green-500'
+                        : i === totalRegistered
                           ? `bg-${step.color}-500`
                           : 'bg-gray-300'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
