@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Clock, CheckCircle2, XCircle, AlertCircle, FileText, User, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import departmentChangeRequestService from '@/services/departmentChangeRequestService';
@@ -80,7 +79,7 @@ export default function ChangeRequestsPage() {
   const filteredRequests = requests;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header with Gradient */}
         <div className="bg-gradient-to-r from-brandBlue via-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-xl">
@@ -280,6 +279,6 @@ export default function ChangeRequestsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

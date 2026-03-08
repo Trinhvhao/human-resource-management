@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { FileSignature, ArrowLeft, User, Calendar, DollarSign, FileText, Search, X } from 'lucide-react';
 import contractService from '@/services/contractService';
@@ -129,7 +128,7 @@ function NewContractForm() {
 
     return (
         <ProtectedRoute requiredPermission="MANAGE_CONTRACTS">
-            <DashboardLayout>
+            <>
                 <div className="max-w-4xl mx-auto space-y-6">
                     {/* Header */}
                     <div>
@@ -398,7 +397,7 @@ function NewContractForm() {
                         </div>
                     </form>
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }
@@ -406,14 +405,14 @@ function NewContractForm() {
 export default function NewContractPage() {
     return (
         <Suspense fallback={
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center h-screen">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
                         <p className="text-slate-600 font-medium">Đang tải...</p>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         }>
             <NewContractForm />
         </Suspense>

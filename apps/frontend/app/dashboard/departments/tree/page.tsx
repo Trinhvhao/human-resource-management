@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Building2, Users, ChevronDown, ChevronRight, Eye, Edit, UserCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import departmentService from '@/services/departmentService';
@@ -240,7 +239,7 @@ export default function OrganizationTreePage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
           <div className="space-y-4">
@@ -249,12 +248,12 @@ export default function OrganizationTreePage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -378,6 +377,6 @@ export default function OrganizationTreePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

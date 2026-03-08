@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Search, Filter, Plus, Download, X } from 'lucide-react';
 import employeeService from '@/services/employeeService';
 import departmentService from '@/services/departmentService';
@@ -246,7 +245,7 @@ export default function EmployeesPage() {
 
   return (
     <ProtectedRoute requiredPermission="VIEW_EMPLOYEES">
-      <DashboardLayout>
+      <>
         <div className="space-y-4">
           {/* Action Bar */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -478,7 +477,7 @@ export default function EmployeesPage() {
             onClose={() => setShowExportModal(false)}
           />
         )}
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

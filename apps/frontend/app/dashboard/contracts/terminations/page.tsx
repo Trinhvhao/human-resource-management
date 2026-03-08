@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import TerminationApprovalPanel from '@/components/contracts/TerminationApprovalPanel';
 import { useAuthStore } from '@/store/authStore';
 import { AlertCircle, Clock, Flame, CheckCircle, FileX, History } from 'lucide-react';
@@ -50,7 +49,7 @@ export default function TerminationManagementPage() {
     // Check permissions
     if (!user || (user.role !== 'HR_MANAGER' && user.role !== 'ADMIN')) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="text-center">
                         <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -62,11 +61,11 @@ export default function TerminationManagementPage() {
                         </p>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
     return (
-        <DashboardLayout>
+        <>
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
@@ -205,6 +204,6 @@ export default function TerminationManagementPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

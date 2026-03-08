@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import PageHeader from '@/components/common/PageHeader';
 import AttendanceStatsBar from '@/components/attendance/AttendanceStatsBar';
 import AttendanceFilterPanel from '@/components/attendance/AttendanceFilterPanel';
@@ -28,7 +27,6 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
-  const [pendingCorrections, setPendingCorrections] = useState(0);
 
   // Stats
   const [totalEmployees, setTotalEmployees] = useState(0);
@@ -63,17 +61,6 @@ export default function AttendancePage() {
       // Fetch departments
       const deptResponse = await departmentService.getAll();
       setDepartments(deptResponse.data.map((d: any) => ({ id: d.id, name: d.name })));
-
-      // Fetch pending corrections
-      if (isAdmin) {
-        try {
-          const correctionsResponse = await attendanceService.getPendingCorrections();
-          setPendingCorrections(correctionsResponse.data?.length || 0);
-        } catch (error) {
-          console.error('Failed to fetch pending corrections:', error);
-          setPendingCorrections(0);
-        }
-      }
 
       // Fetch today's all attendances
       const attendancesResponse = await attendanceService.getTodayAllAttendances();
@@ -192,7 +179,7 @@ export default function AttendancePage() {
 
   return (
     <ProtectedRoute requiredPermission="VIEW_ALL_ATTENDANCE">
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Action Bar - Replace PageHeader */}
           <div className="flex items-center justify-between">
@@ -201,13 +188,6 @@ export default function AttendancePage() {
               onPeriodChange={setActivePeriod}
             />
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/dashboard/attendance/corrections')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:border-brandBlue hover:text-brandBlue font-semibold text-sm transition-all"
-              >
-                <FileText size={18} />
-                Điều chỉnh
-              </button>
               <button
                 onClick={() => router.push('/dashboard/attendance/reports')}
                 className="flex items-center gap-2 px-4 py-2.5 bg-brandBlue text-white rounded-xl hover:bg-blue-700 font-semibold text-sm transition-all shadow-lg shadow-brandBlue/30"
@@ -336,7 +316,7 @@ export default function AttendancePage() {
             </button>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

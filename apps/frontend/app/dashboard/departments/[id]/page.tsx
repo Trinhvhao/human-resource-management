@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
   ArrowLeft, Edit, Trash2, Building2, Users, User, ChevronRight, TrendingUp,
   Award, Target, Crown, UserPlus, UserMinus, FileText, History,
@@ -99,7 +98,7 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-slate-200 rounded w-48"></div>
@@ -112,7 +111,7 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
             <div className="h-64 bg-slate-100 rounded-xl mt-6"></div>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -151,7 +150,7 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <ProtectedRoute requiredPermission="VIEW_DEPARTMENTS">
-      <DashboardLayout>
+      <>
         <div className="max-w-7xl mx-auto">
           {/* Breadcrumb & Actions */}
           <div className="flex items-center justify-between mb-6">
@@ -681,7 +680,7 @@ export default function DepartmentDetailPage({ params }: { params: Promise<{ id:
             )}
           </AnimatePresence>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute >
   );
 }

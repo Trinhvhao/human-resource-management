@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Download, TrendingUp, TrendingDown, Info, DollarSign, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import payrollService from '@/services/payrollService';
@@ -51,11 +50,11 @@ export default function MyPayslipDetailPage({ params }: { params: Promise<{ id: 
 
     if (loading || !payslip) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center h-96">
                     <div className="w-8 h-8 border-4 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -64,7 +63,7 @@ export default function MyPayslipDetailPage({ params }: { params: Promise<{ id: 
     const totalDeductions = Number(payslip.insurance) + Number(payslip.tax) + Number(payslip.deduction);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -256,6 +255,6 @@ export default function MyPayslipDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

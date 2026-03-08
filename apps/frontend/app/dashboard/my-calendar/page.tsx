@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Clock, Briefcase, Umbrella, Award, Plus, Edit, Trash2, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EventClickArg, DateSelectArg } from '@fullcalendar/core';
@@ -168,7 +167,7 @@ export default function MyCalendarPage() {
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -344,6 +343,6 @@ export default function MyCalendarPage() {
                     onSuccess={handleScheduleSuccess}
                 />
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import EmployeeForm from '@/components/employees/EmployeeForm';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -12,7 +11,7 @@ export default function NewEmployeePage() {
 
   return (
     <ProtectedRoute requiredPermission="CREATE_EMPLOYEE">
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -33,7 +32,7 @@ export default function NewEmployeePage() {
           {/* Form */}
           <EmployeeForm mode="create" />
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

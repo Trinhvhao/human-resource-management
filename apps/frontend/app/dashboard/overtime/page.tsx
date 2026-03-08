@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePermission } from '@/hooks/usePermission';
 import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
@@ -89,7 +88,7 @@ export default function OvertimePage() {
 
   return (
     <ProtectedRoute requiredPermission="VIEW_ALL_OVERTIME">
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -268,7 +267,7 @@ export default function OvertimePage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

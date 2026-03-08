@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Bell, Check, CheckCheck, Trash2, Filter } from 'lucide-react';
 import notificationService from '@/services/notificationService';
 import { Notification } from '@/types/notification';
@@ -110,7 +109,7 @@ export default function NotificationsPage() {
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -251,6 +250,6 @@ export default function NotificationsPage() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

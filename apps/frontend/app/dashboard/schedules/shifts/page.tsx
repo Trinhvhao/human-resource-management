@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Users, Plus, Search, Filter, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import employeeService from '@/services/employeeService';
@@ -136,7 +135,7 @@ export default function SchedulesManagementPage() {
 
     return (
         <ProtectedRoute requiredPermission="VIEW_ALL_SCHEDULES">
-            <DashboardLayout>
+            <>
                 <div className="space-y-6">
                     {/* Header with improved action buttons */}
                     <div className="flex items-center justify-between">
@@ -449,7 +448,7 @@ export default function SchedulesManagementPage() {
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 }
             `}</style>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

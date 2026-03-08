@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CheckCircle, XCircle, Eye, Clock, AlertCircle, Calendar, Users } from 'lucide-react';
 import payrollService from '@/services/payrollService';
 import { Payroll } from '@/types/payroll';
@@ -73,7 +72,7 @@ export default function PayrollApprovalsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -246,6 +245,6 @@ export default function PayrollApprovalsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

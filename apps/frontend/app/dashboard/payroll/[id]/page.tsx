@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Download, Lock, Edit, Save, X } from 'lucide-react';
 import payrollService from '@/services/payrollService';
 import { Payroll, PayrollItem } from '@/types/payroll';
@@ -78,18 +77,18 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading || !payroll) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-96">
           <div className="w-8 h-8 border-4 border-brandBlue border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   const canEdit = isHR && payroll.status === 'DRAFT';
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -285,6 +284,6 @@ export default function PayrollDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

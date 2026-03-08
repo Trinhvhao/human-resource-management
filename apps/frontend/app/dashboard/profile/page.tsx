@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { User, Mail, Phone, Calendar, Building, Briefcase, MapPin, Edit, Save, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
@@ -64,7 +63,7 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="animate-pulse space-y-6">
                     <div className="h-8 bg-slate-200 rounded w-48"></div>
                     <div className="bg-white rounded-2xl p-8 space-y-6">
@@ -76,14 +75,14 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!employee) return null;
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -305,6 +304,6 @@ export default function ProfilePage() {
                     </motion.div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

@@ -26,7 +26,7 @@ export default function QuickActions() {
 
   useEffect(() => {
     fetchBadgeCounts();
-    
+
     // Refresh every 60 seconds
     const interval = setInterval(fetchBadgeCounts, 60000);
     return () => clearInterval(interval);
@@ -52,22 +52,13 @@ export default function QuickActions() {
         return endDate >= now && endDate <= in30Days;
       }).length || 0;
 
-      // Pending corrections (if endpoint exists)
-      let pendingCorrections = 0;
-      try {
-        const correctionsRes = await axiosInstance.get('/attendance-corrections?status=PENDING');
-        pendingCorrections = correctionsRes.data?.length || 0;
-      } catch (error) {
-        // Endpoint might not exist
-      }
-
       // Today attendance count
       const todayAttendance = attendanceRes.data?.length || 0;
 
       setBadges({
         pendingLeaves,
         expiringContracts,
-        pendingCorrections,
+        pendingCorrections: 0,
         todayAttendance,
       });
     } catch (error) {
@@ -137,16 +128,6 @@ export default function QuickActions() {
       badge: null,
     },
     {
-      icon: Calendar,
-      label: 'Xử lý điều chỉnh',
-      description: 'Điều chỉnh chấm công',
-      link: '/dashboard/attendance/corrections',
-      category: 'Thời gian',
-      badge: badges.pendingCorrections,
-      badgeColor: 'bg-orange-100 text-orange-600',
-      urgent: badges.pendingCorrections > 5,
-    },
-    {
       icon: Award,
       label: 'Khen thưởng',
       description: 'Quản lý khen thưởng',
@@ -173,13 +154,13 @@ export default function QuickActions() {
   ];
 
   const allActions = [...primaryActions, ...secondaryActions];
-  
+
   const filteredActions = searchQuery
-    ? allActions.filter(action => 
-        action.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        action.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        action.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? allActions.filter(action =>
+      action.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      action.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      action.category.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : allActions;
 
   return (
@@ -215,14 +196,14 @@ export default function QuickActions() {
               />
             </motion.div>
           )}
-          
+
           <button
             onClick={() => setShowAllActions(!showAllActions)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium text-slate-700"
           >
             {showAllActions ? 'Thu gọn' : 'Xem tất cả'}
-            <ChevronDown 
-              size={16} 
+            <ChevronDown
+              size={16}
               className={`transition-transform ${showAllActions ? 'rotate-180' : ''}`}
             />
           </button>
@@ -234,13 +215,13 @@ export default function QuickActions() {
         {primaryActions.map((action, index) => {
           const Icon = action.icon;
           // Extract gradient colors for inline style
-          const gradientStyle = action.label === 'Thêm nhân viên' 
+          const gradientStyle = action.label === 'Thêm nhân viên'
             ? { background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }
             : action.label === 'Chấm công hôm nay'
-            ? { background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }
-            : action.label === 'Duyệt đơn nghỉ phép'
-            ? { background: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)' }
-            : { background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' };
+              ? { background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }
+              : action.label === 'Duyệt đơn nghỉ phép'
+                ? { background: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)' }
+                : { background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' };
 
           return (
             <motion.button
@@ -299,7 +280,7 @@ export default function QuickActions() {
                   Tìm thấy {filteredActions.length} kết quả
                 </p>
               )}
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 {(searchQuery ? filteredActions : secondaryActions).map((action, index) => {
                   const Icon = action.icon;

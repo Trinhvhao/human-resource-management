@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ChevronRight, Mail, Phone, Calendar, Building, User,
     FolderOpen, MapPin, Clock, MoreHorizontal, Download, Share2, Edit2, Trash2,
@@ -231,7 +230,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="animate-pulse space-y-6">
                         <div className="h-6 bg-slate-200 rounded w-48"></div>
@@ -246,7 +245,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
@@ -254,7 +253,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
     return (
         <ProtectedRoute requiredPermission="VIEW_EMPLOYEES">
-            <DashboardLayout>
+            <>
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-2 text-sm text-slate-600 mb-6">
@@ -903,7 +902,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

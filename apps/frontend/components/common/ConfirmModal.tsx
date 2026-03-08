@@ -49,7 +49,7 @@ export default function ConfirmModal({
     const style = typeStyles[type] || typeStyles.warning;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-scale-in">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">

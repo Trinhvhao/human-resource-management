@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/toast';
 import { useConfirm } from '@/hooks/useConfirm';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Award, TrendingUp, DollarSign, Trash2, Search, Filter, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import rewardService, { Reward } from '@/services/rewardService';
@@ -89,19 +88,8 @@ export default function RewardsPage() {
       return;
     }
 
-    const confirmed = await confirm({
-      title: 'Xác nhận tạo khen thưởng',
-      message: `Bạn có chắc muốn tạo khen thưởng "${rewardTypeLabels[formData.rewardType]}" cho nhân viên này?`,
-      confirmText: 'Tạo khen thưởng',
-      type: 'info',
-    });
-
-    if (!confirmed) return;
-
     try {
-      setConfirmLoading(true);
       await rewardService.create(formData);
-      closeModal();
       toast.success('Tạo khen thưởng thành công');
       setShowModal(false);
       setFormData({
@@ -125,7 +113,6 @@ export default function RewardsPage() {
       }
 
       toast.error(errorMessage);
-      setConfirmLoading(false);
     }
   };
 
@@ -171,7 +158,7 @@ export default function RewardsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <ConfirmDialog />
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
@@ -181,12 +168,12 @@ export default function RewardsPage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -476,6 +463,6 @@ export default function RewardsPage() {
           </ul>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

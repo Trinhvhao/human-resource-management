@@ -3,11 +3,9 @@
 import { Settings, Shield, Sparkles, TrendingUp, BookOpen, Zap, CheckCircle2, ArrowRight } from 'lucide-react';
 import AttendanceValidation from '@/components/attendance/AttendanceValidation';
 import AutoAbsentTrigger from '@/components/attendance/AutoAbsentTrigger';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-
 export default function AttendanceManagementPage() {
     return (
-        <DashboardLayout>
+        <>
             <div className="p-6 max-w-7xl mx-auto space-y-6">
                 {/* Enhanced Header with Gradient Background */}
                 <div className="relative overflow-hidden">
@@ -221,6 +219,6 @@ export default function AttendanceManagementPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

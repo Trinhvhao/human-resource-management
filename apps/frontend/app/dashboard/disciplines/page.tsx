@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/toast';
 import { useConfirm } from '@/hooks/useConfirm';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, AlertTriangle, TrendingDown, DollarSign, Trash2, Search, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import disciplineService from '@/services/disciplineService';
@@ -172,7 +171,7 @@ export default function DisciplinesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <ConfirmDialog />
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
@@ -182,12 +181,12 @@ export default function DisciplinesPage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -452,6 +451,6 @@ export default function DisciplinesPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

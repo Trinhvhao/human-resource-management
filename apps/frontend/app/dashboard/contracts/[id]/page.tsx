@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowLeft, FileText, User, Calendar, DollarSign, Clock,
     Briefcase, Building2, Mail, Phone, Hash, AlertCircle,
@@ -135,17 +134,17 @@ export default function ContractDetailPage() {
 
     if (loading) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="flex items-center justify-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     if (!contract) {
         return (
-            <DashboardLayout>
+            <>
                 <div className="text-center py-12">
                     <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-500 font-medium mb-4">Không tìm thấy hợp đồng</p>
@@ -156,14 +155,14 @@ export default function ContractDetailPage() {
                         ← Quay lại danh sách
                     </button>
                 </div>
-            </DashboardLayout>
+            </>
         );
     }
 
     return (
         <ProtectedRoute requiredPermission="VIEW_CONTRACTS">
             <>
-                <DashboardLayout>
+                <>
                     <div className="max-w-7xl mx-auto space-y-6">
                         {/* Header */}
                         <div>
@@ -581,7 +580,7 @@ export default function ContractDetailPage() {
                             </div>
                         </div>
                     </div>
-                </DashboardLayout>
+                </>
 
                 {/* Terminate Modal - Outside DashboardLayout */}
                 {showTerminateModal && (

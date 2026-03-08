@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import leaveService from '@/services/leaveService';
@@ -90,7 +89,7 @@ export default function MyLeavesPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -291,6 +290,6 @@ export default function MyLeavesPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

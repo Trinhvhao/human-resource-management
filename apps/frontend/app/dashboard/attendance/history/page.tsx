@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import attendanceService from '@/services/attendanceService';
@@ -73,7 +72,7 @@ export default function AttendanceHistoryPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -225,6 +224,6 @@ export default function AttendanceHistoryPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

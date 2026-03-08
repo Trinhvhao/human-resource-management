@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Calendar, Clock, User, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import leaveService from '@/services/leaveService';
 import { LeaveRequest } from '@/types/leave';
@@ -122,21 +121,21 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-96">
           <Loader2 className="w-8 h-8 animate-spin text-brandBlue" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!leave) {
     return (
-      <DashboardLayout>
+      <>
         <div className="text-center py-12">
           <p className="text-slate-500">Không tìm thấy đơn nghỉ phép</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -144,7 +143,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <ProtectedRoute>
-      <DashboardLayout>
+      <>
         <ConfirmDialog />
         <div className="space-y-6">
           {/* Header */}
@@ -368,7 +367,7 @@ export default function LeaveDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         )}
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

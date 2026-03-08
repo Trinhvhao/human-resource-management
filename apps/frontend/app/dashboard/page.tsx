@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, Suspense, lazy } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import OverviewCards from '@/components/dashboard/OverviewCards';
 import QuickActions from '@/components/dashboard/QuickActions';
 import EmployeeDashboard from '@/components/dashboard/EmployeeDashboard';
@@ -41,15 +40,15 @@ export default function DashboardPage() {
   // Employee role gets a personalized dashboard
   if (user?.role === 'EMPLOYEE') {
     return (
-      <DashboardLayout>
+      <>
         <EmployeeDashboard />
-      </DashboardLayout>
+      </>
     );
   }
 
   // Admin / HR_MANAGER / MANAGER get the full management dashboard
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8">
         {/* Action Bar */}
         <div className="flex justify-end items-center">
@@ -140,6 +139,6 @@ export default function DashboardPage() {
           <RecentActivities key={`activities-${refreshKey}`} />
         </Suspense>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

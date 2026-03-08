@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -42,7 +41,7 @@ export default function PendingLeavesPage() {
 
     return (
         <ProtectedRoute>
-            <DashboardLayout>
+            <>
                 <div className="space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">
@@ -151,7 +150,7 @@ export default function PendingLeavesPage() {
                         )}
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

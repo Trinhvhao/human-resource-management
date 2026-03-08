@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePermission } from '@/hooks/usePermission';
 import { Plus, Edit, Trash2, DollarSign, Users, TrendingUp } from 'lucide-react';
@@ -78,7 +77,7 @@ export default function SalaryStructurePage() {
 
     return (
         <ProtectedRoute requiredPermission="MANAGE_SALARY_COMPONENTS">
-            <DashboardLayout>
+            <>
                 <div className="space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">
@@ -300,7 +299,7 @@ export default function SalaryStructurePage() {
                         </ul>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

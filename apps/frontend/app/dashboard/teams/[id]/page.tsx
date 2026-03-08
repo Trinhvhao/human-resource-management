@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Users, UserPlus, Trash2, Mail, Calendar, Percent } from 'lucide-react';
 import teamService from '@/services/teamService';
 import employeeService from '@/services/employeeService';
@@ -111,27 +110,27 @@ export default function TeamDetailPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-slate-200 rounded w-1/3"></div>
           <div className="h-64 bg-slate-200 rounded"></div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!team) {
     return (
-      <DashboardLayout>
+      <>
         <div className="text-center py-12">
           <p className="text-slate-500">Team không tồn tại</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -312,6 +311,6 @@ export default function TeamDetailPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

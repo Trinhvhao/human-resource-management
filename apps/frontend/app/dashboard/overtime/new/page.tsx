@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Save, Clock, AlertCircle } from 'lucide-react';
 import overtimeService from '@/services/overtimeService';
 import { toast } from '@/lib/toast';
@@ -91,7 +90,7 @@ export default function NewOvertimePage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -253,6 +252,6 @@ export default function NewOvertimePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

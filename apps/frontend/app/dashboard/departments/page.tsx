@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Building2, Plus, Users, Crown, AlertCircle, TrendingUp, BarChart3, Layers } from 'lucide-react';
 import departmentService from '@/services/departmentService';
 import teamService from '@/services/teamService';
@@ -108,7 +107,7 @@ export default function DepartmentsPage() {
 
   return (
     <ProtectedRoute requiredPermission="VIEW_DEPARTMENTS">
-      <DashboardLayout>
+      <>
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
@@ -372,7 +371,7 @@ export default function DepartmentsPage() {
             )}
           </motion.div>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

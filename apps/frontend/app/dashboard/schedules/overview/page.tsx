@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import employeeService from '@/services/employeeService';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -82,7 +81,7 @@ export default function SchedulesOverviewPage() {
 
     return (
         <ProtectedRoute requiredPermission="VIEW_ALL_SCHEDULES">
-            <DashboardLayout>
+            <>
                 <div className="space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">
@@ -225,7 +224,7 @@ export default function SchedulesOverviewPage() {
                         </div>
                     </div>
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

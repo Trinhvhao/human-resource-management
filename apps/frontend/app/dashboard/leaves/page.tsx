@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { usePermission } from '@/hooks/usePermission';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
@@ -85,7 +84,7 @@ export default function LeavesPage() {
 
   return (
     <ProtectedRoute>
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Success Message */}
           {successMessage && (
@@ -318,7 +317,7 @@ export default function LeavesPage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import overtimeService from '@/services/overtimeService';
@@ -76,7 +75,7 @@ export default function MyOvertimePage() {
     : [];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -266,6 +265,6 @@ export default function MyOvertimePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

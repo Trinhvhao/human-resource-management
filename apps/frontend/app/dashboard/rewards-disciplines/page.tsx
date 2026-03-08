@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Award, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import rewardService, { Reward } from '@/services/rewardService';
@@ -64,7 +63,7 @@ export default function RewardsDisciplinesPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -291,6 +290,6 @@ export default function RewardsDisciplinesPage() {
                     </ul>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }

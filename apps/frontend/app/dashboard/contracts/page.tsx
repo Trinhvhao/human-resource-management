@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Search, Filter, Plus, Download, FileSignature, X, AlertCircle } from 'lucide-react';
 import contractService from '@/services/contractService';
 import departmentService from '@/services/departmentService';
@@ -236,7 +235,7 @@ export default function ContractsPage() {
 
     return (
         <ProtectedRoute requiredPermission="VIEW_CONTRACTS">
-            <DashboardLayout>
+            <>
                 <div className="space-y-6">
                     {/* Page Header */}
                     <div className="flex items-center justify-between">
@@ -464,7 +463,7 @@ export default function ContractsPage() {
                         />
                     )}
                 </div>
-            </DashboardLayout>
+            </>
         </ProtectedRoute>
     );
 }

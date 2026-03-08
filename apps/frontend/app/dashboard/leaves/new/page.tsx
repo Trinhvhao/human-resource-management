@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Calendar, Save } from 'lucide-react';
 import leaveService from '@/services/leaveService';
 import { useAuthStore } from '@/store/authStore';
@@ -95,7 +94,7 @@ export default function NewLeavePage() {
   const estimatedDays = calculateDays();
 
   return (
-    <DashboardLayout>
+    <>
       {isHROrAdmin ? (
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
@@ -307,6 +306,6 @@ export default function NewLeavePage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

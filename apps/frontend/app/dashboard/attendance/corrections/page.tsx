@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Plus, Clock, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import attendanceService from '@/services/attendanceService';
@@ -205,7 +204,7 @@ export default function AttendanceCorrectionsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -431,6 +430,6 @@ export default function AttendanceCorrectionsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

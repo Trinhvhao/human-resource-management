@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Save } from 'lucide-react';
 import teamService from '@/services/teamService';
 import departmentService from '@/services/departmentService';
@@ -69,7 +68,7 @@ export default function NewTeamPage() {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -212,6 +211,6 @@ export default function NewTeamPage() {
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

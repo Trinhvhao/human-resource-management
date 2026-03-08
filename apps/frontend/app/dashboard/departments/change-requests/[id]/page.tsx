@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Clock, CheckCircle2, XCircle, AlertCircle, User, Calendar, FileText, Users, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import departmentChangeRequestService from '@/services/departmentChangeRequestService';
@@ -93,7 +92,7 @@ export default function ChangeRequestDetailPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-64"></div>
           <div className="bg-white rounded-xl p-8 space-y-4">
@@ -102,7 +101,7 @@ export default function ChangeRequestDetailPage() {
             ))}
           </div>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -111,7 +110,7 @@ export default function ChangeRequestDetailPage() {
   const canReview = request.status === 'PENDING';
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -360,6 +359,6 @@ export default function ChangeRequestDetailPage() {
           </motion.div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

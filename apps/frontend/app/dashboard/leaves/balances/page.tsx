@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Calendar, Users, TrendingUp, Edit, Play, History, Loader2 } from 'lucide-react';
 import leaveService from '@/services/leaveService';
 import { LeaveBalance } from '@/types/leave';
@@ -99,7 +98,7 @@ export default function LeaveBalancesPage() {
   const totalSickRemaining = balances.reduce((sum, b) => sum + (b.remainingSick ?? (b.sickLeave - b.usedSick)), 0);
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -303,6 +302,6 @@ export default function LeaveBalancesPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

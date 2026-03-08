@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Clock, User, FileText, CheckCircle, XCircle, Loader2, Calendar } from 'lucide-react';
 import overtimeService from '@/services/overtimeService';
 import { Overtime } from '@/types/overtime';
@@ -114,21 +113,21 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center h-96">
           <Loader2 className="w-8 h-8 animate-spin text-brandBlue" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (!overtime) {
     return (
-      <DashboardLayout>
+      <>
         <div className="text-center py-12">
           <p className="text-slate-500">Không tìm thấy đơn tăng ca</p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -138,7 +137,7 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
     : 0;
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -342,6 +341,6 @@ export default function OvertimeDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

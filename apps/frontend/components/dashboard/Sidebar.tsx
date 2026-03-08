@@ -90,7 +90,6 @@ const adminMenuItems: MenuItem[] = [
     children: [
       { label: 'Tổng quan', href: '/dashboard/attendance' },
       { label: 'Lịch sử', href: '/dashboard/attendance/history' },
-      { label: 'Yêu cầu sửa', href: '/dashboard/attendance/corrections' },
       { label: 'Báo cáo', href: '/dashboard/attendance/reports' },
       { label: 'Quản lý', href: '/dashboard/attendance/management' },
       { label: 'Nhận diện khuôn mặt', href: '/dashboard/attendance/face-management' },
@@ -380,7 +379,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
               <p className="text-xs text-slate-500 truncate font-medium">
                 {user.role === 'ADMIN' ? 'Quản trị viên' :
                   user.role === 'HR_MANAGER' ? 'Nhân sự' :
-                  user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
+                    user.role === 'MANAGER' ? 'Quản lý' : 'Nhân viên'}
               </p>
             </div>
           </div>

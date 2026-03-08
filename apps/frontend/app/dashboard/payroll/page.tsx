@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DollarSign, Download, Eye, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import payrollService from '@/services/payrollService';
@@ -206,7 +205,7 @@ export default function PayrollPage() {
 
   return (
     <ProtectedRoute requiredPermission="VIEW_DASHBOARD">
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Header */}
           <div>
@@ -439,7 +438,7 @@ export default function PayrollPage() {
             </ul>
           </div>
         </div>
-      </DashboardLayout>
+      </>
     </ProtectedRoute>
   );
 }

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { ScanFace, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { FaceRegistration } from '@/components/face-recognition';
 import faceRecognitionService from '@/services/faceRecognitionService';
 
@@ -35,7 +34,7 @@ export default function FaceRecognitionPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Back navigation */}
       <button
@@ -149,6 +148,6 @@ export default function FaceRecognitionPage() {
         </div>
       </div>
     </div>
-    </DashboardLayout>
+    </>
   );
 }

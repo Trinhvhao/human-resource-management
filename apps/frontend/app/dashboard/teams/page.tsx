@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Users, Plus, Search, X } from 'lucide-react';
 import teamService from '@/services/teamService';
 import departmentService from '@/services/departmentService';
@@ -85,7 +84,7 @@ export default function TeamsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -282,6 +281,6 @@ export default function TeamsPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

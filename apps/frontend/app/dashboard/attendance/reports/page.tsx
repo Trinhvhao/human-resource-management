@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Download, Calendar, Users, Clock, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import attendanceService from '@/services/attendanceService';
@@ -69,7 +68,7 @@ export default function AttendanceReportsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -294,6 +293,6 @@ export default function AttendanceReportsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

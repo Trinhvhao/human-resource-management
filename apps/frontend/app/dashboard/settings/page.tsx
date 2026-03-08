@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Bell, Shield, Palette, Globe, Key, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -27,7 +26,7 @@ export default function SettingsPage() {
   ];
 
   return (
-      <DashboardLayout>
+      <>
         <div className="space-y-6">
           {/* Header */}
           <div>
@@ -321,6 +320,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </>
   );
 }

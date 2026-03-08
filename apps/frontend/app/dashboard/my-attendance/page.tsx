@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import attendanceService from '@/services/attendanceService';
 import faceRecognitionService from '@/services/faceRecognitionService';
 import { FaceCheckIn } from '@/components/face-recognition';
@@ -95,7 +94,7 @@ export default function MyAttendancePage() {
   // Face check-in modal
   if (faceCheckInMode) {
     return (
-      <DashboardLayout>
+      <>
       <div className="p-6">
         <div className="mx-auto max-w-2xl">
           <div className="rounded-xl bg-white p-6 shadow-lg">
@@ -107,12 +106,12 @@ export default function MyAttendancePage() {
           </div>
         </div>
       </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Chấm công của tôi</h1>
@@ -317,6 +316,6 @@ export default function MyAttendancePage() {
         )}
       </div>
     </div>
-    </DashboardLayout>
+    </>
   );
 }

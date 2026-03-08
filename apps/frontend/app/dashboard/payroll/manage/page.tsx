@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Plus, Eye, Lock, Calendar, DollarSign, Users, TrendingUp } from 'lucide-react';
 import payrollService from '@/services/payrollService';
 import { Payroll } from '@/types/payroll';
@@ -153,7 +152,7 @@ export default function ManagePayrollPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <ConfirmDialog />
       <div className="space-y-6">
         {/* Header */}
@@ -373,6 +372,6 @@ export default function ManagePayrollPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }
